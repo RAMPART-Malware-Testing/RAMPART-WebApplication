@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (email === 'admin@admin.com' && password === 'password') {
+    if (email === 'a@a.com' && password === '123456') {
       // Login สำเร็จ
       return NextResponse.json(
         { message: 'Login successful' },

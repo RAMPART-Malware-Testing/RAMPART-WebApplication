@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 import NavbarComponent from '@/components/NavbarComponent'
+import { UploadService } from '@/services/uploadService'
 
 interface UploadedFile {
   id: string
@@ -11,6 +12,8 @@ interface UploadedFile {
   type: string
   status: 'uploading' | 'analyzing' | 'completed' | 'failed'
   progress: number
+  uploadedFileId?: string
+  error?: string
   analysisResult?: {
     riskLevel: 'low' | 'medium' | 'high'
     malwareType?: string
@@ -47,13 +50,20 @@ export default function ScanFilesPage() {
     handleFiles(files)
   }
 
-  const handleFiles = (files: File[]) => {
+  const handleFiles = async (files: File[]) => {
     const validFiles = files.filter(file => {
-      const maxSize = 100 * 1024 * 1024 // 100MB
-      if (file.size > maxSize) {
-        alert(`ไฟล์ ${file.name} มีขนาดใหญ่เกินไป (สูงสุด 100MB)`)
+      const maxSize = 1024 * 1024 * 1024 // 1GB
+      if (!UploadService.validateFileSize(file, 1)) {
+        alert(`ไฟล์ ${file.name} มีขนาดใหญ่เกินไป (สูงสุด 1GB)`)
         return false
       }
+
+      // Validate file extension
+      if (!UploadService.validateFileExtension(file, acceptedFileTypes)) {
+        alert(`ไฟล์ ${file.name} ไม่รองรับประเภทไฟล์นี้`)
+        return false
+      }
+
       return true
     })
 
@@ -68,9 +78,9 @@ export default function ScanFilesPage() {
 
     setUploadedFiles(prev => [...prev, ...newFiles])
 
-    // Simulate upload and analysis process
-    newFiles.forEach(file => {
-      simulateUploadProcess(file.id)
+    // Upload files to server
+    newFiles.forEach((uploadedFile, index) => {
+      uploadFileToServer(files[index], uploadedFile.id)
     })
   }
 
@@ -78,30 +88,61 @@ export default function ScanFilesPage() {
     return filename.split('.').pop()?.toLowerCase() || 'unknown'
   }
 
-  const simulateUploadProcess = (fileId: string) => {
-    // Simulate upload progress
-    let progress = 0
-    const uploadInterval = setInterval(() => {
-      progress += Math.random() * 20
-      if (progress >= 100) {
-        progress = 100
-        clearInterval(uploadInterval)
-        setUploadedFiles(prev => 
-          prev.map(file => 
-            file.id === fileId 
-              ? { ...file, status: 'analyzing', progress: 100 }
-              : file
+  const uploadFileToServer = async (file: File, fileId: string) => {
+    try {
+      // Get access token from localStorage or session
+      const accessToken = localStorage.getItem('accessToken') || undefined
+
+      // Upload file with progress tracking
+      const response = await UploadService.uploadFile(file, {
+        accessToken,
+        onProgress: (progress) => {
+          setUploadedFiles(prev =>
+            prev.map(f =>
+              f.id === fileId
+                ? { ...f, progress: progress.percentage }
+                : f
+            )
           )
+        }
+      })
+
+      // Upload completed successfully
+      setUploadedFiles(prev =>
+        prev.map(f =>
+          f.id === fileId
+            ? {
+                ...f,
+                status: 'analyzing',
+                progress: 100,
+                uploadedFileId: response.file_id
+              }
+            : f
         )
-        simulateAnalysisProcess(fileId)
-      } else {
-        setUploadedFiles(prev => 
-          prev.map(file => 
-            file.id === fileId ? { ...file, progress } : file
-          )
+      )
+
+      // Start analysis process
+      simulateAnalysisProcess(fileId)
+
+    } catch (error) {
+      console.error('Upload error:', error)
+
+      // Update file status to failed
+      setUploadedFiles(prev =>
+        prev.map(f =>
+          f.id === fileId
+            ? {
+                ...f,
+                status: 'failed',
+                error: error instanceof Error ? error.message : 'Upload failed'
+              }
+            : f
         )
-      }
-    }, 200)
+      )
+
+      // Show error to user
+      alert(`การอัพโหลดไฟล์ ${file.name} ล้มเหลว: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   const simulateAnalysisProcess = (fileId: string) => {
@@ -309,15 +350,36 @@ export default function ScanFilesPage() {
                           <span className={`${getStatusColor(file.status)}`}>
                             {getStatusText(file.status)}
                           </span>
+                          {file.status === 'uploading' && (
+                            <span className="text-cyan-400 font-medium">
+                              {file.progress}%
+                            </span>
+                          )}
                         </div>
 
+                        {/* Error Message */}
+                        {file.error && (
+                          <div className="text-xs text-red-400 mt-1 p-2 bg-red-500/10 rounded border border-red-500/20">
+                            <i className="fas fa-exclamation-circle mr-1"></i>
+                            {file.error}
+                          </div>
+                        )}
+
                         {/* Progress Bar */}
-                        <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-                          <div
-                            className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${file.progress}%` }}
-                          ></div>
-                        </div>
+                        {file.status !== 'failed' && (
+                          <div className="w-full bg-white/10 rounded-full h-2 mt-2">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                file.status === 'uploading'
+                                  ? 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                                  : file.status === 'analyzing'
+                                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse'
+                                  : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                              }`}
+                              style={{ width: `${file.progress}%` }}
+                            ></div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
