@@ -1,8 +1,14 @@
+import { loginService } from '@/services/auth.service'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, rememberMe, recaptchaToken } = await request.json()
+    const { username, password, recaptchaToken } = await request.json()
+    const userAgent = request.headers.get("user-agent");
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const ip = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : "unknown";
 
     // Verify reCAPTCHA
     const recaptchaResponse = await fetch(
@@ -25,19 +31,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (email === 'rampart' && password === 'rampart') {
-      // Login สำเร็จ
-      return NextResponse.json(
-        { message: 'Login successful' },
+    const res = await loginService({ username, password, userAgent, ip });
+    console.log(res)
+    
+    if (res.success) {
+      const response = NextResponse.json(
+        { message: "Login successful" },
         { status: 200 }
-      )
-    } else {
-      // Login ล้มเหลว
-      return NextResponse.json(
-        { message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' },
-        { status: 401 }
-      )
+      );
+
+      if(res.otp_required)
+
+      // Set Access Token
+      response.cookies.set("access_token", res.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60,
+      });
+      return response;
     }
+
+    // LOGIN FAILED
+    return NextResponse.json(
+      { message: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" },
+      { status: 401 }
+    );
   } catch (error) {
     console.error('Login API error:', error)
     return NextResponse.json(

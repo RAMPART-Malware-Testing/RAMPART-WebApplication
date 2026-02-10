@@ -30,7 +30,7 @@ export default function LoginPage() {
 
     try {
       axios.post('/api/auth/login', {
-        email,
+        username:email,
         password,
         recaptchaToken,
       }).then((res) => {
