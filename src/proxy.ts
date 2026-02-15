@@ -6,6 +6,12 @@ export function proxy(request: NextRequest) {
     const token = request.cookies.get("access_token")?.value;
     const { pathname } = request.nextUrl;
 
+    console.log("Middleware Pathname:", pathname);   
+    if (pathname.startsWith("/logout")) {
+        const response = NextResponse.redirect(new URL("/auth/login", request.url));
+        response.cookies.delete("access_token");
+        return response;
+    }
     // ถ้าเข้า /home หรือ /dashboard ต้องมี token
 
     if (pathname.startsWith("/auth/verify-otp")) {
@@ -21,7 +27,7 @@ export function proxy(request: NextRequest) {
         }
         if (payload.type !== "login_confirm") {
             if (payload.type === "login_success") {
-                return NextResponse.redirect(new URL("/home", request.url));
+                return NextResponse.redirect(new URL("/dashboard", request.url));
             }
             const response = NextResponse.redirect(new URL("/auth/login", request.url));
             response.cookies.delete("access_token");
@@ -72,8 +78,8 @@ export function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
+        "/logout",
         "/auth/verify-otp",
-        "/home/:path*",
         "/dashboard/:path*",
         "/auth/login",
         "/auth/register",

@@ -14,16 +14,20 @@ export async function POST(request: NextRequest) {
   const verifiedPayload = verifyAccessToken(token.value);
   console.log("Verified JWT Payload:", verifiedPayload);
   if (!verifiedPayload) {
-    cookie.delete("access_token");
-    return NextResponse.json(
-      { message: 'Invalid access token', success: false },
-    )
+    const response = NextResponse.json({
+      success: false,
+      message: "Invalid access token",
+    });
+    response.cookies.delete("access_token");
+    return response;
   }
   if (verifiedPayload.type !== "login_confirm") {
-    cookie.delete("access_token");
-    return NextResponse.json(
-      { message: 'Access token type is not valid for OTP verification', success: false },
-    )
+    const response = NextResponse.json({
+      success: false,
+      message: "Access token type is not valid for OTP verification",
+    });
+    response.cookies.delete("access_token");
+    return response;
   }
 
   
@@ -50,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
     // access_token, expires_in:604800
     const jwtPayload = await signAccessToken({
-      token:result.token,
+      token:result.access_token,
       type: "login_success",
     });
     console.log("JWT Payload:", jwtPayload);
