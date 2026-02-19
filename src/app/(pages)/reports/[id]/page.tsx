@@ -236,9 +236,8 @@ export default function ReportDetailPage() {
           <h2 className="text-white font-semibold text-lg mb-4">
             ดาวน์โหลดรายงาน (JSON)
           </h2>
-
           <div className="grid md:grid-cols-2 gap-4">
-            {report.tools.split(',').map((tool) => {
+            {report?.tools ? (report.tools.split(',').map((tool) => {
               const isDownloading = downloadingTool === tool.trim()
 
               return (
@@ -268,8 +267,7 @@ export default function ReportDetailPage() {
                   )}
                 </button>
               )
-            })}
-
+            })) : (<p>ไม่มีข้อมูลเครื่องมือ</p>)}
           </div>
 
           <div className="mt-4 text-xs text-blue-200/50 break-all">
