@@ -14,7 +14,7 @@ export async function loginService(req:LoginParams){
         })
         return res.data;
     }catch{
-        return {success:false, message:"Connect Server Error!!!"}
+        return {success:false, status:404,  message:"Connect Server Error!!!"}
     }
     
 }
@@ -31,7 +31,31 @@ export async function loginServiceConfirm(token:string, otp:string, userAgent:st
         })
         return res.data;
     }catch(error){
-        return {success:false, message:"Connect Server Error!!!"}
+        return {success:false, status:404,  message:"Connect Server Error!!!"}
     }
 }
 
+
+export async function registerService(req:RegisterParams){
+    try{
+        const res = await axios.post(`${URL}/api/register`,{
+            username:req.email,
+            password:req.password
+        })
+        return res.data;
+    }catch{
+        return {success:false, status:404, message:"Connect Server Error!!!"}
+    }
+    
+}
+
+export async function registerServiceConfirm(token:string, otp:string){
+    try{
+        const res = await axios.post(`${URL}/api/register/confirm`,{
+            otp,token
+        })
+        return res.data;
+    }catch(error){
+        return {success:false, status:404,  message:"Connect Server Error!!!"}
+    }
+}

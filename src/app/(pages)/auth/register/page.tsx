@@ -18,6 +18,29 @@ export default function RegisterPage() {
   const [recaptchaToken, setRecaptchaToken] = useState('')
   const [error, setError] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const [isshowCaptcha, setIsshowCaptcha] = useState(false);
+  const [needCaptcha, setNeedCaptcha] = useState(false)
+
+  const validateForm = () => {
+    if (username.length < 3) {
+      return 'Username ต้องมีอย่างน้อย 3 ตัวอักษร'
+    }
+
+    if (!email.includes('@')) {
+      return 'รูปแบบ Email ไม่ถูกต้อง'
+    }
+
+    const passError = validatePassword(password)
+    if (passError) {
+      return passError
+    }
+
+    if (password !== confirmPassword) {
+      return 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน'
+    }
+
+    return ''
+  }
 
   const validatePassword = (pass: string) => {
     if (pass.length < 8) {
@@ -43,35 +66,31 @@ export default function RegisterPage() {
     setError('')
     setPasswordError('')
 
-    // Validate password strength
-    const passError = validatePassword(password)
-    if (passError) {
-      setPasswordError(passError)
-      setError(passError)
+    const formError = validateForm()
+
+    if (formError) {
+      setError(formError)
       return
     }
 
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      setError('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน')
-      return
-    }
+    // if (!needCaptcha) {
+    //   setNeedCaptcha(true)
+    //   setIsshowCaptcha(true)
+    //   setError('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
+    //   return
+    // }
 
-    // Validate reCAPTCHA
-    if (!isVerified || !recaptchaToken) {
-      setError('กรุณายืนยัน reCAPTCHA')
-      return
-    }
+    // if (!isVerified || !recaptchaToken) {
+    //   setError('กรุณายืนยัน reCAPTCHA')
+    //   return
+    // }
 
     setIsLoading(true)
 
     try {
-      // ส่งข้อมูลไปยัง API
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username,
           email,
@@ -81,22 +100,31 @@ export default function RegisterPage() {
       })
 
       const data = await response.json()
+      console.log(data)
+      // {
+      //   "success": false,
+      //   "status": 400,
+      //   "message": "User already exists."
+      // }
+      // {
+      //   "success": false,
+      //   "status": 404,
+      //   "message": "Connect Server Error!!!"
+      // }
+      return 
 
       if (response.ok) {
-        // Register สำเร็จ - redirect ไปหน้า login
         window.location.href = '/auth/login'
       } else {
-        // แสดง error message
-        setError(data.message || 'การลงทะเบียนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
-        // Reset reCAPTCHA
+        setError(data.message || 'การลงทะเบียนไม่สำเร็จ')
+
         recaptchaRef.current?.reset()
         setIsVerified(false)
         setRecaptchaToken('')
       }
-    } catch (error) {
-      console.error('Register error:', error)
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
-      // Reset reCAPTCHA
+    } catch (err) {
+      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ')
+
       recaptchaRef.current?.reset()
       setIsVerified(false)
       setRecaptchaToken('')
@@ -296,19 +324,22 @@ export default function RegisterPage() {
                 </div>
 
                 {/* reCAPTCHA */}
-                <div className="flex justify-center py-2">
-                  <ReCAPTCHA
-                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LcGkdsrAAAAAFW6CFipeSplG7nLqICIKPm-gSln"}
-                    ref={recaptchaRef}
-                    onChange={handleCaptchaChange}
-                    onExpired={handleCaptchaExpired}
-                  />
-                </div>
+                {isshowCaptcha && (
+                  <div className="flex justify-center py-2">
+                    <ReCAPTCHA
+                      sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LcGkdsrAAAAAFW6CFipeSplG7nLqICIKPm-gSln"}
+                      ref={recaptchaRef}
+                      onChange={handleCaptchaChange}
+                      onExpired={handleCaptchaExpired}
+                    />
+                  </div>
+                )}
 
                 {/* Register Button */}
                 <button
                   type="submit"
-                  disabled={isLoading || !isVerified}
+                  // disabled={isLoading || !isVerified}
+                  disabled={false}
                   className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 px-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-cyan-500/25 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group"
                 >
                   {/* Animated background */}

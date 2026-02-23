@@ -152,7 +152,7 @@ export default function LoginPage() {
                   {/* Email Field */}
                   <div className="space-y-3">
                     <label htmlFor="email" className="block text-sm font-semibold text-blue-100">
-                      Username / Email Address
+                      Email Address
                     </label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-transform duration-300 group-focus-within:scale-110">
