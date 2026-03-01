@@ -36,7 +36,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       token: verifiedPayload.token,
-      uri:process.env.SERVER_URL_CLIENT || 'http://localhost:8006',
+      uri:process.env.SERVER_URL || 'http://localhost:8006',
       message: "Access token is valid",
     });
   } catch (error) {

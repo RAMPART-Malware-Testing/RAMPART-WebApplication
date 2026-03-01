@@ -27,10 +27,11 @@ export async function POST(request: NextRequest) {
     // }
 
     const res = await registerService({ username, email, password });
+    console.log(res)
     if (!res.success) return NextResponse.json({success:false, status:res.status, message:res.message || ""})
 
     const jwtPayload = await signAccessToken({
-      token: res.token,
+      token: res.data.token,
       type: "register_confirm",
     });
 

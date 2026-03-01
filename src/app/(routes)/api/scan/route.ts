@@ -3,7 +3,7 @@ import axios from 'axios';
 import { cookies } from 'next/headers';
 import { verifyAccessToken } from '@/libs/jwt';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006';
+const API_URL = process.env.SERVER_URL || 'http://localhost:8006';
 
 // const axios = require('axios');
 // const FormData = require('form-data');

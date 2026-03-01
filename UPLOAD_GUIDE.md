@@ -31,7 +31,7 @@ src/
 สร้างไฟล์ `.env.local` หรือแก้ไขไฟล์ `.env`:
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8006
+SERVER_URL=http://localhost:8006
 ```
 
 ### 2. เริ่มต้น FastAPI Backend
@@ -138,7 +138,7 @@ Archives: .zip, .rar, .7z, .tar, .gz
 ### ปัญหา: ไฟล์อัพโหลดไม่สำเร็จ
 
 1. ตรวจสอบว่า FastAPI server รันอยู่
-2. ตรวจสอบ `NEXT_PUBLIC_API_URL` ใน `.env`
+2. ตรวจสอบ `SERVER_URL` ใน `.env`
 3. ตรวจสอบ Console สำหรับ error messages
 4. ตรวจสอบว่าไฟล์ไม่เกิน 1GB
 

@@ -14,7 +14,6 @@ export default function VerifyOtpPage() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
-    // Start countdown timer
     if (countdown > 0 && !canResend) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
       return () => clearTimeout(timer)
@@ -29,7 +28,6 @@ export default function VerifyOtpPage() {
       newOtp[index] = value
       setOtp(newOtp)
 
-      // Auto focus to next input
       if (value && index < 5) {
         inputRefs.current[index + 1]?.focus()
       }
@@ -39,10 +37,8 @@ export default function VerifyOtpPage() {
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace') {
       if (!otp[index] && index > 0) {
-        // ถ้าช่องปัจจุบันว่างและกด Backspace ให้ย้อนกลับไปช่องก่อนหน้า
         inputRefs.current[index - 1]?.focus()
       } else if (otp[index]) {
-        // ถ้าช่องปัจจุบันมีค่า ให้ลบค่าและอยู่ที่ช่องเดิม
         const newOtp = [...otp]
         newOtp[index] = ''
         setOtp(newOtp)
@@ -54,7 +50,7 @@ export default function VerifyOtpPage() {
     e.preventDefault()
     const pastedData = e.clipboardData.getData('text')
     const pastedNumbers = pastedData.replace(/\D/g, '').split('').slice(0, 6)
-    
+
     if (pastedNumbers.length === 6) {
       const newOtp = [...otp]
       pastedNumbers.forEach((num, index) => {
@@ -63,6 +59,11 @@ export default function VerifyOtpPage() {
       setOtp(newOtp)
       inputRefs.current[5]?.focus()
     }
+  }
+
+  const resetOtpInputs = () => {
+    setOtp(['', '', '', '', '', ''])
+    setTimeout(() => inputRefs.current[0]?.focus(), 50)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,23 +81,47 @@ export default function VerifyOtpPage() {
     try {
       const res = await axios.post('/api/auth/verify-otp', { otp: otpString })
       const data = res.data
-      console.log('OTP verification response:', res.data)
+
+      // ── Success ──────────────────────────────────────────────────────────
+      // Expected: { success: true, type: "...", message: "...", redirect: "/some/path" }
       if (data.success) {
-        window.location.href = '/dashboard'
-      } else {
-        setError(data.message || 'รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง')
-        if (data.message.includes("expired")) {
-          setTimeout(() => {
-            window.location.reload()
-          }, 3000);
+        if (data.redirect) {
+          window.location.href = data.redirect
+        } else {
+          // Fallback ในกรณีที่ API ไม่ส่ง redirect มา
+          window.location.href = '/dashboard'
         }
-        setOtp(['', '', '', '', '', ''])
-        inputRefs.current[0]?.focus()
+        return
       }
-    } catch (error) {
-      window.location.reload()
-      console.error('OTP verification error:', error)
+
+      // ── Error ─────────────────────────────────────────────────────────────
+      // Expected: { success: false, type: "...", message: "..." }
+      // Expected (token invalid): { success: false, message: "Access token type is not valid..." }
+      const message = data.message || 'รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'
+
+      if (message.toLowerCase().includes('expired')) {
+        setError('รหัส OTP หมดอายุแล้ว กำลังนำคุณกลับไปหน้าก่อนหน้า...')
+        setTimeout(() => window.location.reload(), 3000)
+        return
+      }
+
+      if (
+        message.toLowerCase().includes('access token') ||
+        message.toLowerCase().includes('no access token') ||
+        message.toLowerCase().includes('invalid or expired')
+      ) {
+        setError('Session หมดอายุ กำลังนำคุณกลับไปหน้าก่อนหน้า...')
+        setTimeout(() => window.location.reload(), 3000)
+        return
+      }
+
+      setError(message)
+      resetOtpInputs()
+
+    } catch (err) {
+      console.error('OTP verification error:', err)
       setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
+      resetOtpInputs()
     } finally {
       setIsLoading(false)
     }
@@ -111,24 +136,20 @@ export default function VerifyOtpPage() {
     try {
       const response = await fetch('/api/auth/resend-otp', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        // Reset countdown
         setCountdown(30)
         setCanResend(false)
-        setOtp(['', '', '', '', '', ''])
-        inputRefs.current[0]?.focus()
+        resetOtpInputs()
       } else {
         setError(data.message || 'ไม่สามารถส่ง OTP ใหม่ได้ กรุณาลองใหม่อีกครั้ง')
       }
-    } catch (error) {
-      console.error('Resend OTP error:', error)
+    } catch (err) {
+      console.error('Resend OTP error:', err)
       setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
     } finally {
       setIsLoading(false)
@@ -154,10 +175,7 @@ export default function VerifyOtpPage() {
           <div className="text-center mb-8">
             <div className="flex justify-center mb-6">
               <div className="relative">
-                {/* Glow Effect */}
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-20 animate-pulse"></div>
-                
-                {/* Logo Container */}
                 <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10 shadow-2xl">
                   <div className="w-16 h-16 relative">
                     <Image
@@ -171,7 +189,7 @@ export default function VerifyOtpPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-3">
               <h1 className="text-3xl font-black bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent tracking-tight">
                 RAMPART
@@ -182,7 +200,7 @@ export default function VerifyOtpPage() {
             </div>
           </div>
 
-          {/* OTP Form */}
+          {/* OTP Form Header */}
           <div className="text-center mb-8">
             <div className="mb-6">
               <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">
@@ -279,10 +297,7 @@ export default function VerifyOtpPage() {
               disabled={isLoading || otp.join('').length !== 6}
               className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 px-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-cyan-500/25 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group"
             >
-              {/* Animated background */}
               <div className="w-full absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-500 group-hover:from-cyan-500 group-hover:to-blue-600 transition-all duration-300"></div>
-
-              {/* Content */}
               <div className="relative z-10 flex items-center space-x-3">
                 {isLoading ? (
                   <>
@@ -351,15 +366,9 @@ export default function VerifyOtpPage() {
         .animate-float {
           animation: float 8s ease-in-out infinite;
         }
-        .delay-500 {
-          animation-delay: 0.5s;
-        }
-        .delay-1000 {
-          animation-delay: 1s;
-        }
-        .delay-1500 {
-          animation-delay: 1.5s;
-        }
+        .delay-500 { animation-delay: 0.5s; }
+        .delay-1000 { animation-delay: 1s; }
+        .delay-1500 { animation-delay: 1.5s; }
 
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
@@ -370,7 +379,6 @@ export default function VerifyOtpPage() {
           animation: shake 0.5s ease-in-out;
         }
 
-        /* Hide number input arrows */
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
           -webkit-appearance: none;
@@ -380,20 +388,10 @@ export default function VerifyOtpPage() {
           -moz-appearance: textfield;
         }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-          width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
-        }
-        ::-webkit-scrollbar-thumb {
-          background: rgba(74, 222, 128, 0.3);
-          border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: rgba(74, 222, 128, 0.5);
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+        ::-webkit-scrollbar-thumb { background: rgba(74, 222, 128, 0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(74, 222, 128, 0.5); }
       `}</style>
     </div>
   )

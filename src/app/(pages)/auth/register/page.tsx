@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const [recaptchaToken, setRecaptchaToken] = useState('')
   const [error, setError] = useState('')
   const [passwordError, setPasswordError] = useState('')
-  const [isshowCaptcha, setIsshowCaptcha] = useState(false);
+  const [isshowCaptcha, setIsshowCaptcha] = useState(false)
   const [needCaptcha, setNeedCaptcha] = useState(false)
 
   const validateForm = () => {
@@ -61,29 +61,34 @@ export default function RegisterPage() {
     return ''
   }
 
+  const resetCaptcha = () => {
+    recaptchaRef.current?.reset()
+    setIsVerified(false)
+    setRecaptchaToken('')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setPasswordError('')
 
     const formError = validateForm()
-
     if (formError) {
       setError(formError)
       return
     }
 
-    // if (!needCaptcha) {
-    //   setNeedCaptcha(true)
-    //   setIsshowCaptcha(true)
-    //   setError('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
-    //   return
-    // }
+    if (!needCaptcha) {
+      setNeedCaptcha(true)
+      setIsshowCaptcha(true)
+      setError('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
+      return
+    }
 
-    // if (!isVerified || !recaptchaToken) {
-    //   setError('กรุณายืนยัน reCAPTCHA')
-    //   return
-    // }
+    if (!isVerified || !recaptchaToken) {
+      setError('กรุณายืนยัน reCAPTCHA')
+      return
+    }
 
     setIsLoading(true)
 
@@ -100,34 +105,36 @@ export default function RegisterPage() {
       })
 
       const data = await response.json()
-      console.log(data)
-      // {
-      //   "success": false,
-      //   "status": 400,
-      //   "message": "User already exists."
-      // }
-      // {
-      //   "success": false,
-      //   "status": 404,
-      //   "message": "Connect Server Error!!!"
-      // }
-      return 
 
-      if (response.ok) {
-        window.location.href = '/auth/login'
+      // Handle success
+      // Expected: { "success": true, "status": 200, ... }
+      if (response.ok && data.success) {
+        window.location.href = '/auth/verify-otp'
+        return
+      }
+
+      // Handle known error cases
+      // { "success": false, "status": 400, "message": "User already exists." }
+      // { "success": false, "status": 404, "message": "Connect Server Error!!!" }
+      if (!data.success) {
+        switch (data.status) {
+          case 400:
+            setError(data.message || 'มีบัญชีผู้ใช้นี้อยู่แล้ว')
+            break
+          case 404:
+            setError(data.message || 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
+            break
+          default:
+            setError(data.message || 'การลงทะเบียนไม่สำเร็จ')
+        }
       } else {
         setError(data.message || 'การลงทะเบียนไม่สำเร็จ')
-
-        recaptchaRef.current?.reset()
-        setIsVerified(false)
-        setRecaptchaToken('')
       }
-    } catch (err) {
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ')
 
-      recaptchaRef.current?.reset()
-      setIsVerified(false)
-      setRecaptchaToken('')
+      resetCaptcha()
+    } catch (err) {
+      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
+      resetCaptcha()
     } finally {
       setIsLoading(false)
     }
@@ -136,11 +143,16 @@ export default function RegisterPage() {
   const handleCaptchaChange = (token: string | null) => {
     setRecaptchaToken(token || '')
     setIsVerified(!!token)
+    // Clear captcha-related error when user completes it
+    if (token) {
+      setError('')
+    }
   }
 
   const handleCaptchaExpired = () => {
     setIsVerified(false)
     setRecaptchaToken('')
+    setError('reCAPTCHA หมดอายุ กรุณายืนยันใหม่อีกครั้ง')
   }
 
   return (
@@ -338,8 +350,7 @@ export default function RegisterPage() {
                 {/* Register Button */}
                 <button
                   type="submit"
-                  // disabled={isLoading || !isVerified}
-                  disabled={false}
+                  disabled={isLoading || (needCaptcha && !isVerified)}
                   className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 px-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-cyan-500/25 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group"
                 >
                   {/* Animated background */}

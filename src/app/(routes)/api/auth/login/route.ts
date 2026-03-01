@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       if(!res.otp_required){
         const jwtPayload = await signAccessToken({
           token:res.token,
-          type: "login_success",
+          type: "login_confirm",
         });
         console.log("JWT Payload:", jwtPayload);
         response.cookies.set("access_token", jwtPayload, {

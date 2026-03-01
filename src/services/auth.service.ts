@@ -39,7 +39,8 @@ export async function loginServiceConfirm(token:string, otp:string, userAgent:st
 export async function registerService(req:RegisterParams){
     try{
         const res = await axios.post(`${URL}/api/register`,{
-            username:req.email,
+            username:req.username,
+            email:req.email,
             password:req.password
         })
         return res.data;
@@ -50,6 +51,31 @@ export async function registerService(req:RegisterParams){
 }
 
 export async function registerServiceConfirm(token:string, otp:string){
+    try{
+        const res = await axios.post(`${URL}/api/register/confirm`,{
+            otp,token
+        })
+        return res.data;
+    }catch(error){
+        return {success:false, status:404,  message:"Connect Server Error!!!"}
+    }
+}
+
+export async function resetpwdService(req:RegisterParams){
+    try{
+        const res = await axios.post(`${URL}/api/register`,{
+            username:req.username,
+            email:req.email,
+            password:req.password
+        })
+        return res.data;
+    }catch{
+        return {success:false, status:404, message:"Connect Server Error!!!"}
+    }
+    
+}
+
+export async function resetpwdServiceConfirm(token:string, otp:string){
     try{
         const res = await axios.post(`${URL}/api/register/confirm`,{
             otp,token
