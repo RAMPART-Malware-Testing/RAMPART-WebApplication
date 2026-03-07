@@ -1,10 +1,10 @@
-import { signAccessToken } from '@/libs/jwt';
-import { loginService } from '@/services/auth.service'
+import { authService } from '@/services/auth.service';
+import { jwtService } from '@/services/jwt.service';
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password, recaptchaToken } = await request.json()
+    const { email, password, recaptchaToken } = await request.json()
     const userAgent = request.headers.get("user-agent");
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor
@@ -12,28 +12,27 @@ export async function POST(request: NextRequest) {
       : "unknown";
 
     // Verify reCAPTCHA
-    // const recaptchaResponse = await fetch(
-    //   `https://www.google.com/recaptcha/api/siteverify`,
-    //   {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/x-www-form-urlencoded',
-    //     },
-    //     body: `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
-    //   }
-    // )
+    const recaptchaResponse = await fetch(
+      `https://www.google.com/recaptcha/api/siteverify`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
+      }
+    )
 
-    // const recaptchaData = await recaptchaResponse.json()
+    const recaptchaData = await recaptchaResponse.json()
 
-    // if (!recaptchaData.success) {
-    //   return NextResponse.json(
-    //     { message: 'reCAPTCHA verification failed' },
-    //     { status: 400 }
-    //   )
-    // }
+    if (!recaptchaData.success) {
+      return NextResponse.json(
+        { message: 'reCAPTCHA verification failed' },
+        { status: 400 }
+      )
+    }
 
-    const res = await loginService({ username, password, userAgent, ip });
-    console.log(res)
+    const res = await authService.login({ email, password, userAgent, ip });
     
     if (res.success) {
       const response = NextResponse.json(
@@ -41,11 +40,11 @@ export async function POST(request: NextRequest) {
       );
 
       if(!res.otp_required){
-        const jwtPayload = await signAccessToken({
-          token:res.token,
-          type: "login_confirm",
+        const jwtPayload = await jwtService.sign({
+          token:res.data.access_token,
+          data:res.data.data,
+          type: "login_success",
         });
-        console.log("JWT Payload:", jwtPayload);
         response.cookies.set("access_token", jwtPayload, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
@@ -55,15 +54,11 @@ export async function POST(request: NextRequest) {
         return response;
       }
 
-      console.log(process.env.NODE_ENV )
-
-      const jwtPayload = await signAccessToken({
+      const jwtPayload = await jwtService.sign({
         token:res.token,
         type: "login_confirm",
       });
-      console.log("JWT Payload:", jwtPayload);
 
-      // Set Access Token
       response.cookies.set("access_token", jwtPayload, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -74,7 +69,6 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    // LOGIN FAILED
     return NextResponse.json(
       { message: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง", success: false },
     );

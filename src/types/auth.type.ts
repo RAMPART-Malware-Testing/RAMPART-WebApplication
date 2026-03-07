@@ -1,5 +1,5 @@
 interface LoginParams{
-    username:string, 
+    email:string, 
     password:string, 
     userAgent:string | null, 
     ip:string | null
@@ -10,3 +10,9 @@ interface RegisterParams{
     email:string, 
     password:string, 
 }
+
+
+interface ResetPasswordParams{
+    email: string
+}
+

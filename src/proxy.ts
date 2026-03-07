@@ -1,88 +1,96 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyAccessToken } from "./libs/jwt";
+import { jwtService, TokenType } from "@/services/jwt.service";
+
+const GUEST_ONLY_ROUTES = ["/login", "/register", "/reset-passwd"];
+const PROTECTED_ROUTES  = ["/home", "/dashboard", "/scan"];
+const OTP_ONLY_ROUTE    = "/verify-otp";
+const OTP_TYPES: TokenType[] = ["login_confirm", "register_confirm", "reset_password_confirm"];
+
+function redirect(path: string, request: NextRequest, clearCookie = false) {
+    const response = NextResponse.redirect(new URL(path, request.url));
+    if (clearCookie) response.cookies.delete("access_token");
+    return response;
+}
+
+function redirectToOtp(type: string, request: NextRequest) {
+    const url = new URL(OTP_ONLY_ROUTE, request.url);
+    url.searchParams.set("content", type);
+    return NextResponse.redirect(url);
+}
+
+function matchesAny(pathname: string, routes: string[]) {
+    return routes.some((r) => pathname.startsWith(r));
+}
 
 export function proxy(request: NextRequest) {
-    // const token = request.cookies.get("access_token")?.value;
-    // const { pathname } = request.nextUrl;
+    const { pathname } = request.nextUrl;
+    const token = request.cookies.get("access_token")?.value;
 
-    // if (pathname.startsWith("/logout")) {
-    //     const response = NextResponse.redirect(new URL("/auth/login", request.url));
-    //     response.cookies.delete("access_token");
-    //     return response;
-    // }
-    // // ถ้าเข้า /home หรือ /dashboard ต้องมี token
+    if (pathname === "/") {
+        const payload = token ? jwtService.verify(token) : null;
+        const tokenType = payload?.type as TokenType | undefined;
 
-    // if (pathname.startsWith("/auth/verify-otp")) {
-    //     if (!token) {
-    //         return NextResponse.redirect(new URL("/auth/login", request.url));
-    //     }
-    //     const payload = verifyAccessToken(token);
-    //     console.log("Verified JWT Payload:", payload);
-    //     if (!payload) {
-    //         const response = NextResponse.redirect(new URL("/auth/login", request.url));
-    //         response.cookies.delete("access_token");
-    //         return response;
-    //     }
-    //     if (payload.type !== "login_confirm" || payload.type !== "register_confirm") {
-    //         if (payload.type === "login_success") {
-    //             return NextResponse.redirect(new URL("/dashboard", request.url));
-    //         }
-    //         const response = NextResponse.redirect(new URL("/auth/login", request.url));
-    //         response.cookies.delete("access_token");
-    //         return response;
-    //     }
-    //     return NextResponse.next();
-    // }
-    // if (
-    //     pathname.startsWith("/home") ||
-    //     pathname.startsWith("/dashboard") ||
-    //     pathname.startsWith("/scan")
-    // ) {
-    //     if (!token) {
-    //         return NextResponse.redirect(new URL("/auth/login", request.url));
-    //     }
+        if (!payload)                       return redirect("/login", request, !!token);
+        if (tokenType === "login_success")  return redirect("/dashboard", request);
+        if (OTP_TYPES.includes(tokenType!)) return redirectToOtp(tokenType!, request);
 
-    //     const payload = verifyAccessToken(token);
-    //     console.log("Verified JWT Payload:", payload);
+        return redirect("/login", request, true);
+    }
 
-    //     if (!payload) {
-    //         // delete invalid token cookie
-    //         const response = NextResponse.redirect(new URL("/auth/login", request.url));
-    //         response.cookies.delete("access_token");
-    //         return response;
-    //     }
-    //     if (payload.type !== "login_success") {
-    //         if (payload.type === "login_confirm") {
-    //             return NextResponse.redirect(new URL("/auth/verify-otp", request.url));
-    //         }
-    //         const response = NextResponse.redirect(new URL("/auth/login", request.url));
-    //         response.cookies.delete("access_token");
-    //         return response;
-    //     }
-    //     return NextResponse.next();
-    // }
+    if (pathname.startsWith("/logout")) {
+        return redirect("/login", request, true);
+    }
 
-    // // ถ้า login แล้ว ห้ามเข้า /login หรือ /register
-    // if (
-    //     pathname.startsWith("/auth/login") ||
-    //     pathname.startsWith("/auth/register")
-    // ) {
-    //     if (token) {
-    //         return NextResponse.redirect(new URL("/home", request.url));
-    //     }
-    // }
+    const payload = token ? jwtService.verify(token) : null;
+    const tokenType = payload?.type as TokenType | undefined;
+    const isOtpToken = tokenType && OTP_TYPES.includes(tokenType);
 
-    return NextResponse.next();
+    if (!payload) {
+        if (matchesAny(pathname, PROTECTED_ROUTES) || pathname.startsWith(OTP_ONLY_ROUTE)) {
+            return redirect("/login", request, !!token);
+        }
+        if (!matchesAny(pathname, GUEST_ONLY_ROUTES)) {
+            return redirect("/login", request);
+        }
+        return NextResponse.next();
+    }
+
+    if (isOtpToken) {
+        if (!pathname.startsWith(OTP_ONLY_ROUTE)) {
+            return redirectToOtp(tokenType!, request);
+        }
+        const contentParam = request.nextUrl.searchParams.get("content");
+        if (contentParam !== tokenType) {
+            return redirectToOtp(tokenType!, request); // force correct content
+        }
+
+        return NextResponse.next();
+    }
+
+    if (tokenType === "login_success") {
+        if (matchesAny(pathname, GUEST_ONLY_ROUTES) || pathname.startsWith(OTP_ONLY_ROUTE)) {
+            return redirect("/dashboard", request);
+        }
+        if (!matchesAny(pathname, PROTECTED_ROUTES)) {
+            return redirect("/dashboard", request);
+        }
+        return NextResponse.next();
+    }
+
+    return redirect("/login", request, true);
 }
 
 export const config = {
     matcher: [
-        // "/logout",
-        // "/auth/verify-otp",
-        // "/dashboard/:path*",
-        // "/auth/login",
-        // "/auth/register",
-        // "/scan"
+        "/",
+        "/logout",
+        "/login",
+        "/register",
+        "/reset-passwd",
+        "/verify-otp",
+        "/dashboard/:path*",
+        "/home/:path*",
+        "/scan/:path*",
     ],
 };

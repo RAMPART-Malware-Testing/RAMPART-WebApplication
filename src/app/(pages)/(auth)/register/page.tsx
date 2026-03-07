@@ -109,7 +109,7 @@ export default function RegisterPage() {
       // Handle success
       // Expected: { "success": true, "status": 200, ... }
       if (response.ok && data.success) {
-        window.location.href = '/auth/verify-otp'
+        window.location.href = '/verify-otp'
         return
       }
 
@@ -377,7 +377,7 @@ export default function RegisterPage() {
               <div className="text-center mt-8 pt-6 border-t border-white/10">
                 <p className="text-sm text-blue-200/60">
                   Already have an account?{' '}
-                  <Link href="/auth/login" className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors duration-200">
+                  <Link href="/login" className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors duration-200">
                     Sign In
                   </Link>
                 </p>

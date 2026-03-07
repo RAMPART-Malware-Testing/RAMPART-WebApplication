@@ -1,4 +1,4 @@
-import { verifyAccessToken } from '@/libs/jwt';
+import { verifyAccessToken } from '@/services/jwt.service';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server'
 

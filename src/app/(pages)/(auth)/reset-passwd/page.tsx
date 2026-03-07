@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import Image from 'next/image'
 import ReCAPTCHA from "react-google-recaptcha"
 import axios from 'axios'
+import Swal from 'sweetalert2'
 
 export default function LoginPage() {
   const recaptchaRef = useRef<ReCAPTCHA>(null)
@@ -29,18 +30,29 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      axios.post('/api/auth/login', {
-        username:email,
-        password,
-        recaptchaToken,
+      axios.post('/api/auth/reset-passwd', { email,recaptchaToken,
       }).then((res) => {
-        console.log('Login successful:', res.data)
-        // Login สำเร็จ - redirect ไปหน้า dashboard
-        window.location.href = '/auth/verify-otp'
+        if (res.data.success){
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: res.data.message,
+            showConfirmButton: false,
+            timer: 1500
+          }).then(()=>{
+            window.location.href = '/verify-otp?content=reset_password_confirm'
+          });
+          return
+        }
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: res.data.message,
+          showConfirmButton: false,
+          timer: 1500
+        });
       }).catch((err) => {
-        // แสดง error message
         setError(err.response?.data?.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
-        // Reset reCAPTCHA
         recaptchaRef.current?.reset()
         setIsVerified(false)
         setRecaptchaToken('')
@@ -131,10 +143,10 @@ export default function LoginPage() {
               <div className="bg-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10">
                 <div className="text-center mb-8">
                   <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">
-                    เข้าสู่ระบบ
+                    รีเซ็ตรหัสผ่าน
                   </h2>
                   <p className="text-blue-200/60 text-sm">
-                    เข้าสู่ระบบเพื่อใช้บริการวิเคราะห์มัลแวร์
+                    รีเซ็ตรหัสผ่านเพื่อใช้บริการวิเคราะห์มัลแวร์
                   </p>
                 </div>
 
@@ -169,41 +181,7 @@ export default function LoginPage() {
                       />
                     </div>
                   </div>
-
-                  {/* Password Field */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <label htmlFor="password" className="block text-sm font-semibold text-blue-100">
-                        Password
-                      </label>
-                      <a href="#" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors duration-200 font-medium">
-                        Forgot Password?
-                      </a>
-                    </div>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-transform duration-300 group-focus-within:scale-110">
-                        <i className="fas fa-lock text-cyan-400 text-lg"></i>
-                      </div>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-blue-200/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 backdrop-blur-sm"
-                        placeholder="••••••••"
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center transition-all duration-300 hover:scale-110 z-10"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
-                      >
-                        <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'} text-cyan-400 hover:text-cyan-300 text-lg`}></i>
-                      </button>
-                    </div>
-                  </div>
-
+       
                   {/* reCAPTCHA Placeholder */}
                   {isshowCaptcha && (
                     <div className="flex justify-center py-2 transform hover:scale-105 transition-transform duration-200">
@@ -246,9 +224,9 @@ export default function LoginPage() {
                 {/* Register Link */}
                 <div className="text-center mt-8 pt-6 border-t border-white/10">
                   <p className="text-sm text-blue-200/60">
-                    New to RAMPART?{' '}
-                    <a href="register" className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors duration-200">
-                      Create Account
+                    Back to login page ?{' '}
+                    <a href="/login" className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors duration-200">
+                      Login Page
                     </a>
                   </p>
                 </div>
