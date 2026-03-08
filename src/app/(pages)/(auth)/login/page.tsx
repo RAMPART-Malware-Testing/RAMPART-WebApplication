@@ -6,7 +6,7 @@ import ReCAPTCHA from "react-google-recaptcha"
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import Hero from '@/components/HeroComponent'
-
+import { useToast } from '@/components/ui/ToastProvider'
 
 export default function LoginPage() {
   const recaptchaRef = useRef<ReCAPTCHA>(null)
@@ -30,6 +30,8 @@ export default function LoginPage() {
     }
   }, [email, password]);
 
+  const notify = useToast();
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -50,25 +52,14 @@ export default function LoginPage() {
       });
 
       if (res.data.success) {
-        Swal.fire({
-          position: "center",
-          icon: "success",
-          title: res.data.message,
-          showConfirmButton: false,
-          timer: 1500
-        }).then(() => {
-          window.location.href = '/verify-otp?content=login_confirm'
-        });
-        return;
-      }
+        notify.success(res.data.message);
 
-      Swal.fire({
-        position: "center",
-        icon: "error",
-        title: res.data.message,
-        showConfirmButton: false,
-        timer: 1500
-      });
+        setTimeout(() => {
+          window.location.href = "/verify-otp?content=login_confirm";
+        }, 1500);
+      } else {
+        notify.error(res.data.message);
+      }
 
     } catch (err: any) {
       setError(err.response?.data?.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
@@ -184,18 +175,25 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={isLoading || (isshowCaptcha && !isVerified)}
-                    className="w-full bg-white text-gray-700 py-3 px-4 rounded-lg font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm"
+                    className="w-full bg-gradient-to-r from-white to-gray-100 text-gray-700 py-4 px-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-gray-500/25 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group border border-gray-200"
                   >
-                    {isLoading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                        <span>กำลังตรวจสอบ...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>เข้าสู่ระบบ</span>
-                      </>
-                    )}
+                    {/* Animated background */}
+                    <div className="w-full absolute inset-0 bg-gradient-to-r from-gray-100 to-white group-hover:from-white group-hover:to-gray-100 transition-all duration-300"></div>
+
+                    {/* Content */}
+                    <div className="relative z-10 flex items-center space-x-3">
+                      {isLoading ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-gray-400/30 border-t-gray-600 rounded-full animate-spin"></div>
+                          <span>กำลังตรวจสอบ...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-fingerprint text-lg text-gray-600"></i>
+                          <span>เข้าสู่ระบบ</span>
+                        </>
+                      )}
+                    </div>
                   </button>
                 </form>
 
