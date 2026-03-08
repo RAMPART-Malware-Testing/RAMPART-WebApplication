@@ -18,20 +18,23 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
 
-    const res = await AnalyService.generateToken(verify.token);
+    const body = await request.json() as Omit<AnalysisHistoryParams, 'token'>
 
-    if (!res?.success || !res?.data?.upload_token) {
+    const params: AnalysisHistoryParams = {
+      ...body,
+      token: verify.token,
+    }
+    console.log(params)
+    const res = await AnalyService.history(params) as AnalysisHistoryResponse
+
+    if (!res?.success) {
       return NextResponse.json(
-        { success: false, message: 'Failed to generate upload token' },
+        { success: false, message: 'Failed to fetch history' },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      upload_token: res.data.upload_token,
-      expires_in: res.data.expires_in
-    }, { status: 200 });
+    return NextResponse.json(res, { status: 200 });
 
   } catch (error) {
     return NextResponse.json(

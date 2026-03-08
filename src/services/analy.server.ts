@@ -32,6 +32,17 @@ export class AnalysisService {
       return ERROR_RESPONSE;
     }
   }
+
+  async history(body:AnalysisHistoryParams) {
+    try {
+      const res = await this.http.post(`${this.uri}/api/analy/v1/history`, {
+        ...body
+      });
+      return res.data;
+    } catch {
+      return ERROR_RESPONSE;
+    }
+  }
 }
 
 export const AnalyService = new AnalysisService();
