@@ -33,29 +33,30 @@ export async function POST(request: NextRequest) {
     }
 
     const res = await authService.login({ email, password, userAgent, ip });
+    console.log(res)
     
     if (res.success) {
       const response = NextResponse.json(
         { message: "Login successful", success: true },
       );
 
-      if(!res.otp_required){
-        const jwtPayload = await jwtService.sign({
-          token:res.data.access_token,
-          data:res.data.data,
-          type: "login_success",
-        });
-        response.cookies.set("access_token", jwtPayload, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-        });
-        return response;
-      }
+      // if(!res.otp_required){
+      //   const jwtPayload = await jwtService.sign({
+      //     token:res.data.access_token,
+      //     data:res.data.data,
+      //     type: "login_success",
+      //   });
+      //   // response.cookies.set("access_token", jwtPayload, {
+      //   //   httpOnly: true,
+      //   //   secure: process.env.NODE_ENV === "production",
+      //   //   sameSite: "lax",
+      //   //   path: "/",
+      //   // });
+      //   return response;
+      // }
 
       const jwtPayload = await jwtService.sign({
-        token:res.token,
+        token:res.data.token,
         type: "login_confirm",
       });
 
