@@ -39,6 +39,7 @@ export class JwtService {
         if (!payload?.exp) return true;
         return Date.now() >= payload.exp * 1000;
     }
+
 }
 
 // jwtService.sign({ uid: 1, type: "login_confirm" }, "5m");
