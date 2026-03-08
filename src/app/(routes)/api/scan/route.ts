@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { cookies } from 'next/headers';
-import { verifyAccessToken } from '@/services/jwt.service';
 
 const API_URL = process.env.SERVER_URL || 'http://localhost:8006';
 

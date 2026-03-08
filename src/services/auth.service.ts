@@ -21,7 +21,6 @@ export class AuthService {
 
     // ─── Login ───────────────────────────────────────────
     async login(req: LoginParams) {
-        console.log(`${this.uri}/api/login`,req )
         try {
             const res = await this.http.post(`${this.uri}/api/login`, {
                 email: req.email,
@@ -36,7 +35,6 @@ export class AuthService {
     }
 
     async loginConfirm(token: string, otp: string, userAgent?: string | null, ip?: string | null) {
-        console.log(otp, token)
         try {
             const res = await this.http.post(`${this.uri}/api/login/confirm`, { otp, token }, {
                 headers: this.buildHeaders(userAgent, ip),
@@ -83,7 +81,6 @@ export class AuthService {
     }
 
     async resetPasswordConfirm(token: string, otp: string, newPasswd: string) {
-        console.log({ otp, token, newPasswd })
         try {
             const res = await this.http.post(`${this.uri}/api/reset-passwd/confirm`, { otp, token, newPasswd });
             return res.data;
