@@ -4,25 +4,28 @@ import { useState, useRef } from 'react'
 import Image from 'next/image'
 import axios from 'axios'
 import { useSearchParams, useRouter } from 'next/navigation'
+import Hero from '@/components/HeroComponent'
 
 type OtpContent = 'login_confirm' | 'register_confirm' | 'reset_password_confirm'
 
 const OTP_CONFIG: Record<OtpContent, { title: string; description: string; redirectOnSuccess: string; requirePassword: boolean }> = {
   login_confirm: {
-    title: 'Verify Your Identity',
-    description: 'Security check: Enter the 6-digit OTP sent to your email.',
+    title: 'ยืนยันตัวตนของคุณ',
+    description: 'ตรวจสอบความปลอดภัย: กรุณากรอกรหัส OTP 6 หลักที่ส่งไปยังอีเมลของคุณ',
     redirectOnSuccess: '/dashboard',
     requirePassword: false,
   },
+
   register_confirm: {
-    title: 'Activate Account',
-    description: 'Almost there! Enter the OTP to verify your registration.',
+    title: 'เปิดใช้งานบัญชี',
+    description: 'เกือบเสร็จแล้ว! กรุณากรอกรหัส OTP เพื่อยืนยันการสมัครของคุณ',
     redirectOnSuccess: '/login',
     requirePassword: false,
   },
+
   reset_password_confirm: {
-    title: 'Secure Reset',
-    description: 'Enter the OTP and set your new secure password.',
+    title: 'รีเซ็ตรหัสผ่านอย่างปลอดภัย',
+    description: 'กรอกรหัส OTP และตั้งรหัสผ่านใหม่ของคุณ',
     redirectOnSuccess: '/login',
     requirePassword: true,
   },
@@ -71,7 +74,7 @@ export default function VerifyOtpPage() {
       // เรียก logout api เพื่อล้าง cookie/session ฝั่ง server
       await axios.get('/logout')
     } catch (err) {
-      console.error("Logout failed", err)
+      console.error("เกิดข้อผิดพลาดในการออกจากระบบ", err)
     } finally {
       router.push('/login')
     }
@@ -83,17 +86,17 @@ export default function VerifyOtpPage() {
 
     const otpString = otp.join('')
     if (otpString.length !== 6) {
-      setError('Please enter the full 6-digit code.')
+      setError('โปรดป้อนรหัส 6 หลักทั้งหมด.')
       return
     }
 
     if (config.requirePassword) {
       if (newPassword.length < 8) {
-        setError('Password must be at least 8 characters.')
+        setError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร.')
         return
       }
       if (newPassword !== confirmPassword) {
-        setError('Passwords do not match.')
+        setError('รหัสผ่านไม่ตรงกัน.')
         return
       }
     }
@@ -108,9 +111,9 @@ export default function VerifyOtpPage() {
         router.push(config.redirectOnSuccess)
         return
       }
-      setError(res.data.message || 'Invalid OTP code.')
+      setError(res.data.message || 'รหัส OTP ไม่ถูกต้อง.')
     } catch {
-      setError('Connection failed. Please try again.')
+      setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง.')
     } finally {
       setIsLoading(false)
     }
@@ -127,32 +130,21 @@ export default function VerifyOtpPage() {
 
       <div className="relative z-10 w-full max-w-5xl">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
-          
+
           {/* Left Side: Brand Identity (Visible on Desktop) */}
-          <div className="text-center lg:text-left space-y-8 flex-1 hidden lg:block">
-            <div className="relative inline-block">
-              <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-3xl blur-xl opacity-20 animate-pulse"></div>
-              <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl">
-                <div className="w-32 h-32 relative">
-                  <Image src="/RAMPART-LOGO.png" alt="Logo" fill className="object-contain filter drop-shadow-lg" priority />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <h1 className="text-5xl font-black bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent tracking-tight">RAMPART</h1>
-              <p className="text-xl font-semibold text-white/90">Multi-Factor Authentication</p>
-              <p className="text-blue-200/50 max-w-sm">We've sent a verification code to your registered email to ensure your account remains secure.</p>
-            </div>
-          </div>
+
+          <Hero >
+            <p className="text-xl font-semibold text-white/90">Multi-Factor Authentication</p>
+            <p className="text-blue-200/50 max-w-sm ">เราได้ส่งรหัสยืนยันไปยังอีเมลที่คุณลงทะเบียนไว้ เพื่อยืนยันตัวตนและรักษาความปลอดภัยของบัญชีของคุณ</p>
+          </Hero>
+
 
           {/* Right Side: Form Card */}
           <div className="w-full max-w-md flex-1">
             <div className="bg-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10 relative">
-              
+
               <div className="text-center mb-8">
-                <div className="lg:hidden flex justify-center mb-6">
-                    <Image src="/RAMPART-LOGO.png" alt="Logo" width={60} height={60} className="object-contain" />
-                </div>
+    
                 <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">{config.title}</h2>
                 <p className="text-blue-200/60 text-sm leading-relaxed">{config.description}</p>
               </div>
@@ -201,8 +193,8 @@ export default function VerifyOtpPage() {
                         placeholder="New Secure Password"
                         className="w-full pl-11 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-blue-200/30 focus:ring-2 focus:ring-cyan-500 outline-none transition-all"
                       />
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-400/60 hover:text-cyan-400"
                       >
@@ -230,14 +222,14 @@ export default function VerifyOtpPage() {
                   <button
                     type="submit"
                     disabled={isLoading || otp.join('').length < 6}
-                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-3"
+                    className="w-full bg-gradient-to-r from-white to-gray-100 text-gray-700 py-4 rounded-2xl font-bold shadow-lg shadow-gray-500/20 hover:shadow-gray-500/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-3 border border-gray-200"
                   >
                     {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-gray-400/30 border-t-gray-600 rounded-full animate-spin"></div>
                     ) : (
                       <>
-                        <i className="fas fa-lock-open"></i>
-                        <span>{config.requirePassword ? 'Confirm Reset' : 'Verify & Continue'}</span>
+                        <i className="fas fa-lock-open text-gray-600"></i>
+                        <span>{config.requirePassword ? 'ยืนยันการรีเซ็ตรหัสผ่าน' : 'ยืนยัน OTP'}</span>
                       </>
                     )}
                   </button>
@@ -245,10 +237,10 @@ export default function VerifyOtpPage() {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full py-4 rounded-2xl font-semibold text-blue-200/60 hover:text-red-400 hover:bg-red-400/10 transition-all border border-transparent hover:border-red-400/20 flex items-center justify-center gap-2"
+                    className="w-full py-4 rounded-2xl font-semibold text-gray-500/60 hover:text-red-500 hover:bg-red-500/10 transition-all border border-gray-200 hover:border-red-500/20 flex items-center justify-center gap-2"
                   >
                     <i className="fas fa-sign-out-alt"></i>
-                    Cancel & Logout
+                    ยกเลิกการยืนยัน
                   </button>
                 </div>
               </form>
