@@ -15,10 +15,10 @@ export default function NavbarComponent() {
     };
 
     const menuItems = [
-        { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-        { name: 'Scan Files', href: '/scan', icon: '🔍' },
-        { name: 'All Reports', href: '/reports', icon: '📜' },
-        { name: 'My Reports', href: '/profile?m=report', icon: '📄' },
+        { name: 'Dashboard', href: '/dashboard', icon: '' },
+        { name: 'Scan Files', href: '/scan', icon: '' },
+        { name: 'All Reports', href: '/reports', icon: '' },
+        { name: 'My Reports', href: '/profile?m=report', icon: '' },
     ];
 
     return (
@@ -29,7 +29,7 @@ export default function NavbarComponent() {
                     <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 relative group">
                             <Image
-                                src="/RAMPART-LOGO.png"
+                                src="/logo_bg_white.png"
                                 alt="RAMPART"
                                 fill
                                 className="object-contain group-hover:scale-110 transition-transform duration-300"
@@ -40,7 +40,7 @@ export default function NavbarComponent() {
                                 RAMPART
                             </h1>
                             <p className="text-blue-200/60 text-sm">
-                                ระบบวิเคราะห์มัลแวร์แบบเรียลไทม์
+                                แพลตฟอร์มตรวจสอบมัลแวร์จากระยะไกลด้วยการทดสอบการทำงานแบบอัตโนมัติ
                             </p>
                         </div>
                     </div>
