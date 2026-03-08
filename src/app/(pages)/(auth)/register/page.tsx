@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import Image from 'next/image'
 import ReCAPTCHA from "react-google-recaptcha"
 import Link from 'next/link'
+import Hero from '@/components/HeroComponent'
 
 export default function RegisterPage() {
   const recaptchaRef = useRef<ReCAPTCHA>(null)
@@ -171,46 +172,16 @@ export default function RegisterPage() {
       <div className="relative z-10 w-full max-w-6xl">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
           {/* Logo Section */}
-          <div className="text-center lg:text-left space-y-8 flex-1">
-            <div className="flex lg:justify-start justify-center mb-6">
-              <div className="relative">
-                {/* Glow Effect */}
-                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-20 animate-pulse"></div>
-
-                {/* Logo Container */}
-                <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl">
-                  <div className="w-32 h-32 lg:w-40 lg:h-40 relative">
-                    <Image
-                      src="/RAMPART-LOGO.png"
-                      alt="RAMPART Security"
-                      fill
-                      className="object-contain filter drop-shadow-lg"
-                      priority
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h1 className="text-5xl lg:text-6xl font-black bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent tracking-tight">
-                RAMPART
-              </h1>
-              <div className="space-y-3">
-                <p className="text-xl lg:text-2xl font-semibold text-white/90">
-                  Threat Analysis Malware Platform
-                </p>
-              </div>
-            </div>
-          </div>
+          <Hero />
 
           {/* Register Form */}
           <div className="w-full lg:w-auto lg:min-w-[450px] flex-1 max-w-md">
             <div className="bg-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10">
               <div className="text-center mb-8">
                 <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">
-                  Create Account
+                  สมัครสมาชิก
                 </h2>
+                <p className="text-blue-200/60 text-sm">สร้างบัญชีเพื่อใช้บริการวิเคราะห์มัลแวร์</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -227,7 +198,7 @@ export default function RegisterPage() {
                 {/* Username Field */}
                 <div className="space-y-3">
                   <label htmlFor="username" className="block text-sm font-semibold text-blue-100">
-                    Username
+                    ชื่อผู้ใช้งาน
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-transform duration-300 group-focus-within:scale-110">
@@ -239,7 +210,7 @@ export default function RegisterPage() {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-blue-200/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 backdrop-blur-sm"
-                      placeholder="username"
+                      placeholder="ชาลาเปา"
                       required
                       minLength={3}
                     />
@@ -249,7 +220,7 @@ export default function RegisterPage() {
                 {/* Email Field */}
                 <div className="space-y-3">
                   <label htmlFor="email" className="block text-sm font-semibold text-blue-100">
-                    Email Address
+                    อีเมล
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-transform duration-300 group-focus-within:scale-110">
@@ -261,7 +232,7 @@ export default function RegisterPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-blue-200/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 backdrop-blur-sm"
-                      placeholder="analyst@rampart.security"
+                      placeholder="rampart@example.com"
                       required
                     />
                   </div>
@@ -270,7 +241,7 @@ export default function RegisterPage() {
                 {/* Password Field */}
                 <div className="space-y-3">
                   <label htmlFor="password" className="block text-sm font-semibold text-blue-100">
-                    Password
+                    รหัสผ่าน
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-transform duration-300 group-focus-within:scale-110">
@@ -309,7 +280,7 @@ export default function RegisterPage() {
                 {/* Confirm Password Field */}
                 <div className="space-y-3">
                   <label htmlFor="confirmPassword" className="block text-sm font-semibold text-blue-100">
-                    Confirm Password
+                    ยืนยันรหัสผ่านอีกครั้ง
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-transform duration-300 group-focus-within:scale-110">
@@ -351,22 +322,22 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={isLoading || (needCaptcha && !isVerified)}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 px-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-cyan-500/25 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group"
+                  className="w-full bg-gradient-to-r from-white to-gray-100 text-gray-700 py-4 px-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-gray-500/25 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group border border-gray-200"
                 >
                   {/* Animated background */}
-                  <div className="w-full absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-500 group-hover:from-cyan-500 group-hover:to-blue-600 transition-all duration-300"></div>
+                  <div className="w-full absolute inset-0 bg-gradient-to-r from-gray-100 to-white group-hover:from-white group-hover:to-gray-100 transition-all duration-300"></div>
 
                   {/* Content */}
                   <div className="relative z-10 flex items-center space-x-3">
                     {isLoading ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>Creating Account...</span>
+                        <div className="w-5 h-5 border-2 border-gray-400/30 border-t-gray-600 rounded-full animate-spin"></div>
+                        <span>กำลังสร้าง บัญชี...</span>
                       </>
                     ) : (
                       <>
-                        <i className="fas fa-user-plus text-lg"></i>
-                        <span>Create Account</span>
+                        <i className="fas fa-user-plus text-lg text-gray-600"></i>
+                        <span>สร้างบัญชีผู้ใช้</span>
                       </>
                     )}
                   </div>
@@ -376,9 +347,9 @@ export default function RegisterPage() {
               {/* Login Link */}
               <div className="text-center mt-8 pt-6 border-t border-white/10">
                 <p className="text-sm text-blue-200/60">
-                  Already have an account?{' '}
+                  ฉมีบัญชีแล้ว?{' '}
                   <Link href="/login" className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors duration-200">
-                    Sign In
+                    เข้าสู่ระบบ
                   </Link>
                 </p>
               </div>

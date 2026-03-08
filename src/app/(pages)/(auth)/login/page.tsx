@@ -5,6 +5,8 @@ import Image from 'next/image'
 import ReCAPTCHA from "react-google-recaptcha"
 import axios from 'axios'
 import Swal from 'sweetalert2'
+import Hero from '@/components/HeroComponent'
+
 
 export default function LoginPage() {
   const recaptchaRef = useRef<ReCAPTCHA>(null)
@@ -67,7 +69,7 @@ export default function LoginPage() {
         showConfirmButton: false,
         timer: 1500
       });
-      
+
     } catch (err: any) {
       setError(err.response?.data?.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
       // Reset reCAPTCHA เมื่อเกิด Error เพื่อความปลอดภัย
@@ -102,21 +104,7 @@ export default function LoginPage() {
         <div className="relative z-10 w-full max-w-6xl">
           <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
             {/* Logo Section */}
-            <div className="text-center lg:text-left space-y-8 flex-1">
-              <div className="flex lg:justify-start mb-6">
-                <div className="relative">
-                  <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-20 animate-pulse"></div>
-                  <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl">
-                    <div className="w-32 h-32 lg:w-40 lg:h-40 relative">
-                      <Image src="/RAMPART-LOGO.png" alt="RAMPART Security" fill className="object-contain filter drop-shadow-lg" priority />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <h1 className="text-5xl lg:text-6xl font-black bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent tracking-tight">RAMPART</h1>
-              </div>
-            </div>
+            <Hero />
 
             {/* Login Form */}
             <div className="w-full lg:w-auto lg:min-w-[450px] flex-1 max-w-md">
@@ -137,7 +125,7 @@ export default function LoginPage() {
                   )}
 
                   <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-blue-100">Email Address</label>
+                    <label className="block text-sm font-semibold text-blue-100">อีเมล</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-transform duration-300 group-focus-within:scale-110">
                         <i className="fas fa-envelope text-cyan-400 text-lg"></i>
@@ -147,7 +135,7 @@ export default function LoginPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-blue-200/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300 backdrop-blur-sm"
-                        placeholder="analyst@rampart.security"
+                        placeholder="rampart@example.com"
                         required
                       />
                     </div>
@@ -155,8 +143,8 @@ export default function LoginPage() {
 
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <label className="block text-sm font-semibold text-blue-100">Password</label>
-                      <a href="/reset-passwd" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors duration-200 font-medium">Forgot Password?</a>
+                      <label className="block text-sm font-semibold text-blue-100">รหัสผ่าน</label>
+                      <a href="/reset-passwd" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors duration-200 font-medium">ลืมรหัสผ่าน?</a>
                     </div>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-transform duration-300 group-focus-within:scale-110">
@@ -196,29 +184,25 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={isLoading || (isshowCaptcha && !isVerified)}
-                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 px-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-cyan-500/25 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group"
+                    className="w-full bg-white text-gray-700 py-3 px-4 rounded-lg font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm"
                   >
-                    <div className="w-full absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-500 group-hover:from-cyan-500 group-hover:to-blue-600 transition-all duration-300"></div>
-                    <div className="relative z-10 flex items-center space-x-3">
-                      {isLoading ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          <span>Authenticating...</span>
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-fingerprint text-lg"></i>
-                          <span>Secure Login</span>
-                        </>
-                      )}
-                    </div>
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                        <span>กำลังตรวจสอบ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>เข้าสู่ระบบ</span>
+                      </>
+                    )}
                   </button>
                 </form>
 
                 <div className="text-center mt-8 pt-6 border-t border-white/10">
                   <p className="text-sm text-blue-200/60">
-                    New to RAMPART?{' '}
-                    <a href="/register" className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors duration-200">Create Account</a>
+                    ยังไม่มีบัญชี?{' '}
+                    <a href="/register" className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors duration-200">สร้างบัญชี</a>
                   </p>
                 </div>
               </div>
