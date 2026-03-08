@@ -2,7 +2,7 @@ import jwt, { SignOptions, JwtPayload } from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
-export type TokenType = "login_confirm" | "login_success" | "register_confirm" | "reset_password_confirm";
+export type TokenType = "login_confirm" | "login_success" | "register_confirm" | "reset_password_confirm" | "device";
 
 export interface TokenPayload extends JwtPayload {
     type?: TokenType;

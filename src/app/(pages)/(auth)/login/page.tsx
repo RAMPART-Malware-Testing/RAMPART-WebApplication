@@ -17,28 +17,16 @@ export default function LoginPage() {
   const [isVerified, setIsVerified] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState('')
   const [error, setError] = useState('')
-  const [isshowCaptcha, setIsshowCaptcha] = useState(false);
-
-  // ตรวจสอบข้อมูลแบบ Real-time เพื่อแสดง Captcha
-  useEffect(() => {
-    if (email.length > 5 && password.length > 5) {
-      setIsshowCaptcha(true);
-    } else {
-      setIsshowCaptcha(false);
-      setIsVerified(false);
-      setRecaptchaToken('');
-    }
-  }, [email, password]);
+  const [requireCaptcha, setRequireCaptcha] = useState(false)
 
   const notify = useToast();
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    // ตรวจสอบ reCAPTCHA ก่อนส่ง API
-    if (!isVerified || !recaptchaToken) {
-      setError('กรุณายืนยันว่าคุณไม่ใช่โปรแกรมอัตโนมัติ (reCAPTCHA)')
+    if (requireCaptcha && !isVerified) {
+      setError('กรุณายืนยัน reCAPTCHA ก่อนเข้าสู่ระบบ')
       return
     }
 
@@ -48,8 +36,14 @@ export default function LoginPage() {
       const res = await axios.post('/api/auth/login', {
         email,
         password,
-        recaptchaToken,
+        ...(recaptchaToken && { recaptchaToken }),
       });
+
+      if (res.data.require_captcha) {
+        setRequireCaptcha(true)
+        setError('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
+        return
+      }
 
       if (res.data.success) {
         notify.success(res.data.message);
@@ -63,7 +57,6 @@ export default function LoginPage() {
 
     } catch (err: any) {
       setError(err.response?.data?.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
-      // Reset reCAPTCHA เมื่อเกิด Error เพื่อความปลอดภัย
       recaptchaRef.current?.reset()
       setIsVerified(false)
       setRecaptchaToken('')
@@ -75,7 +68,7 @@ export default function LoginPage() {
   const handleCaptchaChange = (token: string | null) => {
     setRecaptchaToken(token || '')
     setIsVerified(!!token)
-    if (token) setError('') // ล้าง error เมื่อติ๊กถูก
+    if (token) setError('')
   }
 
   const handleCaptchaExpired = () => {
@@ -159,9 +152,9 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  {/* reCAPTCHA - จะปรากฏเมื่อ email และ password ยาวพอ */}
-                  {isshowCaptcha && (
-                    <div className="flex justify-center py-2 transition-all duration-500 ease-out transform scale-100 animate-fade-in">
+                  {requireCaptcha && (
+                    <div className="flex flex-col items-center gap-2 py-2 animate-fade-in">
+                      <p className="text-yellow-400 text-sm">กรุณายืนยันตัวตนเพื่อดำเนินการต่อ</p>
                       <ReCAPTCHA
                         sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
                         ref={recaptchaRef}
@@ -174,7 +167,7 @@ export default function LoginPage() {
 
                   <button
                     type="submit"
-                    disabled={isLoading || (isshowCaptcha && !isVerified)}
+                    disabled={isLoading || (requireCaptcha && !isVerified)}
                     className="w-full bg-gradient-to-r from-white to-gray-100 text-gray-700 py-4 px-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-gray-500/25 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none transition-all duration-300 flex items-center justify-center space-x-3 relative overflow-hidden group border border-gray-200"
                   >
                     {/* Animated background */}

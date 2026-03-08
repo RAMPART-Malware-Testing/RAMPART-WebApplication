@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         result = await authService.resetPasswordConfirm(payload.token, otp, newPasswd);
         break;
     }
-
+    
     console.log(`OTP Verify [${tokenType}] : ${otp}`, result);
 
     // ── 5. Handle Error จาก Service ──────────────────────────────────────────
@@ -86,11 +86,18 @@ export async function POST(request: NextRequest) {
     
 
     const newToken = jwtService.sign({ token: result.data.access_token, data:result.data.data, type: "login_success" }, result.expires_in ?? "7d");
+    const deviceToken = jwtService.sign({ deviceToken: result.data.deiveToken, type: "device" }, "7d");
 
     cookie.set("access_token", newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: result.expires_in,
+      path: "/",
+    });
+    cookie.set("deviceToken", deviceToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 

@@ -12,10 +12,11 @@ export class AuthService {
         });
     }
 
-    private buildHeaders(userAgent?: string | null, ip?: string | null) {
+    private buildHeaders(userAgent?: string | null, ip?: string | null, deviceToken?:string|null) {
         return {
             "User-Agent": userAgent ?? "",
             "x-client-ip": ip ?? "",
+            "deviceToken": deviceToken ?? ""
         };
     }
 
@@ -26,7 +27,7 @@ export class AuthService {
                 email: req.email,
                 password: req.password,
             }, {
-                headers: this.buildHeaders(req.userAgent, req.ip),
+                headers: this.buildHeaders(req.userAgent, req.ip, req.deviceToken),
             });
             return res.data;
         } catch {

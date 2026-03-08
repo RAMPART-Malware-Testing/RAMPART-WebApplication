@@ -3,6 +3,7 @@ interface LoginParams{
     password:string, 
     userAgent:string | null, 
     ip:string | null
+    deviceToken: string | null
 }
 
 interface RegisterParams{
