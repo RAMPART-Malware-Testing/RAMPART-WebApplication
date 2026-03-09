@@ -37,7 +37,7 @@ export default function HistoryFileComponent() {
         try {
             const body = {
                 page,
-                limit: 10,
+                limit: 5,
 
             }
             const { data } = await axios.post<AnalysisHistoryResponse>('/api/analy/history', body)

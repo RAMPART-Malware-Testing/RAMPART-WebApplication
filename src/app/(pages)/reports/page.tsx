@@ -23,7 +23,7 @@ export default function ReportsPage() {
 
   // Filters
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('all')
+  const [status, setStatus] = useState('success')
   const [fileType, setFileType] = useState('all')
 
   // Sort: field + direction
