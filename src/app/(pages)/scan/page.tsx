@@ -195,7 +195,7 @@ export default function ScanFilesPage() {
             >
               {/* Click hint - shows on hover */}
               {!(file?.status === 'uploading' || file?.status === 'analyzing') && (
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute top-4 right-4  duration-300">
                   <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -262,7 +262,7 @@ export default function ScanFilesPage() {
 
               {/* Optional: Show hint text when not uploading/analyzing */}
               {!(file?.status === 'uploading' || file?.status === 'analyzing') && (
-                <div className="mt-4 text-sm text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="mt-4 text-sm text-gray-400 duration-300">
                   คลิกที่ใดก็ได้เพื่อเลือกไฟล์
                 </div>
               )}
