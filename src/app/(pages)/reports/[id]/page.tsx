@@ -104,10 +104,16 @@ export default function ReportDetailPage() {
 
   if (!report) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-3 text-white">
-        <div className="text-4xl">🔍</div>
-        <p className="text-blue-200/60">ไม่พบรายงาน</p>
+      <div className="min-h-screen bg-slate-900 p-6">
+        <NavbarComponent />
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-3 text-white">
+
+          <div className="text-4xl">🔍</div>
+
+          <p className="text-blue-200/60">ไม่พบรายงาน</p>
+        </div>
       </div>
+
     )
   }
 
