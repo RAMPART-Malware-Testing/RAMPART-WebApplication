@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
+export const dynamic = "force-dynamic"
+
+import { useState, useRef, Suspense } from 'react'
 import Image from 'next/image'
 import axios from 'axios'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -32,6 +34,14 @@ const OTP_CONFIG: Record<OtpContent, { title: string; description: string; redir
 }
 
 export default function VerifyOtpPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyOtpPageContent />
+    </Suspense>
+  )
+}
+
+function VerifyOtpPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const content = (searchParams.get('content') as OtpContent) ?? 'login_confirm'
