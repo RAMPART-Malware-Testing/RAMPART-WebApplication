@@ -23,7 +23,7 @@ export default function ReportsPage() {
 
   // Filters
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('success')
+  const [status, setStatus] = useState('all')
   const [fileType, setFileType] = useState('all')
 
   // Sort: field + direction
@@ -41,7 +41,7 @@ export default function ReportsPage() {
     try {
       const body = {
         page,
-        limit: 10,
+        limit: 5,
         ...(search && { s: search }),
         ...(status !== 'all' && { status }),
         ...(fileType !== 'all' && { file_type: fileType }),
@@ -100,11 +100,25 @@ export default function ReportsPage() {
     return 'text-green-400'
   }
 
+  const getprivacyColor = (score: boolean | null) => {
+    if (score === null) return 'text-gray-400'
+    if (score == false) return 'text-red-400'
+    if (score == true) return 'text-green-400'
+    return 'text-green-400'
+  }
+
   const getStatusBadge = (s: string | null) => {
     switch (s) {
       case 'success': return 'text-green-400 bg-green-500/10 border border-green-500/20'
       case 'processing': return 'text-yellow-400 bg-yellow-500/10 border border-yellow-500/20'
       case 'failed': return 'text-red-400 bg-red-500/10 border border-red-500/20'
+      default: return 'text-gray-400 bg-gray-500/10 border border-gray-500/20'
+    }
+  }
+  const getprivacyBadge = (s: boolean | null) => {
+    switch (s) {
+      case true: return 'text-green-400 bg-green-500/10 border border-green-500/20'
+      case false: return 'text-red-400 bg-red-500/10 border border-red-500/20'
       default: return 'text-gray-400 bg-gray-500/10 border border-gray-500/20'
     }
   }
@@ -186,8 +200,8 @@ export default function ReportsPage() {
                 key={o.value}
                 onClick={() => handleSort(o.value)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${sortField === o.value
-                    ? 'bg-cyan-500 text-white'
-                    : 'bg-white/5 text-blue-200/60 hover:text-white'
+                  ? 'bg-cyan-500 text-white'
+                  : 'bg-white/5 text-blue-200/60 hover:text-white'
                   }`}
               >
                 {o.label}
@@ -241,9 +255,13 @@ export default function ReportsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="text-white font-medium truncate">{item.file_name ?? '-'}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium font-medium ${getprivacyColor(item.privacy)} ${getprivacyBadge(item.privacy)}`}>
+                          {item.privacy ? 'PUBLIC' : 'PRIVATE'}
+                        </span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(item.status)}`}>
                           {getStatusLabel(item.status)}
                         </span>
+
                         {item.report?.risk_level && (
                           <span className="px-2 py-0.5 rounded-full text-xs font-medium text-orange-400 bg-orange-500/10 border border-orange-500/20">
                             {item.report.risk_level}
@@ -269,6 +287,9 @@ export default function ReportsPage() {
                             <span className="uppercase">{item.tools.replace(',', ', ')}</span>
                           </>
                         )}
+
+
+
                       </div>
                     </div>
                   </div>

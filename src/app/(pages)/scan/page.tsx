@@ -12,6 +12,7 @@ interface UploadedFile {
   size: number
   status: 'uploading' | 'analyzing' | 'completed' | 'failed'
   progress: number
+  privacy: boolean
   taskId?: string
   error?: string
 }
@@ -42,6 +43,7 @@ export default function ScanFilesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
+  const [privacy, setPrivacy] = useState(false)
 
   async function getUploadToken(): Promise<string> {
     const res = await axios.post<GenerateTokenResponse>('/api/generate-token', {}, {
@@ -70,7 +72,7 @@ export default function ScanFilesPage() {
     return new Promise<void>((resolve, reject) => {
       const formData = new FormData()
       formData.append('file', selectedFile)
-
+      formData.append('privacy', privacy.toString())
       const xhr = new XMLHttpRequest()
       xhr.open('POST', `${SERVER_URL}/api/analy/v1/upload?token=${uploadToken}`)
       xhr.timeout = 30 * 60 * 1000
@@ -163,7 +165,7 @@ export default function ScanFilesPage() {
       return
     }
 
-    setFile({ name: selectedFile.name, size: selectedFile.size, status: 'uploading', progress: 0 })
+    setFile({ name: selectedFile.name, size: selectedFile.size, status: 'uploading', progress: 0, privacy: privacy })
     e.target.value = ''
     uploadFile(selectedFile)
   }
@@ -176,7 +178,7 @@ export default function ScanFilesPage() {
   return (
     <div className="min-h-screen bg-slate-900 p-6">
       <NavbarComponent />
-      <div className="flex flex-row items-center max-w-6xl mx-auto mt-10 gap-10">
+      <div className="flex flex-col lg:flex-row items-center max-w-6xl mx-auto mt-10 gap-10">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="relative">
             {/* Gradient background with blur effect */}
@@ -193,9 +195,42 @@ export default function ScanFilesPage() {
       ${file?.status === 'uploading' || file?.status === 'analyzing' ? 'cursor-not-allowed' : 'cursor-pointer group'}
     `}
             >
+              {/* Privacy Switch - Top Left */}
+              <div className="absolute top-4 left-4 z-10" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full p-1 shadow-lg border border-gray-200">
+                  {/* Public Option */}
+                  <button
+                    onClick={() => setPrivacy(true)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${privacy === true
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Public
+                  </button>
+
+                  {/* Private Option */}
+                  <button
+                    onClick={() => setPrivacy(false)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${privacy === false
+                        ? 'bg-purple-500 text-white shadow-md'
+                        : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Private
+                  </button>
+                </div>
+              </div>
+
               {/* Click hint - shows on hover */}
               {!(file?.status === 'uploading' || file?.status === 'analyzing') && (
-                <div className="absolute top-4 right-4  duration-300">
+                <div className="absolute top-4 right-4 duration-300">
                   <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -251,6 +286,25 @@ export default function ScanFilesPage() {
     `}>
                 RAMPART
               </h1>
+
+              {/* Privacy Mode Indicator */}
+              {privacy === false && (
+                <div className="mb-4 inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  ส่วนตัว - เฉพาะคุณเท่านั้นที่เห็นรายงานนี้
+                </div>
+              )}
+
+              {privacy === true && (
+                <div className="mb-4 inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  สาธารณะ - ทุกคนสามารถเห็นรายงานนี้
+                </div>
+              )}
 
               {/* Hidden file input */}
               <input
