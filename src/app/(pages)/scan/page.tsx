@@ -182,20 +182,40 @@ export default function ScanFilesPage() {
             {/* Gradient background with blur effect */}
             <div className="absolute -inset-4 bg-gradient-to-r from-blue-100/50 via-cyan-100/50 to-blue-100/50 rounded-3xl blur-2xl opacity-70"></div>
 
-            {/* Main card with outer shadow */}
-            <div className={`relative bg-white p-8 rounded-2xl text-center border border-gray-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)] hover:shadow-[0_25px_45px_-15px_rgba(0,0,0,0.3)] transition-all duration-300 ${file?.status === 'analyzing' ? 'opacity-70' : ''
-              }`}>
+            {/* Main card with outer shadow - now clickable */}
+            <div
+              onClick={() => !(file?.status === 'uploading' || file?.status === 'analyzing') && fileInputRef.current?.click()}
+              className={`
+      relative bg-white p-8 rounded-2xl text-center border border-gray-100 
+      shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)] 
+      transition-all duration-300 cursor-pointer
+      ${file?.status === 'analyzing' ? 'opacity-70' : 'hover:shadow-[0_25px_45px_-15px_rgba(0,0,0,0.3)] hover:scale-[1.02]'}
+      ${file?.status === 'uploading' || file?.status === 'analyzing' ? 'cursor-not-allowed' : 'cursor-pointer group'}
+    `}
+            >
+              {/* Click hint - shows on hover */}
+              {!(file?.status === 'uploading' || file?.status === 'analyzing') && (
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    คลิกเพื่ออัปโหลด
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-center">
                 <div className="relative w-44 h-44 lg:w-84 lg:h-84">
                   <Image
                     src="/logo_none_white.png"
                     alt="RAMPART Security"
                     fill
-                    className="object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.1)]"
+                    className="object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.1)] transition-transform duration-300 group-hover:scale-105"
                     priority
                   />
                   {file?.status === 'analyzing' && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-full">
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm ">
                       <div className="relative">
                         {/* Pulsing circles animation */}
                         <div className="absolute inset-0 rounded-full animate-ping bg-red-400/20"></div>
@@ -224,43 +244,28 @@ export default function ScanFilesPage() {
                 </div>
               </div>
 
-              <h1 className={`mb-8 text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-black bg-clip-text tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)] ${file?.status === 'analyzing' ? 'opacity-50' : ''
-                }`}>
+              <h1 className={`
+      mb-8 text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-black bg-clip-text tracking-tight 
+      drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-all duration-300
+      ${file?.status === 'analyzing' ? 'opacity-50' : 'group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 group-hover:bg-clip-text'}
+    `}>
                 RAMPART
               </h1>
 
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={file?.status === 'uploading' || file?.status === 'analyzing'}
-                className={`
-          px-8 py-3.5 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 active:scale-95
-          ${file?.status === 'analyzing'
-                    ? 'bg-gradient-to-r from-red-100 to-red-50 text-red-700 cursor-not-allowed shadow-none border border-red-200'
-                    : 'bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_25px_-5px_rgba(0,0,0,0.4)]'
-                  }
-        `}
-              >
-                {file?.status === 'analyzing' ? (
-                  <span className="flex items-center justify-center gap-3">
-                    <div className="relative w-5 h-5">
-                      <div className="absolute inset-0 rounded-full border-2 border-red-600/30"></div>
-                      <div className="absolute inset-0 rounded-full border-2 border-red-600 border-t-transparent animate-spin"></div>
-                    </div>
-                    <span className="bg-gradient-to-r from-red-700 to-red-600 bg-clip-text text-transparent">
-                      กำลังวิเคราะห์...
-                    </span>
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    เลือกไฟล์เพื่อสแกน
-                  </span>
-                )}
-              </button>
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileInput}
+                className="hidden"
+              />
 
-              <input type="file" ref={fileInputRef} onChange={handleFileInput} className="hidden" />
+              {/* Optional: Show hint text when not uploading/analyzing */}
+              {!(file?.status === 'uploading' || file?.status === 'analyzing') && (
+                <div className="mt-4 text-sm text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  คลิกที่ใดก็ได้เพื่อเลือกไฟล์
+                </div>
+              )}
             </div>
           </div>
 
