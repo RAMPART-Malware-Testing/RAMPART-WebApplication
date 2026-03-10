@@ -7,6 +7,7 @@ import Image from 'next/image'
 import axios from 'axios'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Hero from '@/components/HeroComponent'
+import Swal from 'sweetalert2'
 
 type OtpContent = 'login_confirm' | 'register_confirm' | 'reset_password_confirm'
 
@@ -117,8 +118,27 @@ function VerifyOtpPageContent() {
       if (config.requirePassword) payload.newPasswd = newPassword
 
       const res = await axios.post('/api/auth/verify-otp', payload)
+      console.log(res.data)
+      if (res.data.status === 1400) {
+        Swal.fire({
+          icon: 'error',
+          title: 'การยืนยันล้มเหลว',
+          text: res.data.message || 'ไม่พบโทเค็นการเข้าถึง กรุณาล็อกอินใหม่อีกครั้ง.',
+          timer: 1500
+        }).then(() => {
+          window.location.href = '/login'
+        })
+        return
+      }
       if (res.data.success) {
-        router.push(config.redirectOnSuccess)
+        Swal.fire({
+          icon: 'success',
+          title: 'ยืนยันสำเร็จ',
+          text: res.data.message || 'การยืนยัน OTP สำเร็จแล้ว!',
+          timer: 1500
+        }).then(() => {
+          window.location.href = config.redirectOnSuccess
+        })
         return
       }
       setError(res.data.message || 'รหัส OTP ไม่ถูกต้อง.')
@@ -154,7 +174,7 @@ function VerifyOtpPageContent() {
             <div className="bg-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10 relative">
 
               <div className="text-center mb-8">
-    
+
                 <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">{config.title}</h2>
                 <p className="text-blue-200/60 text-sm leading-relaxed">{config.description}</p>
               </div>
