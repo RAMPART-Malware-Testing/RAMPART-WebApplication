@@ -7,19 +7,24 @@ import { useState, useEffect, useCallback } from 'react'
 
 const FILE_TYPES = ['apk', 'exe', 'msi', 'bat', 'dmg', 'ipa', 'zip']
 const STATUS_OPTIONS = [
-  { value: 'all', label: 'ทั้งหมด' },
-  { value: 'success', label: 'สำเร็จ' },
-  { value: 'processing', label: 'กำลังวิเคราะห์' },
-  { value: 'failed', label: 'ไม่สำเร็จ' },
-  { value: 'pending', label: 'รอดำเนินการ' },
+    { value: 'all', label: 'ทั้งหมด' },
+    { value: 'success', label: 'สำเร็จ' },
+    { value: 'processing', label: 'กำลังวิเคราะห์' },
+    { value: 'failed', label: 'ไม่สำเร็จ' },
+    { value: 'pending', label: 'รอดำเนินการ' },
 ]
 
+interface Props {
+    onRegisterRefresh?: (fn: () => void) => void
+}
+
 type SortField = 'created_at' | 'file_name' | 'file_size' | 'score'
-export default function HistoryFileComponent() {
+
+export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
     const [items, setItems] = useState<AnalysisHistoryItem[]>([])
     const [pagination, setPagination] = useState<AnalysisHistoryPagination | null>(null)
     const [isLoading, setIsLoading] = useState(true)
-    
+
 
     // Filters
     const [search, setSearch] = useState('')
@@ -41,7 +46,6 @@ export default function HistoryFileComponent() {
 
             }
             const { data } = await axios.post<AnalysisHistoryResponse>('/api/analy/history', body)
-            console.log(data)
 
             if (data.success) {
                 setItems(data.data)
@@ -70,6 +74,10 @@ export default function HistoryFileComponent() {
     useEffect(() => {
         setPage(1)
     }, [search, status, fileType, sortField, sortDir])
+
+    useEffect(() => {
+        onRegisterRefresh?.(fetchHistory)
+    }, [onRegisterRefresh, fetchHistory])
 
     // ==============================
     // Helpers

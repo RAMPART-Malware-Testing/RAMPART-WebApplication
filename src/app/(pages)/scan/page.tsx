@@ -44,6 +44,7 @@ export default function ScanFilesPage() {
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
   const [privacy, setPrivacy] = useState(false)
+  const refreshHistoryRef = useRef<(() => void) | null>(null)
 
   async function getUploadToken(): Promise<string> {
     const res = await axios.post<GenerateTokenResponse>('/api/generate-token', {}, {
@@ -139,9 +140,11 @@ export default function ScanFilesPage() {
         if (data.status === 'success') {
           clearInterval(pollIntervalRef.current!)
           setFile(prev => prev ? { ...prev, status: 'completed' } : null)
+          refreshHistoryRef.current?.()
         } else if (data.status === 'failed') {
           clearInterval(pollIntervalRef.current!)
           setFile(prev => prev ? { ...prev, status: 'failed', error: data.message || 'การวิเคราะห์ล้มเหลว' } : null)
+          refreshHistoryRef.current?.()
         }
 
       } catch (err) {
@@ -531,7 +534,7 @@ export default function ScanFilesPage() {
           }
         `}
         </style>
-        <HistoryFileComponent />
+        <HistoryFileComponent onRegisterRefresh={(fn) => { refreshHistoryRef.current = fn }} />
       </div>
 
 
