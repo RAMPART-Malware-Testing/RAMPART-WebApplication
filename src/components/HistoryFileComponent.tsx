@@ -135,7 +135,7 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
         { value: 'score', label: 'ความเสี่ยง' },
     ]
     return (
-        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+        <div className="bg-white/5 rounded-2xl p-8 border border-white/10 min-h-[550px] w-full max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-5">
                 <h2 className="text-white font-semibold text-lg">รายงานทั้งหมด</h2>
                 {pagination && (

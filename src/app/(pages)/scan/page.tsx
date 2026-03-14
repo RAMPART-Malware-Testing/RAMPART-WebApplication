@@ -181,9 +181,9 @@ export default function ScanFilesPage() {
   return (
     <div className="min-h-screen bg-slate-900 p-6">
       <NavbarComponent />
-      <div className="flex flex-col lg:flex-row items-center max-w-6xl mx-auto mt-10 gap-10">
+      <div className="flex flex-col lg:flex-row  max-w-6xl mx-auto mt-10 gap-10">
         <div className="max-w-3xl mx-auto space-y-6">
-          <div className="relative">
+          <div className="relative ">
             {/* Gradient background with blur effect */}
             <div className="absolute -inset-4 bg-gradient-to-r from-blue-100/50 via-cyan-100/50 to-blue-100/50 rounded-3xl blur-2xl opacity-70"></div>
 
