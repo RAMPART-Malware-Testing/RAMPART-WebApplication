@@ -124,7 +124,7 @@ export default function DashboardPage() {
       setTimeout(() => {
         setStats(mockData)
         setIsLoading(false)
-      }, 1000)
+      }, 1)
     }
 
     fetchDashboardData()

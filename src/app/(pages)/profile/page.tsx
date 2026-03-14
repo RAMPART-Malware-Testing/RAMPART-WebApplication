@@ -197,7 +197,7 @@ function ProfileContent() {
       setUploadHistory(mockUploadHistory)
       setDownloadHistory(mockDownloadHistory)
       setIsLoading(false)
-    }, 1000)
+    }, 1)
   }, [])
 
   const handlePasswordChange = (e: React.FormEvent) => {
