@@ -2,14 +2,14 @@ import jwt, { SignOptions, JwtPayload } from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
-export type TokenType = "login_confirm" | "login_success" | "register_confirm" | "reset_password_confirm" | "device";
+type TokenType = "login_confirm" | "login_success" | "register_confirm" | "reset_password_confirm" | "device";
 
-export interface TokenPayload extends JwtPayload {
+interface TokenPayload extends JwtPayload {
     type?: TokenType;
     [key: string]: any;
 }
 
-export class JwtService {
+class JwtService {
     private readonly secret: string;
 
     constructor(secret: string = JWT_SECRET) {

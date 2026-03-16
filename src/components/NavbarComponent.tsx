@@ -22,8 +22,8 @@ export default function NavbarComponent() {
     ];
 
     return (
-        <nav className="bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-2xl mb-8 sticky top-0 z-50">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center px-6 py-4">
+        <nav className="bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-2xl mb-8 sticky top-0 z-50 text-xs">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center px-2 py-4">
                 {/* Logo & Title */}
                 <div className="flex items-center justify-between w-full lg:w-auto mb-4 lg:mb-0">
                     <div className="flex items-center space-x-4">
@@ -36,7 +36,7 @@ export default function NavbarComponent() {
                             />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent">
+                            <h1 className="font-black bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent">
                                 RAMPART
                             </h1>
                             <p className="text-blue-200/60 text-sm">
@@ -81,7 +81,7 @@ export default function NavbarComponent() {
                         {/* System Status */}
                         <div className="flex items-center space-x-2 bg-white/5 rounded-xl px-4 py-2 border border-white/10 hover:bg-white/10 transition-colors">
                             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
-                            <span className="text-white text-sm font-medium">ระบบพร้อมใช้งาน</span>
+                            <span className="text-white font-medium">ระบบพร้อมใช้งาน</span>
                         </div>
 
                         {/* User Profile Dropdown */}

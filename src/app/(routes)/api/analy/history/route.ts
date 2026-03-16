@@ -24,7 +24,6 @@ export async function POST(request: NextRequest) {
       ...body,
       token: verify.token,
     }
-    console.log(params)
     const res = await AnalyService.history(params) as AnalysisHistoryResponse
 
     if (!res?.success) {
