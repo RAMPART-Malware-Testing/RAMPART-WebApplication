@@ -42,6 +42,23 @@ interface DashboardStats {
   recentActivities: RecentActivity[]
 }
 
+
+function safeNumber(value?: number) {
+  if (typeof value !== 'number' || isNaN(value)) return 0
+  return value
+}
+
+function truncate(text?: string, max = 30) {
+  if (!text) return '-'
+  if (text.length <= max) return text
+  return text.slice(0, max) + '...'
+}
+
+function safeArray<T>(arr?: T[]): T[] {
+  if (!Array.isArray(arr)) return []
+  return arr
+}
+
 type TimeRange = 'daily' | 'monthly'
 
 const STATUS_STYLES: Record<RecentActivity['status'], { wrapper: string; icon: string; badge: string; label: string }> = {
@@ -89,18 +106,42 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const loadDashboardData = async () => {
-      setIsLoading(true)
+      try {
+        setIsLoading(true)
 
-      const [statsResponse, activitiesResponse] = await Promise.all([
-        axios.post<Omit<DashboardStats, 'recentActivities'>>('/api/dashboard'),
-        axios.post<RecentActivity[]>('/api/dashboard/recent-activities'),
-      ])
+        const [statsResponse, activitiesResponse] = await Promise.all([
+          axios.post<Omit<DashboardStats, 'recentActivities'>>('/api/dashboard'),
+          axios.post<RecentActivity[]>('/api/dashboard/recent-activities'),
+        ])
 
-      setDashboardStats({
-        ...statsResponse.data,
-        recentActivities: activitiesResponse.data,
-      })
-      setIsLoading(false)
+        const stats = statsResponse?.data
+        const activities = activitiesResponse?.data
+
+        setDashboardStats({
+          totalFiles: stats?.totalFiles ?? { total: 0, success: 0, pending: 0, failed: 0 },
+          userFiles: stats?.userFiles ?? { total: 0, success: 0, pending: 0, failed: 0 },
+          totalUsers: safeNumber(stats?.totalUsers),
+          topMalwareTypes: {
+            daily: safeArray(stats?.topMalwareTypes?.daily),
+            monthly: safeArray(stats?.topMalwareTypes?.monthly),
+          },
+          riskScores: safeArray(stats?.riskScores),
+          recentActivities: safeArray(activities),
+        })
+      } catch (error) {
+        console.error('Dashboard Load Error:', error)
+
+        setDashboardStats({
+          totalFiles: { total: 0, success: 0, pending: 0, failed: 0 },
+          userFiles: { total: 0, success: 0, pending: 0, failed: 0 },
+          totalUsers: 0,
+          topMalwareTypes: { daily: [], monthly: [] },
+          riskScores: [],
+          recentActivities: [],
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     loadDashboardData()
@@ -113,7 +154,10 @@ export default function DashboardPage() {
       ? dashboardStats.topMalwareTypes.daily
       : dashboardStats.topMalwareTypes.monthly
 
-  const maxMalwareCount = Math.max(...activeMalwareList.map((m) => m.count))
+  const maxMalwareCount =
+    activeMalwareList.length > 0
+      ? Math.max(...activeMalwareList.map((m) => safeNumber(m.count)))
+      : 1
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-[#1e293b] p-6">
@@ -159,8 +203,8 @@ export default function DashboardPage() {
                   key={range}
                   onClick={() => setSelectedTimeRange(range)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${selectedTimeRange === range
-                      ? 'bg-cyan-500 text-white'
-                      : 'bg-white/5 text-blue-200/60 hover:text-white'
+                    ? 'bg-cyan-500 text-white'
+                    : 'bg-white/5 text-blue-200/60 hover:text-white'
                     }`}
                 >
                   {range === 'daily' ? 'รายวัน' : 'รายเดือน'}
@@ -171,7 +215,7 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
             {activeMalwareList.map((malware, index) => (
-              <div key={malware.type} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+              <div key={truncate(malware.type, 25)} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
                     <span className="text-cyan-400 font-bold text-sm">{index + 1}</span>
@@ -199,11 +243,12 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-4">
-            {dashboardStats.riskScores.map((entry) => {
-              const normalizedScore = Math.min(entry.riskScore, 100)
+            {safeArray(dashboardStats.riskScores).map((entry) => {
+              const score = safeNumber(entry.riskScore)
+              const normalizedScore = Math.min(score, 100)
               const colors = getRiskScoreColor(normalizedScore)
               return (
-                <div key={entry.fileType} className="p-3 bg-white/5 rounded-xl border border-white/10">
+                <div key={truncate(entry.fileType, 15)} className="p-3 bg-white/5 rounded-xl border border-white/10">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-white font-medium">{entry.fileType}</span>
                     <span className={`text-lg font-bold ${colors.text}`}>
@@ -232,17 +277,16 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-3">
-          {dashboardStats.recentActivities.map((activity) => {
-            const style = STATUS_STYLES[activity.status]
+          {safeArray(dashboardStats.recentActivities).map((activity) => {
+            const style =
+              STATUS_STYLES[activity.status] ??
+              STATUS_STYLES['failed']
             return (
               <div key={activity.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300">
                 <div className="flex items-center space-x-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${style.wrapper}`}>
-                    <i className={`fas ${style.icon}`} />
-                  </div>
                   <div>
-                    <p className="text-white font-medium">{activity.fileName}</p>
-                    <p className="text-blue-200/60 text-sm">{activity.fileType} • {activity.timestamp}</p>
+                    <p className="text-white font-medium">{truncate(activity.fileName, 35)}</p>
+                    <p className="text-blue-200/60 text-sm">{truncate(activity.fileType, 10)} • {truncate(activity.timestamp, 20)}</p>
                   </div>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-medium ${style.badge}`}>
@@ -279,19 +323,19 @@ function FileStatsCard({
       <div className="space-y-3">
         <div className="flex justify-between items-center">
           <span className="text-blue-200/60">ทั้งหมด</span>
-          <span className="text-white font-bold text-xl">{stats.total.toLocaleString()}</span>
+          <span className="text-white font-bold text-xl">{safeNumber(stats?.total).toLocaleString()}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-green-400">สำเร็จ</span>
-          <span className="text-white font-semibold">{stats.success.toLocaleString()}</span>
+          <span className="text-white font-semibold">{safeNumber(stats?.success).toLocaleString()}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-yellow-400">รอวิเคราะห์</span>
-          <span className="text-white font-semibold">{stats.pending.toLocaleString()}</span>
+          <span className="text-white font-semibold">{safeNumber(stats?.pending).toLocaleString()}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-red-400">ไม่สำเร็จ</span>
-          <span className="text-white font-semibold">{stats.failed.toLocaleString()}</span>
+          <span className="text-white font-semibold">{safeNumber(stats?.failed).toLocaleString()}</span>
         </div>
       </div>
     </div>

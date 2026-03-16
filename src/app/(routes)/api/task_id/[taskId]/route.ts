@@ -33,6 +33,7 @@ export async function GET(
         );
 
         const res = await AnalyService.gettask_id(taskId, verify.token);
+        console.log(res)
         return NextResponse.json(res, { status: 200 });
 
     } catch (error) {
