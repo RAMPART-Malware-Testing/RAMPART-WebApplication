@@ -26,6 +26,7 @@ export default function LoginPage() {
     setError('')
 
     if (requireCaptcha && !isVerified) {
+      notify.warning('กรุณายืนยัน reCAPTCHA ก่อนเข้าสู่ระบบ')
       setError('กรุณายืนยัน reCAPTCHA ก่อนเข้าสู่ระบบ')
       return
     }
@@ -42,6 +43,7 @@ export default function LoginPage() {
       if (res.data.require_captcha) {
         setRequireCaptcha(true)
         setError('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
+        notify.warning('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
         return
       }
 
@@ -56,6 +58,7 @@ export default function LoginPage() {
       }
 
     } catch (err: any) {
+      notify.error(err.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง.')
       setError(err.response?.data?.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
       recaptchaRef.current?.reset()
       setIsVerified(false)

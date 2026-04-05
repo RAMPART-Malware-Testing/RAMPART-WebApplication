@@ -5,6 +5,8 @@ import Image from 'next/image'
 import ReCAPTCHA from "react-google-recaptcha"
 import Link from 'next/link'
 import Hero from '@/components/HeroComponent'
+import { useToast } from '@/components/ui/ToastProvider'
+
 
 export default function RegisterPage() {
   const recaptchaRef = useRef<ReCAPTCHA>(null)
@@ -22,8 +24,11 @@ export default function RegisterPage() {
   const [isshowCaptcha, setIsshowCaptcha] = useState(false)
   const [needCaptcha, setNeedCaptcha] = useState(false)
 
+  const notify = useToast();
+
   const validateForm = () => {
     if (username.length < 3) {
+      
       return 'Username ต้องมีอย่างน้อย 3 ตัวอักษร'
     }
 
@@ -45,18 +50,23 @@ export default function RegisterPage() {
 
   const validatePassword = (pass: string) => {
     if (pass.length < 8) {
+      notify.warning('รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร.')
       return 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร'
     }
     if (!/[A-Z]/.test(pass)) {
+      notify.warning('รหัสผ่านต้องมีตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว.')
       return 'รหัสผ่านต้องมีตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว'
     }
     if (!/[a-z]/.test(pass)) {
+      notify.warning('รหัสผ่านต้องมีตัวอักษรพิมพ์เล็กอย่างน้อย 1 ตัว.')
       return 'รหัสผ่านต้องมีตัวอักษรพิมพ์เล็กอย่างน้อย 1 ตัว'
     }
     if (!/[0-9]/.test(pass)) {
+      notify.warning('รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว.')
       return 'รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว'
     }
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(pass)) {
+      notify.warning('รหัสผ่านต้องมีอักขระพิเศษอย่างน้อย 1 ตัว.')
       return 'รหัสผ่านต้องมีอักขระพิเศษอย่างน้อย 1 ตัว'
     }
     return ''
@@ -83,11 +93,13 @@ export default function RegisterPage() {
       setNeedCaptcha(true)
       setIsshowCaptcha(true)
       setError('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
+      notify.warning('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
       return
     }
 
     if (!isVerified || !recaptchaToken) {
       setError('กรุณายืนยัน reCAPTCHA')
+      notify.warning('กรุณายืนยัน reCAPTCHA')
       return
     }
 
@@ -110,7 +122,10 @@ export default function RegisterPage() {
       // Handle success
       // Expected: { "success": true, "status": 200, ... }
       if (response.ok && data.success) {
-        window.location.href = '/verify-otp'
+        notify.success(data.message || 'สมัครสมาชิกสำเร็จ');
+        setTimeout(() => {
+          window.location.href = '/verify-otp'
+        }, 1500);
         return
       }
 
@@ -120,20 +135,25 @@ export default function RegisterPage() {
       if (!data.success) {
         switch (data.status) {
           case 400:
+            notify.error(data.message || 'มีบัญชีผู้ใช้นี้อยู่แล้ว')
             setError(data.message || 'มีบัญชีผู้ใช้นี้อยู่แล้ว')
             break
           case 404:
+            notify.error(data.message || 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
             setError(data.message || 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
             break
           default:
+            notify.error(data.message || 'การลงทะเบียนไม่สำเร็จ')
             setError(data.message || 'การลงทะเบียนไม่สำเร็จ')
         }
       } else {
+        notify.error(data.message || 'การลงทะเบียนไม่สำเร็จ')
         setError(data.message || 'การลงทะเบียนไม่สำเร็จ')
       }
 
       resetCaptcha()
     } catch (err) {
+      notify.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
       setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
       resetCaptcha()
     } finally {
@@ -153,6 +173,7 @@ export default function RegisterPage() {
   const handleCaptchaExpired = () => {
     setIsVerified(false)
     setRecaptchaToken('')
+    notify.warning('reCAPTCHA หมดอายุ กรุณายืนยันใหม่อีกครั้ง.')
     setError('reCAPTCHA หมดอายุ กรุณายืนยันใหม่อีกครั้ง')
   }
 

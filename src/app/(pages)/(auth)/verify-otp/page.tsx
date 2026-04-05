@@ -8,6 +8,9 @@ import axios from 'axios'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Hero from '@/components/HeroComponent'
 import Swal from 'sweetalert2'
+import { useToast } from '@/components/ui/ToastProvider'
+
+
 
 type OtpContent = 'login_confirm' | 'register_confirm' | 'reset_password_confirm'
 
@@ -35,6 +38,7 @@ const OTP_CONFIG: Record<OtpContent, { title: string; description: string; redir
 }
 
 export default function VerifyOtpPage() {
+  
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <VerifyOtpPageContent />
@@ -43,6 +47,7 @@ export default function VerifyOtpPage() {
 }
 
 function VerifyOtpPageContent() {
+  const notify = useToast();
   const router = useRouter()
   const searchParams = useSearchParams()
   const content = (searchParams.get('content') as OtpContent) ?? 'login_confirm'
@@ -97,16 +102,19 @@ function VerifyOtpPageContent() {
 
     const otpString = otp.join('')
     if (otpString.length !== 6) {
+      notify.warning('โปรดป้อนรหัส 6 หลักทั้งหมด.')
       setError('โปรดป้อนรหัส 6 หลักทั้งหมด.')
       return
     }
 
     if (config.requirePassword) {
       if (newPassword.length < 8) {
+        notify.warning('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร.')
         setError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร.')
         return
       }
       if (newPassword !== confirmPassword) {
+        notify.warning('รหัสผ่านไม่ตรงกัน.')
         setError('รหัสผ่านไม่ตรงกัน.')
         return
       }
@@ -120,29 +128,24 @@ function VerifyOtpPageContent() {
       const res = await axios.post('/api/auth/verify-otp', payload)
       console.log(res.data)
       if (res.data.status === 1400) {
-        Swal.fire({
-          icon: 'error',
-          title: 'การยืนยันล้มเหลว',
-          text: res.data.message || 'ไม่พบโทเค็นการเข้าถึง กรุณาล็อกอินใหม่อีกครั้ง.',
-          timer: 1500
-        }).then(() => {
+        notify.warning(res.data.message || 'ไม่พบโทเค็นการเข้าถึง กรุณาล็อกอินใหม่อีกครั้ง.')
+        setTimeout(() => {
           window.location.href = '/login'
-        })
+        }, 1500);
         return
       }
       if (res.data.success) {
-        Swal.fire({
-          icon: 'success',
-          title: 'ยืนยันสำเร็จ',
-          text: res.data.message || 'การยืนยัน OTP สำเร็จแล้ว!',
-          timer: 1500
-        }).then(() => {
+        notify.success(res.data.message || 'การยืนยัน OTP สำเร็จแล้ว!');
+        setTimeout(() => {
           window.location.href = config.redirectOnSuccess
-        })
+        }, 1500);
+        
         return
       }
       setError(res.data.message || 'รหัส OTP ไม่ถูกต้อง.')
+      notify.error(res.data.message || 'รหัส OTP ไม่ถูกต้อง.')
     } catch {
+      notify.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง.')
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง.')
     } finally {
       setIsLoading(false)

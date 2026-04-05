@@ -4,12 +4,15 @@ import { useState, useRef } from 'react'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import Hero from '@/components/HeroComponent'
+import { useToast } from '@/components/ui/ToastProvider'
+
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const notify = useToast();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -19,26 +22,15 @@ export default function ResetPasswordPage() {
       const res = await axios.post('/api/auth/reset-passwd', { email })
 
       if (res.data.success) {
-        Swal.fire({
-          position: "center",
-          icon: "success",
-          title: res.data.message,
-          showConfirmButton: false,
-          timer: 1500
-        }).then(() => {
+        notify.success(res.data.message);
+        setTimeout(() => {
           window.location.href = '/verify-otp?content=reset_password_confirm'
-        })
+        }, 1500);
         return
       }
 
-      Swal.fire({
-        position: "center",
-        icon: "error",
-        title: res.data.message,
-        showConfirmButton: false,
-        timer: 1500
-      })
     } catch (err: any) {
+      notify.error(err.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง.')
       setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
     } finally {
       setIsLoading(false)
