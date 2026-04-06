@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { jwtService, TokenType } from "@/services/jwt.service";
 
 const GUEST_ONLY_ROUTES = ["/login", "/register", "/reset-passwd"];
-const PROTECTED_ROUTES  = ["/home", "/dashboard", "/scan"];
+const PROTECTED_ROUTES  = ["/home", "/dashboard", "/scan", "/details"];
 const OTP_ONLY_ROUTE    = "/verify-otp";
 const OTP_TYPES: TokenType[] = ["login_confirm", "register_confirm", "reset_password_confirm"];
 
@@ -91,6 +91,7 @@ export const config = {
         "/verify-otp",
         "/dashboard/:path*",
         "/home/:path*",
+        "/details/:path*",
         "/scan/:path*",
     ],
 };

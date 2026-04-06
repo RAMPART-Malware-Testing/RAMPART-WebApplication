@@ -33,6 +33,17 @@ class AnalysisService {
     }
   }
 
+  async gettask_reporttarget(task_id: string, token: string,tool:string) {
+    try {
+      const res = await this.http.post(`${this.uri}/api/analy/v1/report_target`, {
+        token, task_id,tool
+      });
+      return res.data;
+    } catch {
+      return ERROR_RESPONSE;
+    }
+  }
+
   async history(body:AnalysisHistoryParams) {
     try {
       const res = await this.http.post(`${this.uri}/api/analy/v1/history`, {

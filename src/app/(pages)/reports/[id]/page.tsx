@@ -137,154 +137,90 @@ export default function ReportDetailPage() {
       <NavbarComponent />
 
       {/* Main Content - Responsive Stack */}
-      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mt-4 sm:mt-6">
-
-        {/* Left Column - File Info & Tools */}
-        <div className="w-full lg:w-1/3 xl:w-1/4 space-y-4 sm:space-y-6">
-
-          {/* Header details file name */}
-          <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
-            <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-              <div className="space-y-2 w-full">
-                {/* ชื่อไฟล์ */}
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-white mb-1 break-all line-clamp-2">
-                    {report.file_name}
-                  </h1>
-                  <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-blue-200/50">
-                    <span>ขนาด: {(report.file_size / 1024 / 1024).toFixed(2)} MB</span>
-                    <span className="hidden xs:inline">•</span>
-                    <span>ประเภท: {report.file_type?.toUpperCase()}</span>
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mt-4 sm:mt-6 justify-center">
+        {/* Right Column - Analysis Report */}
+        <div className="w-full lg:w-2/3 xl:w-3/4 space-y-4 sm:space-y-6">
+          {/* File Information */}
+          <div className="flex flex-row gap-4 sm:gap-6">
+            {/* File Details */}
+            <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10 w-full">
+              <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                <div className="space-y-2 w-full">
+                  {/* ชื่อไฟล์ */}
+                  <div>
+                    <h1 className="text-xl sm:text-lg font-bold text-white mb-1 break-all line-clamp-2">
+                      {report.file_name}
+                    </h1>
+                    <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-blue-200/50">
+                      <span>ขนาด: {(report.file_size / 1024 / 1024).toFixed(2)} MB</span>
+                      <span className="hidden xs:inline">•</span>
+                      <span>ประเภท: {report.file_type?.toUpperCase()}</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Package name (ถ้ามี) */}
-                {report.package && (
-                  <p className="text-xs sm:text-sm text-blue-200/40 break-all">
-                    Package: {report.package}
-                  </p>
-                )}
-
-                {/* Timestamp */}
-                <p className="text-xs sm:text-sm text-blue-200/50">
-                  {new Date(report.created_at).toLocaleString('th-TH')}
-                </p>
-
-                {/* File hash แบบย่อ */}
-                <p className="text-[10px] sm:text-xs text-blue-200/30 font-mono break-all">
-                  SHA256: {report.file_hash?.substring(0, 16)}...
-                </p>
-              </div>
-
-              {/* RID Badge */}
-              <span className="shrink-0 text-[10px] sm:text-xs bg-white/10 text-blue-200/60 px-2 sm:px-3 py-1 rounded-full">
-                #{report.rid}
-              </span>
-            </div>
-          </div>
-
-          {/* เครื่องมือที่ใช้วิเคราะห์ */}
-          <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
-            <h2 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">เครื่องมือที่ใช้วิเคราะห์</h2>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-6 mb-4">
-              {tools.map(tool => {
-                const toolLogos: Record<string, { logo: string; alt: string }> = {
-                  mobsf: { logo: '/mobsf_logo.png', alt: 'MobSF' },
-                  virustotal: { logo: '/virustotal_logo.png', alt: 'VirusTotal' },
-                  cape: { logo: '/cape_logo.png', alt: 'CAPE Sandbox' },
-                }
-                const meta = toolLogos[tool] ?? { logo: '/default_logo.png', alt: tool }
-
-                return (
-                  <div key={tool} className="flex flex-col items-center gap-1 sm:gap-2 group">
-                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14">
-                      <Image
-                        src={meta.logo}
-                        alt={meta.alt}
-                        fill
-                        className="object-contain hover:scale-110 transition-transform duration-200"
-                      />
-                    </div>
-                    <span className="text-[10px] sm:text-xs text-blue-200/60">
-                      {meta.alt}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-            <p className="text-[10px] sm:text-xs text-blue-200/40 break-all">MD5: {report.md5}</p>
-          </div>
-
-          {/* Rampart Score */}
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50 shadow-sm">
-            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-3">
-              {/* Rampart Logo */}
-              <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 shrink-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl opacity-30 blur-md"></div>
-                <div className="absolute inset-0 bg-white rounded-2xl shadow-lg border border-gray-100"></div>
-                <div className="absolute inset-1 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl"></div>
-                <Image
-                  src="/logo_none_white.png"
-                  alt="Rampart Security"
-                  fill
-                  className="object-contain p-2 sm:p-3"
-                  priority
-                />
-              </div>
-
-              {/* Status Info */}
-              <div className="flex-1 text-center sm:text-left">
-                <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 mb-2">
-                  <p className="text-gray-400 text-xs sm:text-sm flex items-center gap-1">
-                    <span className="w-1 h-1 bg-purple-400 rounded-full"></span>
-                    Rampart Matching Learning
-                  </p>
-                  <span className="text-[10px] sm:text-xs font-medium text-orange-300 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20 whitespace-nowrap">
-                    XGBoost
-                  </span>
-                </div>
-
-                {/* Status Badge */}
-                <div className="flex items-center justify-center sm:justify-start gap-2">
-                  {report.rampart_score > 50 ? (
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        <div className="absolute inset-0 w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-ping opacity-75"></div>
-                      </div>
-                      <div className="flex flex-col xs:flex-row items-center gap-1">
-                        <span className="text-lg sm:text-xl font-bold text-red-400">MALWARE</span>
-                        <span className="text-[10px] sm:text-xs text-gray-500">(ความเสี่ยงสูง)</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
-                      <div className="flex flex-col xs:flex-row items-center gap-1">
-                        <span className="text-lg sm:text-xl font-bold text-green-400">BENIGN</span>
-                        <span className="text-[10px] sm:text-xs text-gray-500">(ปลอดภัย)</span>
-                      </div>
-                    </div>
+                  {/* Package name (ถ้ามี) */}
+                  {report.package && (
+                    <p className="text-xs sm:text-sm text-blue-200/40 break-all">
+                      Package: {report.package}
+                    </p>
                   )}
+
+                  {/* Timestamp */}
+                  <p className="text-xs sm:text-sm text-blue-200/50">
+                    {new Date(report.created_at).toLocaleString('th-TH')}
+                  </p>
+
+                  {/* File hash แบบย่อ */}
+                  <p className="text-[10px] sm:text-xs text-blue-200/30 font-mono break-all">
+                    SHA256: {report.file_hash}
+                  </p>
                 </div>
 
-                {/* Confidence Level */}
-                <div className="mt-2 flex items-center justify-center sm:justify-start gap-1">
-                  <svg className="w-2 h-2 sm:w-3 sm:h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span className="text-[8px] sm:text-[10px] text-gray-500">
-                    ความมั่นใจ {report.rampart_score}%
-                  </span>
-                </div>
+                {/* RID Badge */}
+                <span className="shrink-0 text-[10px] sm:text-xs bg-white/10 text-blue-200/60 px-2 sm:px-3 py-1 rounded-full">
+                  #{report.rid}
+                </span>
+              </div>
+            </div>
+            {/* Tools Analysis*/}
+            <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10 w-full">
+              <h2 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">เครื่องมือที่ใช้วิเคราะห์</h2>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-6 mb-4">
+                {tools.map(tool => {
+                  const toolLogos: Record<string, { logo: string; alt: string }> = {
+                    mobsf: { logo: '/mobsf_logo.png', alt: 'MobSF' },
+                    virustotal: { logo: '/virustotal_logo.png', alt: 'VirusTotal' },
+                    cape: { logo: '/cape_logo.png', alt: 'CAPE Sandbox' },
+                  }
+                  const meta = toolLogos[tool] ?? { logo: '/default_logo.png', alt: tool }
+
+                  return (
+                    <div key={tool} className="flex flex-col items-center gap-1 sm:gap-2 group">
+                      <div className="relative w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14">
+                        <Image
+                          src={meta.logo}
+                          alt={meta.alt}
+                          fill
+                          className="object-contain hover:scale-110 transition-transform duration-200"
+                        />
+                      </div>
+                      <span className="text-[10px] sm:text-xs text-blue-200/60">
+                        {meta.alt}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
+          {/* Details Report */}
+          {
 
+          }
           {/* Tools & Download */}
           <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
             <h2 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">ดาวน์โหลดรายงาน</h2>
-            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3">
+            <div className="flex flex-row gap-3 sm:gap-4 flex-wrap justify-center sm:justify-start">
               {tools.map(tool => {
                 const isDownloading = downloadingTool === tool
                 const toolLabels: Record<string, { label: string; imagePath: string }> = {
@@ -305,13 +241,13 @@ export default function ReportDetailPage() {
                         : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-pointer'
                       }`}
                   >
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                      <div className="relative w-5 h-5 sm:w-6 sm:h-6 shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 ">
+                      <div className="relative w-5 h-5 sm:w-20 sm:h-20 shrink-0 bg-white/10 rounded-lg">
                         <Image
                           src={meta.imagePath}
                           alt={meta.label}
                           fill
-                          className="object-contain"
+                          className="object-contain p-1"
                         />
                       </div>
                       <span className="text-white font-medium truncate">{meta.label}</span>
@@ -322,7 +258,7 @@ export default function ReportDetailPage() {
                         <span className="text-xs sm:text-sm">โหลด...</span>
                       </div>
                     ) : (
-                      <span className="text-cyan-400 text-xs sm:text-sm shrink-0">↓ JSON</span>
+                      <span className="text-cyan-400 text-xs sm:text-sm shrink-0 pl-10">↓ JSON</span>
                     )}
                   </button>
                 )
@@ -330,10 +266,8 @@ export default function ReportDetailPage() {
             </div>
             <p className="text-[10px] sm:text-xs text-blue-200/40 break-all mt-4">MD5: {report.md5}</p>
           </div>
-        </div>
 
-        {/* Right Column - Analysis Report */}
-        <div className="w-full lg:w-2/3 xl:w-3/4">
+          {/* Gemini & VirusTotal */}
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50 shadow-xl">
 
             {/* Header with Logo and Risk Level */}
@@ -354,7 +288,7 @@ export default function ReportDetailPage() {
                 </div>
                 <p className="text-gray-300 text-xs sm:text-sm flex items-center justify-center sm:justify-start gap-1">
                   <span className="w-1 h-1 bg-purple-400 rounded-full"></span>
-                  รายงานจาก Gemini
+                  คำแนะนำจาก Gemini
                 </p>
               </div>
 
