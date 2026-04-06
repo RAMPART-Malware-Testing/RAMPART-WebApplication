@@ -76,7 +76,7 @@ export default function Toast({ type, message, onClose }: ToastProps) {
   };
 
   return (
-    <div className="fixed top-6 right-6 z-50">
+    <div className="fixed top-6 right-6 z-51">
       <div
         className={`
           flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg

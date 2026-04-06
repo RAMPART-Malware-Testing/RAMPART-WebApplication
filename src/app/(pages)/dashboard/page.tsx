@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import NavbarComponent from '@/components/NavbarComponent'
 import axios from 'axios'
+import GeometricLoader from '@/components/GeometricLoader'
 
 interface FileStats {
   total: number
@@ -147,13 +148,13 @@ export default function DashboardPage() {
     loadDashboardData()
   }, [])
 
-  if (isLoading || !dashboardStats) return <LoadingScreen />
+  if (isLoading || !dashboardStats) return <GeometricLoader loadingText='กำลังโหลด'/>
 
   const activeMalwareList =
     selectedTimeRange === 'daily'
       ? dashboardStats.topMalwareTypes.daily
       : dashboardStats.topMalwareTypes.monthly
-
+  
   const maxMalwareCount =
     activeMalwareList.length > 0
       ? Math.max(...activeMalwareList.map((m) => safeNumber(m.count)))

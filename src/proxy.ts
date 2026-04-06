@@ -31,7 +31,7 @@ export function proxy(request: NextRequest) {
         const payload = token ? jwtService.verify(token) : null;
         const tokenType = payload?.type as TokenType | undefined;
 
-        if (!payload)                       return redirect("/login", request, !!token);
+        if (!payload) return NextResponse.next();
         if (tokenType === "login_success")  return redirect("/dashboard", request);
         if (OTP_TYPES.includes(tokenType!)) return redirectToOtp(tokenType!, request);
 

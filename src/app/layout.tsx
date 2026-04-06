@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { kanit } from "@/lib/fonts";
 import ToastProvider from "@/components/ui/ToastProvider";
@@ -7,6 +7,12 @@ import ToastProvider from "@/components/ui/ToastProvider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "600", "700", "800"],
+  variable: "--font-inter",
 });
 
 const geistMono = Geist_Mono({
@@ -26,8 +32,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${kanit.className}  antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${kanit.className}${inter.className}  text-white selection:bg-purple-500 selection:text-white`}
       >
         <ToastProvider>
         {children}
@@ -36,3 +52,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+
