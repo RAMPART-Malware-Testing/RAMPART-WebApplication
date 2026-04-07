@@ -8,7 +8,10 @@
     "start": "next start"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "axios": "^1.13.2",
+    "chart.js": "^4.5.1",
+    "chartjs-gauge": "^0.3.0",
     "jsonwebtoken": "^9.0.3",
     "next": "16.1.6",
     "react": "19.2.4",

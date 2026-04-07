@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import Navbarservice from "@/components/Navbarservice";
+import Hero from "@/components/HeroComponent_landing";
 
 export default function Home() {
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
@@ -108,7 +109,6 @@ export default function Home() {
           borderColor: isHovering ? "#c084fc" : "rgba(167, 139, 250, 0.7)",
         }}
       />
-
       {/* Animated gradient blobs background */}
       <div className="fixed inset-0 overflow-hidden -z-10">
         <div
@@ -130,7 +130,6 @@ export default function Home() {
         />
         <div className="absolute w-[600px] h-[600px] bottom-10 right-0 bg-indigo-600/10 blur-[120px] spin-slow" />
       </div>
-
       {/* Navbar */}
       <Navbarservice />
 
@@ -142,47 +141,22 @@ export default function Home() {
           </div>
         </div>
         <div className="max-w-5xl mx-auto z-10">
-          <div className="inline-block mb-6 px-4 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-xs font-mono tracking-wider">
-            ✦ immersive future-ready ✦
+          <div className="flex justify-center items-center ">
+            <Hero subtitle="" title="" style={{display:"flex",justifyContent:"center",alignItems:"center"}}/>
           </div>
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold leading-[1.1] tracking-tight">
-            <span className="bg-gradient-to-r from-white via-purple-200 to-indigo-300 bg-clip-text text-transparent glitch-text">
-              สัมผัสโลก
+          
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold leading-[1.1] tracking-tight ">
+            <span className="bg-gradient-to-r from-white via-purple-200 to-indigo-300 bg-clip-text text-transparent glitch-text z-10">
+              เช็คก่อนติดตั้ง
             </span>
             <br />
             <span className="bg-gradient-to-r from-indigo-300 via-fuchsia-300 to-purple-200 bg-clip-text text-transparent">
-              ที่ไม่มีขีดจำกัด
+              ด้วย RAMPART
             </span>
           </h1>
           <p className="text-gray-300 text-lg md:text-2xl max-w-2xl mx-auto mt-6 leading-relaxed">
-            สร้างประสบการณ์ดิจิทัลที่เหนือจินตนาการ ด้วยเทคโนโลยีล้ำสมัยและการออกแบบที่เปี่ยมมนต์ขลัง
-            เปลี่ยนไอเดียให้กลายเป็นความจริงที่ไม่เหมือนใคร
+            แพลตฟอร์มตรวจสอบมัลแวร์จากระยะไกลด้วยการทดสอบการทำงานแบบอัตโนมัติ
           </p>
-          <div className="flex flex-col sm:flex-row gap-5 justify-center mt-10">
-            <button
-              className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full font-bold text-lg shadow-[0_8px_32px_rgba(128,90,213,0.4)] hover:shadow-[0_12px_40px_rgba(128,90,213,0.7)] transition-all duration-300 overflow-hidden"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                เริ่มต้นการเดินทาง{" "}
-                <i className="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-              </span>
-              <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            </button>
-            <button
-              className="px-8 py-4 rounded-full border border-white/30 backdrop-blur-sm font-semibold hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <i className="fas fa-play-circle"></i> ดูภาพยนตร์สั้น
-            </button>
-          </div>
-        </div>
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
-            <div className="w-1 h-2 bg-white/60 rounded-full mt-2 animate-ping" />
-          </div>
         </div>
       </section>
 
@@ -194,7 +168,7 @@ export default function Home() {
             ref={addToRevealRefs}
           >
             <span className="text-purple-300 font-mono tracking-widest text-sm uppercase bg-white/5 px-4 py-1 rounded-full">
-              ทำไมต้อง Nexora
+              ทำไมต้อง RAMPART
             </span>
             <h2 className="text-4xl md:text-5xl font-bold mt-5 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
               มากกว่าความสวยงาม

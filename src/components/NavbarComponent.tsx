@@ -22,7 +22,7 @@ export default function NavbarComponent() {
     ];
 
     return (
-        <nav className="bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-2xl mb-8 sticky top-0 z-50 text-xs">
+        <nav className="bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-2xl mb-4 sticky top-0 z-50 text-xs">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center px-2 py-4">
                 {/* Logo & Title */}
                 <div className="flex items-center justify-between w-full lg:w-auto mb-4 lg:mb-0">
