@@ -24,7 +24,7 @@ export default function Hero({
                 <div className="relative">
                     <div className="absolute -inset-4 bg-gradient-to-r from-white to-white rounded-[50%] blur-3xl opacity-90"></div>
 
-                    <div className="w-44 h-44 lg:w-84 lg:h-84 ">
+                    <div className="w-64 h-64 lg:w-94 lg:h-94 ">
                         <Image
                             src={logo}
                             alt="RAMPART Security"

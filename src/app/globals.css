@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --background: #ffffff;
@@ -33,10 +33,12 @@ body {
     transform: translate(0px, 0px) scale(1);
     opacity: 0.6;
   }
+
   50% {
     transform: translate(30px, -40px) scale(1.2);
     opacity: 0.9;
   }
+
   100% {
     transform: translate(-20px, 30px) scale(1);
     opacity: 0.6;
@@ -47,6 +49,7 @@ body {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -57,30 +60,37 @@ body {
     clip-path: inset(0 0 0 0);
     transform: translate(0);
   }
+
   10% {
     clip-path: inset(2% 0 1% 0);
     transform: translate(-2px, 1px);
   }
+
   20% {
     clip-path: inset(5% 0 3% 0);
     transform: translate(2px, -1px);
   }
+
   30% {
     clip-path: inset(1% 0 4% 0);
     transform: translate(-1px, 2px);
   }
+
   40% {
     clip-path: inset(6% 0 2% 0);
     transform: translate(1px, -2px);
   }
+
   50% {
     clip-path: inset(3% 0 5% 0);
     transform: translate(-2px, 0px);
   }
+
   60% {
     clip-path: inset(0 0 0 0);
     transform: translate(0);
   }
+
   100% {
     clip-path: inset(0 0 0 0);
     transform: translate(0);
@@ -124,12 +134,10 @@ body {
   position: absolute;
   width: 700px;
   height: 700px;
-  background: radial-gradient(
-    circle,
-    rgba(79, 70, 229, 0.25) 0%,
-    rgba(6, 182, 212, 0.1) 70%,
-    transparent 100%
-  );
+  background: radial-gradient(circle,
+      rgba(79, 70, 229, 0.25) 0%,
+      rgba(6, 182, 212, 0.1) 70%,
+      transparent 100%);
   filter: blur(70px);
   border-radius: 50%;
   z-index: 0;
@@ -160,6 +168,7 @@ body {
 }
 
 @media (max-width: 768px) {
+
   .cursor-dot,
   .cursor-outline {
     display: none;
@@ -173,4 +182,50 @@ html {
 body {
   background-color: #050510;
   overflow-x: hidden;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
+.delay-1500 {
+  animation-delay: 1.5s;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(74, 222, 128, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 222, 128, 0.5);
 }

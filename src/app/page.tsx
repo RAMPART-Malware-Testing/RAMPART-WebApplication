@@ -4,11 +4,14 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import Navbarservice from "@/components/Navbarservice";
 import Hero from "@/components/HeroComponent_landing";
+import CollisionCards from "@/components/CollisionCards";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [cursorOutlinePos, setCursorOutlinePos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+  const router = useRouter();
 
   const revealRefs = useRef<(HTMLDivElement | null)[]>([]);
   const counterRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -142,9 +145,9 @@ export default function Home() {
         </div>
         <div className="max-w-5xl mx-auto z-10">
           <div className="flex justify-center items-center ">
-            <Hero subtitle="" title="" style={{display:"flex",justifyContent:"center",alignItems:"center"}}/>
+            <Hero subtitle="" title="" style={{ display: "flex", justifyContent: "center", alignItems: "center" }} />
           </div>
-          
+
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold leading-[1.1] tracking-tight ">
             <span className="bg-gradient-to-r from-white via-purple-200 to-indigo-300 bg-clip-text text-transparent glitch-text z-10">
               เช็คก่อนติดตั้ง
@@ -171,55 +174,12 @@ export default function Home() {
               ทำไมต้อง RAMPART
             </span>
             <h2 className="text-4xl md:text-5xl font-bold mt-5 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-              มากกว่าความสวยงาม
+              มากกว่า "1" เครื่องมือในการตรวจสอบ
               <br />
-              คือเวทมนตร์แห่งการเชื่อมต่อ
+              เราคือเกราะป้องกันที่คุณวางใจได้
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div
-              className="floating-card backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10 hover-glow transition-all duration-500 reveal-on-scroll"
-              style={{ animationDelay: "0s" }}
-              ref={addToRevealRefs}
-            >
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/40 to-indigo-500/40 flex items-center justify-center mb-6 backdrop-blur-sm shadow-lg">
-                <i className="fas fa-cube text-3xl text-purple-300"></i>
-              </div>
-              <h3 className="text-2xl font-bold mb-3">Immersive 3D</h3>
-              <p className="text-gray-300 leading-relaxed">
-                ผสานโลกแห่งความเป็นจริงและดิจิทัลด้วยเทคโนโลยี WebGL
-                และอนิเมชั่นสุดล้ำ ที่ทำให้ผู้ใช้หลงใหลในทุกการปฏิสัมพันธ์
-              </p>
-            </div>
-            <div
-              className="floating-card backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10 hover-glow transition-all duration-500 reveal-on-scroll"
-              style={{ animationDelay: "0.2s", animationDuration: "9s" }}
-              ref={addToRevealRefs}
-            >
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-fuchsia-500/40 to-pink-500/40 flex items-center justify-center mb-6">
-                <i className="fas fa-meteor text-3xl text-fuchsia-300"></i>
-              </div>
-              <h3 className="text-2xl font-bold mb-3">Motion Alchemy</h3>
-              <p className="text-gray-300 leading-relaxed">
-                อนิเมชั่นที่ไม่เหมือนใคร สร้างการเล่าเรื่องที่มีชีวิตชีวา
-                ทุกการเคลื่อนไหวคือศิลปะที่ปลุกแบรนด์ให้โดดเด่น
-              </p>
-            </div>
-            <div
-              className="floating-card backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10 hover-glow transition-all duration-500 reveal-on-scroll"
-              style={{ animationDelay: "0.4s" }}
-              ref={addToRevealRefs}
-            >
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/40 to-blue-500/40 flex items-center justify-center mb-6">
-                <i className="fas fa-brain text-3xl text-cyan-300"></i>
-              </div>
-              <h3 className="text-2xl font-bold mb-3">AI Empathy</h3>
-              <p className="text-gray-300 leading-relaxed">
-                ผสานพลังของ AI เข้ากับดีไซน์ที่เข้าใจมนุษย์
-                สร้างประสบการณ์เฉพาะบุคคลที่เหนือระดับและเข้าถึงอารมณ์
-              </p>
-            </div>
-          </div>
+          <CollisionCards />
         </div>
       </section>
 
@@ -240,35 +200,21 @@ export default function Home() {
             </div>
             <div className="flex-1 space-y-6 reveal-on-scroll" ref={addToRevealRefs}>
               <div className="inline-block px-4 py-1 bg-amber-500/10 rounded-full border border-amber-500/30 text-amber-300 text-sm font-mono">
-                ✦ ล่าสุด: โปรเจกต์แห่งปี
+                ✦ เครื่องมือชั้นนำ ✦
               </div>
               <h2 className="text-4xl font-bold leading-tight">
-                เวทมนตร์ที่ซ่อนอยู่ใน
+                รวมพลังเทคโนโลยีเพื่อ
                 <br />
                 <span className="bg-gradient-to-r from-fuchsia-300 to-purple-300 bg-clip-text text-transparent">
-                  ทุกพิกเซล
+                  ความปลอดภัยที่เหนือระดับ
                 </span>
               </h2>
               <p className="text-gray-300 leading-loose">
-                เราไม่ได้แค่ดีไซน์ แต่เราสร้างอารมณ์สะเทือนใจ
-                ผ่านการเล่าเรื่องด้วยภาพเคลื่อนไหวแบบ ORGANIC ที่ไม่มีใครเหมือน
-                กล้าที่จะแตกต่าง กล้าที่จะทดลอง
-                เพื่อมอบประสบการณ์ที่ตราตรึงใจผู้ใช้ในทุกมิติ
+                เรารวมเครื่องมือตรวจสอบระดับโลกไว้ในที่เดียว พร้อมด้วย AI ที่ทันสมัย
+                เพื่อให้คุณมั่นใจในทุกการใช้งาน กล้าที่จะตรวจจับ กล้าที่จะป้องกัน
+                เพื่อความปลอดภัยที่คุณวางใจได้ในทุกสถานการณ์
               </p>
-              <div className="flex flex-wrap gap-4 pt-4">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-check-circle text-purple-400"></i>
-                  <span>Motion Design Award 2024</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-check-circle text-purple-400"></i>
-                  <span>CSS Art ระดับตำนาน</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-check-circle text-purple-400"></i>
-                  <span>Interactive Experience</span>
-                </div>
-              </div>
+
               <button
                 className="mt-6 px-8 py-3 rounded-full bg-white/5 border border-white/20 font-semibold hover:bg-purple-500/40 hover:border-purple-300 transition-all flex items-center gap-2 group"
                 onMouseEnter={handleMouseEnter}
@@ -333,9 +279,9 @@ export default function Home() {
       {/* Testimonials */}
       <section className="py-24 px-6">
         <div className="max-w-6xl mx-auto text-center reveal-on-scroll" ref={addToRevealRefs}>
-          <h2 className="text-4xl font-bold mb-4">เสียงจากผู้ร่วมทาง</h2>
+          <h2 className="text-4xl font-bold mb-4">ความไว้วางใจจากผู้ใช้งานจริง</h2>
           <p className="text-gray-400 max-w-2xl mx-auto mb-16">
-            คนที่เคยสัมผัสเวทมนตร์ของ Nexora พูดเป็นเสียงเดียวกันว่า ... “เหนือความคาดหมาย”
+            ผู้ใช้งานและองค์กรชั้นนำที่ไว้วางใจระบบตรวจสอบของเรา พูดเป็นเสียงเดียวกันว่า ... “มั่นใจ ปลอดภัย ไว้ใจได้”
           </p>
           <div className="grid md:grid-cols-2 gap-8">
             <div className="backdrop-blur-md bg-white/5 p-8 rounded-2xl border border-white/10 text-left hover:scale-[1.02] transition duration-500 group">
@@ -384,30 +330,31 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500" />
             </span>
-            <span className="text-sm font-mono">เปิดรับไอเดียไร้ขีดจำกัด</span>
+            <span className="text-sm font-mono">ระบบพร้อมใช้งานตลอด 24 ชั่วโมง</span>
           </div>
           <h2 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-purple-200 to-indigo-300 bg-clip-text text-transparent">
-            พร้อมเปลี่ยนโลก digital ของคุณ
+            พร้อมปกป้องทุกการติดตั้งของคุณ
           </h2>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10">
-            มาร่วมสร้างบางสิ่งที่ไม่เคยมีที่ไหนมาก่อน
-            ด้วยพลังของดีไซน์และอนิเมชั่นที่จะทำให้ผู้คนจดจำคุณตลอดไป
+            รวมพลังเครื่องมือและ AI ที่ทันสมัย เพื่อความปลอดภัยที่คุณวางใจได้
+            ตรวจจับ วิเคราะห์ และป้องกันภัยคุกคามก่อนจะถึงมือคุณ
           </p>
           <div className="flex flex-wrap gap-6 justify-center">
             <button
               className="group px-10 py-4 bg-white text-black font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 flex items-center gap-3 text-lg"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
+              onClick={() => router.push("/register")}
             >
-              เริ่มโปรเจกต์ของคุณ{" "}
-              <i className="fas fa-magic group-hover:rotate-12 transition"></i>
+              เริ่มต้นใช้งาน{" "}
+              <i className="fas fa-shield-alt group-hover:rotate-12 transition"></i>
             </button>
             <button
               className="px-10 py-4 rounded-full border border-white/30 bg-transparent backdrop-blur-sm font-semibold hover:bg-white/10 transition-all flex items-center gap-2"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
-              <i className="fab fa-discord"></i> เข้าร่วมชุมชน
+              <i className="fas fa-chart-line"></i> ดูรายงานตัวอย่าง
             </button>
           </div>
         </div>
@@ -418,7 +365,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-white/10 py-12 px-6 text-center text-gray-400 text-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>© 2025 Nexora — สร้างด้วยจิตวิญญาณและอนิเมชั่นสุดพิเศษ</p>
+          <p>© 2025 RAMPART — สร้างด้วยจิตวิญญาณ</p>
           <div className="flex gap-6 text-lg">
             <i className="fab fa-twitter hover:text-purple-400 cursor-pointer transition"></i>
             <i className="fab fa-instagram hover:text-purple-400 cursor-pointer transition"></i>

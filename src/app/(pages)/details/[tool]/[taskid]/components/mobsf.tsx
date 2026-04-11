@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import GeometricLoader from "@/components/GeometricLoader";
 import NavbarComponent from "@/components/NavbarComponent";
+import ServerMap from "./servermap";
 
 interface Datareport {
     success: boolean;
@@ -115,133 +116,259 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
 
     return (
         <>
-        <NavbarComponent />
-         <div className="min-h-screen bg-[#f8f9fa] text-black">
-           
-
-            <div className="max-w-7xl mx-auto px-4 py-6">
-                {/* Header Info */}
-                <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <img src={`/download/${report.hash}-icon.png`} className="w-12 h-12 rounded-lg" onError={(e) => ((e.target as HTMLImageElement).src = "/no_icon.png")} alt="app icon" />
-                        <div>
-                            <h2 className="text-lg font-semibold">{report.app_name || report.file_name} {report.version_name}</h2>
-                            <p className="text-sm text-gray-500">{report.package_name}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">ขนาด:</span>
-                        <span className="font-mono">{report.size}</span>
-                    </div>
-                </div>
-
-                {/* Stats Cards Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {/* Security Score */}
-                    <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-                        <div className="relative w-32 h-32 mx-auto">
-                            <svg className="w-32 h-32 transform -rotate-90">
-                                <circle cx="64" cy="64" r="56" stroke="#e5e7eb" strokeWidth="12" fill="none" />
-                                <circle cx="64" cy="64" r="56" stroke={getScoreColor()} strokeWidth="12" fill="none" strokeDasharray={`${(securityScore / 100) * 351.86} 351.86`} strokeLinecap="round" />
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-3xl font-bold">{securityScore}</span>
-                            </div>
-                        </div>
-                        <p className="mt-3 text-gray-600">Security Score /100</p>
-                    </div>
+            <NavbarComponent />
+            <div className="min-h-screen bg-[#f8f9fa] text-black gap-10">
 
 
-                    {/* Severity Distribution */}
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <h3 className="font-medium mb-3 text-center">Severity Distribution (%)</h3>
-                        <div className="space-y-2">
-                            {[
-                                { label: "High", value: hp, color: "bg-red-500" },
-                                { label: "Medium", value: wp, color: "bg-yellow-500" },
-                                { label: "Info", value: ip, color: "bg-blue-500" },
-                                { label: "Secure", value: sp, color: "bg-green-500" },
-                            ].map((item) => (
-                                <div key={item.label} className="flex items-center gap-2">
-                                    <span className="w-16 text-sm">{item.label}</span>
-                                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                        <div className={`h-full ${item.color}`} style={{ width: `${item.value}%` }} />
-                                    </div>
-                                    <span className="w-12 text-sm text-right">{item.value}%</span>
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    {/* Header Info */}
+                    <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div>
+                                <h2 className="text-lg font-semibold">{report.app_name || report.file_name} {report.version_name} </h2>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-500">ขนาด:</span>
+                                    <span className="font-mono">{report.size}</span>
                                 </div>
+                                <p className="text-sm text-gray-500">anlysis: {report.title}</p>
+                                <p className="text-sm text-gray-500">version: {report.version}</p>
+                                <p className="text-sm text-gray-500">type_file: {report.app_type}</p>
+                                <p className="text-sm text-gray-500">md5: {report.md5}</p>
+                                <p className="text-sm text-gray-500">sha1: {report.sha1}</p>
+                                <p className="text-sm text-gray-500">sha256: {report.sha256}</p>
+                                <p className="text-sm text-gray-500">package_name: {report.package_name}</p>
+                                <p className="text-sm text-gray-500">task_id: {taskid}</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Stats Cards Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        {/* Security Score */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 text-center">
+                            <div className="relative w-32 h-32 mx-auto">
+                                <svg className="w-32 h-32 transform -rotate-90">
+                                    <circle cx="64" cy="64" r="56" stroke="#e5e7eb" strokeWidth="12" fill="none" />
+                                    <circle cx="64" cy="64" r="56" stroke={getScoreColor()} strokeWidth="12" fill="none" strokeDasharray={`${(securityScore / 100) * 351.86} 351.86`} strokeLinecap="round" />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-3xl font-bold">{securityScore}</span>
+                                </div>
+                            </div>
+                            <p className="mt-3 text-gray-600">Security Score /100</p>
+                        </div>
+
+
+                        {/* Severity Distribution */}
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h3 className="font-medium mb-3 text-center">Severity Distribution (%)</h3>
+                            <div className="space-y-2">
+                                {[
+                                    { label: "High", value: hp, color: "bg-red-500" },
+                                    { label: "Medium", value: wp, color: "bg-yellow-500" },
+                                    { label: "Info", value: ip, color: "bg-blue-500" },
+                                    { label: "Secure", value: sp, color: "bg-green-500" },
+                                ].map((item) => (
+                                    <div key={item.label} className="flex items-center gap-2">
+                                        <span className="w-16 text-sm">{item.label}</span>
+                                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div className={`h-full ${item.color}`} style={{ width: `${item.value}%` }} />
+                                        </div>
+                                        <span className="w-12 text-sm text-right">{item.value}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Privacy Risk */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 text-center">
+                            <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto text-3xl font-bold text-white ${trackers === 0 ? "bg-green-500" : trackers > 4 ? "bg-red-500" : "bg-gray-600"}`}>
+                                {trackers}
+                            </div>
+                            <p className="mt-3 text-gray-600">{totalTrackers ? "User/Device Trackers" : "Not Scanned"}</p>
+                        </div>
+                    </div>
+
+                    {/* Signature Certificate */}
+                    <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div>
+                                <h2 className="text-lg font-semibold">Signature Certificate</h2>
+                                <pre style={{ whiteSpace: "pre-line" }} className="text-sm text-gray-500">
+                                    {report.certificate_analysis.certificate_info}
+                                </pre>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Word Map */}
+
+                    <div className="w-full h-[500px] mb-50">
+                        <ServerMap domains={report.domains} />
+                    </div>
+
+
+                    {/* Domain Malware Check */}
+                    <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div>
+                                <h2 className="text-lg font-semibold">Domain Malware Check</h2>
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th
+                                                scope="col"
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                API Name
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                Bad
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                IP
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                Country
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                Region/City
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                OFAC Listed
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                Google Map
+                                            </th>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {Object.entries(report.domains).map(([domain, info], idx) => (
+                                            <tr key={idx}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                                    {domain}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {info.bad}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {info.geolocation.ip}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {info.geolocation.country_long}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {info.geolocation.region}, {info.geolocation.city}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {info.ofac ? "Yes" : "No"}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {info.geolocation.latitude && info.geolocation.longitude ? (
+                                                        <a
+                                                            href={`https://www.google.com/maps/search/?api=1&query=${info.geolocation.latitude},${info.geolocation.longitude}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-blue-500 hover:underline"
+                                                        >
+                                                            View Map
+                                                        </a>
+                                                    ) : (
+                                                        "N/A"
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Findings Section */}
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">Findings</h3>
+                        </div>
+                        <div className="p-6">
+                            {/* Summary Stats */}
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                                <div className="text-center p-3 bg-red-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-red-600">{highFindings.length}</div>
+                                    <div className="text-sm text-red-600">High</div>
+                                </div>
+                                <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-yellow-600">{warningFindings.length}</div>
+                                    <div className="text-sm text-yellow-600">Medium</div>
+                                </div>
+                                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-blue-600">{infoFindings.length}</div>
+                                    <div className="text-sm text-blue-600">Info</div>
+                                </div>
+                                <div className="text-center p-3 bg-green-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-green-600">{secureFindings.length}</div>
+                                    <div className="text-sm text-green-600">Secure</div>
+                                </div>
+                                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-gray-600">{hotspotFindings.length}</div>
+                                    <div className="text-sm text-gray-600">Hotspot</div>
+                                </div>
+                            </div>
+
+                            {/* Findings List */}
+                            {highFindings.map((item: any, idx: number) => (
+                                <FindingCard key={`high-${idx}`} item={item} type="high" index={idx} />
                             ))}
+                            {warningFindings.map((item: any, idx: number) => (
+                                <FindingCard key={`warning-${idx}`} item={item} type="warning" index={idx} />
+                            ))}
+                            {infoFindings.map((item: any, idx: number) => (
+                                <FindingCard key={`info-${idx}`} item={item} type="info" index={idx} />
+                            ))}
+                            {secureFindings.map((item: any, idx: number) => (
+                                <FindingCard key={`secure-${idx}`} item={item} type="secure" index={idx} />
+                            ))}
+                            {hotspotFindings.map((item: any, idx: number) => (
+                                <FindingCard key={`hotspot-${idx}`} item={item} type="hotspot" index={idx} />
+                            ))}
+
+                            {highFindings.length === 0 && warningFindings.length === 0 && infoFindings.length === 0 && secureFindings.length === 0 && hotspotFindings.length === 0 && (
+                                <div className="text-center py-8 text-gray-500">ไม่พบปัญหาในการวิเคราะห์</div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Privacy Risk */}
-                    <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-                        <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto text-3xl font-bold text-white ${trackers === 0 ? "bg-green-500" : trackers > 4 ? "bg-red-500" : "bg-gray-600"}`}>
-                            {trackers}
-                        </div>
-                        <p className="mt-3 text-gray-600">{totalTrackers ? "User/Device Trackers" : "Not Scanned"}</p>
+                    {/* Footer */}
+                    <div className="mt-8 text-center text-sm text-gray-400">
+                        MobSF Application Security Scorecard generated for {report.app_name || report.file_name} {report.version_name}
                     </div>
-                </div>
-
-                {/* Findings Section */}
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200">
-                        <h3 className="text-lg font-semibold flex items-center gap-2">Findings</h3>
-                    </div>
-                    <div className="p-6">
-                        {/* Summary Stats */}
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-                            <div className="text-center p-3 bg-red-50 rounded-lg">
-                                <div className="text-2xl font-bold text-red-600">{highFindings.length}</div>
-                                <div className="text-sm text-red-600">High</div>
-                            </div>
-                            <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                                <div className="text-2xl font-bold text-yellow-600">{warningFindings.length}</div>
-                                <div className="text-sm text-yellow-600">Medium</div>
-                            </div>
-                            <div className="text-center p-3 bg-blue-50 rounded-lg">
-                                <div className="text-2xl font-bold text-blue-600">{infoFindings.length}</div>
-                                <div className="text-sm text-blue-600">Info</div>
-                            </div>
-                            <div className="text-center p-3 bg-green-50 rounded-lg">
-                                <div className="text-2xl font-bold text-green-600">{secureFindings.length}</div>
-                                <div className="text-sm text-green-600">Secure</div>
-                            </div>
-                            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                                <div className="text-2xl font-bold text-gray-600">{hotspotFindings.length}</div>
-                                <div className="text-sm text-gray-600">Hotspot</div>
-                            </div>
-                        </div>
-
-                        {/* Findings List */}
-                        {highFindings.map((item: any, idx: number) => (
-                            <FindingCard key={`high-${idx}`} item={item} type="high" index={idx} />
-                        ))}
-                        {warningFindings.map((item: any, idx: number) => (
-                            <FindingCard key={`warning-${idx}`} item={item} type="warning" index={idx} />
-                        ))}
-                        {infoFindings.map((item: any, idx: number) => (
-                            <FindingCard key={`info-${idx}`} item={item} type="info" index={idx} />
-                        ))}
-                        {secureFindings.map((item: any, idx: number) => (
-                            <FindingCard key={`secure-${idx}`} item={item} type="secure" index={idx} />
-                        ))}
-                        {hotspotFindings.map((item: any, idx: number) => (
-                            <FindingCard key={`hotspot-${idx}`} item={item} type="hotspot" index={idx} />
-                        ))}
-
-                        {highFindings.length === 0 && warningFindings.length === 0 && infoFindings.length === 0 && secureFindings.length === 0 && hotspotFindings.length === 0 && (
-                            <div className="text-center py-8 text-gray-500">ไม่พบปัญหาในการวิเคราะห์</div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="mt-8 text-center text-sm text-gray-400">
-                    MobSF Application Security Scorecard generated for {report.app_name || report.file_name} {report.version_name}
                 </div>
             </div>
-        </div>
         </>
-       
+
     );
 }
