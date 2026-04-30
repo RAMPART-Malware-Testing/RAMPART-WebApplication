@@ -14,7 +14,6 @@
     "chartjs-gauge": "^0.3.0",
     "d3-geo": "^3.1.1",
     "jsonwebtoken": "^9.0.3",
-    "leaflet": "^1.9.4",
     "next": "16.1.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",

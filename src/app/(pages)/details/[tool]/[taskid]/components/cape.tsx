@@ -1,24 +1,111 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { use, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-import { report } from "process";
-
+import GeometricLoader from "@/components/GeometricLoader";
+import NavbarComponent from "@/components/NavbarComponent";
 
 interface Datareport {
-    success: boolean
-    task_id: string
-    status: 'processing' | 'success' | 'failed'
-    report: any
+  success: boolean;
+  task_id: string;
+  status: "processing" | "success" | "failed";
+  report: any;
 }
 
+export default function Page({ taskid, tool }: { taskid: string; tool: string }) {
+  const [reportData, setReportData] = useState<Datareport | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-export default function Page() {
+  useEffect(() => {
+    async function fetchReport() {
+      try {
+        const res = await axios.get<Datareport>(
+          `/api/report_target/${taskid}?tool=${tool}`
+        );
+        setReportData(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchReport();
+  }, [taskid, tool]);
 
-    return(
-        <>
-        Cape
-        </>
-    )
+  if (isLoading) return <GeometricLoader />;
+
+  if (!reportData || reportData.status !== "success") {
+    return <div className="text-center mt-10">❌ ไม่พบ report หรือยังไม่เสร็จ</div>;
+  }
+
+  const report = reportData.report;
+  const target = report?.target;
+  const file = target?.file || {};
+  const debug = report?.debug || {};
+  const network = report?.network || {};
+  const info = report?.info || {};
+  const statistics = report?.statistics || {};
+  const cape = report?.CAPE || {};
+
+  // ตรวจสอบว่ามี Error หรือไม่
+  const hasError = debug?.errors?.length > 0 || debug?.log?.includes("ERROR");
+  const errorLog = debug?.log || "";
+  const errorMessage = debug?.errors?.[0] || (errorLog.includes("CuckooPackageError") ? 
+    "Analysis failed: Invalid package type. APK file was run with 'jar' package but Java is not available." : 
+    "Analysis failed with unknown error");
+
+  return (
+    <>
+      <NavbarComponent />
+
+      <div className="p-6 space-y-6 text-white max-w-6xl mx-auto">
+        
+        {/* 🔴 ERROR ALERT - กรณีวิเคราะห์ล้มเหลว */}
+        {hasError && (
+          <div className="bg-red-900/50 border-l-4 border-red-500 p-4 rounded-xl">
+            <h2 className="text-xl font-bold text-red-400 mb-2">⚠️ Analysis Failed</h2>
+            <p className="text-red-300">{errorMessage}</p>
+            {errorLog.includes("CuckooPackageError") && (
+              <div className="mt-3 p-3 bg-black/50 rounded-lg text-sm font-mono">
+                <p className="text-yellow-400">Root Cause:</p>
+                <p>The submitted file is an <strong>Android APK</strong> but was analyzed with the <strong>'jar'</strong> package (for Java JAR files).</p>
+                <p className="mt-2">✅ <strong>Recommendation:</strong> Re-analyze using package <code>"apk"</code> or <code>"android"</code>.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+       
+
+        {/* 📊 Analysis Info */}
+        <div className="bg-gray-900 p-4 rounded-xl border border-gray-700">
+          <h2 className="text-xl font-bold mb-3">Analysis Details</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div><span className="text-gray-400">Task ID:</span> <span className="font-mono text-xs">{reportData.task_id?.slice(0, 8)}...</span></div>
+            <div><span className="text-gray-400">Started:</span> {info?.started || "N/A"}</div>
+            <div><span className="text-gray-400">Duration:</span> {info?.duration || 0} seconds</div>
+            <div><span className="text-gray-400">Package Used:</span> <span className="text-yellow-400">{info?.package || "jar"} {hasError && "(❌ Incorrect)"}</span></div>
+            <div><span className="text-gray-400">Machine:</span> {info?.machine?.name || "N/A"}</div>
+            <div><span className="text-gray-400">Score:</span> <span className="text-green-400">{report?.malscore || 0}</span></div>
+            <div><span className="text-gray-400">Status:</span> <span className={hasError ? "text-red-400" : "text-green-400"}>{hasError ? "Failed" : "Success"}</span></div>
+            <div><span className="text-gray-400">CAPE Version:</span> {info?.CAPE_current_commit?.slice(0, 7) || "N/A"}</div>
+          </div>
+        </div>
+
+        
+
+       
+        
+
+        {/* 📄 RAW JSON (สำหรับ Debug) */}
+        <div className="bg-black p-4 rounded-xl overflow-x-auto border border-gray-700">
+          <h2 className="text-xl font-bold mb-2">Raw JSON Report</h2>
+          <pre className="text-xs text-gray-300 overflow-auto max-h-[500px]">
+            {JSON.stringify(report, null, 2)}
+          </pre>
+        </div>
+
+      </div>
+    </>
+  );
 }

@@ -43,7 +43,6 @@ interface DashboardStats {
   recentActivities: RecentActivity[]
 }
 
-
 function safeNumber(value?: number) {
   if (typeof value !== 'number' || isNaN(value)) return 0
   return value
@@ -62,42 +61,28 @@ function safeArray<T>(arr?: T[]): T[] {
 
 type TimeRange = 'daily' | 'monthly'
 
-const STATUS_STYLES: Record<RecentActivity['status'], { wrapper: string; icon: string; badge: string; label: string }> = {
+const STATUS_STYLES: Record<RecentActivity['status'], { icon: string; badge: string; label: string }> = {
   success: {
-    wrapper: 'bg-green-500/10 border border-green-500/20',
-    icon: 'fas fa-check text-green-400',
-    badge: 'bg-green-500/20 text-green-400',
+    icon: 'fas fa-check-circle',
+    badge: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
     label: 'สำเร็จ',
   },
   pending: {
-    wrapper: 'bg-yellow-500/10 border border-yellow-500/20',
-    icon: 'fas fa-clock text-yellow-400',
-    badge: 'bg-yellow-500/20 text-yellow-400',
+    icon: 'fas fa-hourglass-half',
+    badge: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
     label: 'รอวิเคราะห์',
   },
   failed: {
-    wrapper: 'bg-red-500/10 border border-red-500/20',
-    icon: 'fas fa-times text-red-400',
-    badge: 'bg-red-500/20 text-red-400',
+    icon: 'fas fa-times-circle',
+    badge: 'bg-rose-500/10 text-rose-400 border border-rose-500/20',
     label: 'ไม่สำเร็จ',
   },
 }
 
 function getRiskScoreColor(score: number) {
-  if (score >= 70) return { text: 'text-red-400', bar: 'bg-red-500' }
-  if (score >= 40) return { text: 'text-yellow-400', bar: 'bg-yellow-500' }
-  return { text: 'text-green-400', bar: 'bg-green-500' }
-}
-
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-[#1e293b] flex items-center justify-center">
-      <div className="flex items-center space-x-3">
-        <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-white text-lg">กำลังโหลดข้อมูล...</span>
-      </div>
-    </div>
-  )
+  if (score >= 70) return { text: 'text-rose-400', bar: 'bg-gradient-to-r from-rose-500 to-red-500' }
+  if (score >= 40) return { text: 'text-amber-400', bar: 'bg-gradient-to-r from-amber-500 to-orange-500' }
+  return { text: 'text-emerald-400', bar: 'bg-gradient-to-r from-emerald-500 to-teal-500' }
 }
 
 export default function DashboardPage() {
@@ -109,29 +94,24 @@ export default function DashboardPage() {
     const loadDashboardData = async () => {
       try {
         setIsLoading(true)
-
         const [statsResponse, activitiesResponse] = await Promise.all([
           axios.post<Omit<DashboardStats, 'recentActivities'>>('/api/dashboard'),
           axios.post<RecentActivity[]>('/api/dashboard/recent-activities'),
         ])
 
-        const stats = statsResponse?.data
-        const activities = activitiesResponse?.data
-
         setDashboardStats({
-          totalFiles: stats?.totalFiles ?? { total: 0, success: 0, pending: 0, failed: 0 },
-          userFiles: stats?.userFiles ?? { total: 0, success: 0, pending: 0, failed: 0 },
-          totalUsers: safeNumber(stats?.totalUsers),
+          totalFiles: statsResponse?.data?.totalFiles ?? { total: 0, success: 0, pending: 0, failed: 0 },
+          userFiles: statsResponse?.data?.userFiles ?? { total: 0, success: 0, pending: 0, failed: 0 },
+          totalUsers: safeNumber(statsResponse?.data?.totalUsers),
           topMalwareTypes: {
-            daily: safeArray(stats?.topMalwareTypes?.daily),
-            monthly: safeArray(stats?.topMalwareTypes?.monthly),
+            daily: safeArray(statsResponse?.data?.topMalwareTypes?.daily),
+            monthly: safeArray(statsResponse?.data?.topMalwareTypes?.monthly),
           },
-          riskScores: safeArray(stats?.riskScores),
-          recentActivities: safeArray(activities),
+          riskScores: safeArray(statsResponse?.data?.riskScores),
+          recentActivities: safeArray(activitiesResponse?.data),
         })
       } catch (error) {
         console.error('Dashboard Load Error:', error)
-
         setDashboardStats({
           totalFiles: { total: 0, success: 0, pending: 0, failed: 0 },
           userFiles: { total: 0, success: 0, pending: 0, failed: 0 },
@@ -144,229 +124,298 @@ export default function DashboardPage() {
         setIsLoading(false)
       }
     }
-
     loadDashboardData()
   }, [])
 
-  if (isLoading || !dashboardStats) return <GeometricLoader loadingText='กำลังโหลด'/>
+  if (isLoading || !dashboardStats) return <GeometricLoader loadingText="กำลังโหลดข้อมูล..." />
 
-  const activeMalwareList =
-    selectedTimeRange === 'daily'
-      ? dashboardStats.topMalwareTypes.daily
-      : dashboardStats.topMalwareTypes.monthly
-  
-  const maxMalwareCount =
-    activeMalwareList.length > 0
-      ? Math.max(...activeMalwareList.map((m) => safeNumber(m.count)))
-      : 1
+  const activeMalwareList = selectedTimeRange === 'daily'
+    ? dashboardStats.topMalwareTypes.daily
+    : dashboardStats.topMalwareTypes.monthly
+
+  const totalSuccessRate = dashboardStats.totalFiles.total > 0
+    ? (dashboardStats.totalFiles.success / dashboardStats.totalFiles.total) * 100
+    : 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-[#1e293b] p-6">
+    <div className="min-h-screen bg-gradient-to-br p-6 from-slate-900 via-slate-800 to-slate-900">
       <NavbarComponent />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-        <FileStatsCard title="ไฟล์ทั้งหมดในระบบ" icon="fa-folder" iconColor="text-cyan-400" borderHover="hover:border-cyan-500/30" stats={dashboardStats.totalFiles} />
-        <FileStatsCard title="ไฟล์ส่วนตัวของคุณ" icon="fa-user-shield" iconColor="text-blue-400" borderHover="hover:border-blue-500/30" stats={dashboardStats.userFiles} />
-
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold">สมาชิกทั้งหมด</h3>
-            <i className="fas fa-users text-purple-400 text-xl" />
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-black text-white mb-2">
-              {dashboardStats.totalUsers.toLocaleString()}
-            </div>
-            <p className="text-blue-200/60 text-sm">ผู้ใช้งานที่ลงทะเบียน</p>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">
+            ยินดีต้อนรับกลับ! 👋
+          </h1>
+          <p className="text-slate-400">นี่คือภาพรวมของระบบความปลอดภัยของคุณ</p>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-green-500/30 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold">การดำเนินการด่วน</h3>
-            <i className="fas fa-bolt text-green-400 text-xl" />
-          </div>
-          <div className="space-y-3">
-            <QuickActionLink href="/scan" colorScheme="cyan" icon="fa-upload" label="อัพโหลดไฟล์ใหม่" />
-            <QuickActionLink href="/reports" colorScheme="blue" icon="fa-chart-bar" label="ดูรายงานทั้งหมด" />
-            <QuickActionLink href="/profile?m=report" colorScheme="purple" icon="fa-cog" label="ผลการวิเคราะห์" />
-          </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="ไฟล์ทั้งหมด"
+            value={dashboardStats.totalFiles.total}
+            icon="fas fa-database"
+            gradient="from-blue-500 to-cyan-500"
+            subtitle={`สำเร็จ ${dashboardStats.totalFiles.success} รายการ`}
+          />
+          <StatCard
+            title="ไฟล์ของฉัน"
+            value={dashboardStats.userFiles.total}
+            icon="fas fa-user-shield"
+            gradient="from-purple-500 to-pink-500"
+            subtitle={`รอวิเคราะห์ ${dashboardStats.userFiles.pending} รายการ`}
+          />
+          <StatCard
+            title="อัตราความสำเร็จ"
+            value={`${totalSuccessRate.toFixed(1)}%`}
+            icon="fas fa-chart-line"
+            gradient="from-emerald-500 to-teal-500"
+            subtitle="โดยรวมทั้งหมด"
+          />
+          <StatCard
+            title="ผู้ใช้งานทั้งหมด"
+            value={dashboardStats.totalUsers}
+            icon="fas fa-users"
+            gradient="from-orange-500 to-red-500"
+            subtitle="สมาชิกที่ลงทะเบียน"
+          />
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-        <div className="xl:col-span-2 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-white font-semibold">TOP 5 ประเภทมัลแวร์</h3>
-            <div className="flex space-x-2">
-              {(['daily', 'monthly'] as TimeRange[]).map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setSelectedTimeRange(range)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${selectedTimeRange === range
-                    ? 'bg-cyan-500 text-white'
-                    : 'bg-white/5 text-blue-200/60 hover:text-white'
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Malware Types */}
+          <div className="lg:col-span-2 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
+              <div>
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <i className="fas fa-bug text-rose-400" />
+                  ประเภทมัลแวร์ยอดนิยม
+                </h3>
+                <p className="text-slate-400 text-sm mt-1">5 อันดับมัลแวร์ที่พบมากที่สุด</p>
+              </div>
+              <div className="flex gap-2">
+                {(['daily', 'monthly'] as TimeRange[]).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setSelectedTimeRange(range)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      selectedTimeRange === range
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg'
+                        : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
                     }`}
-                >
-                  {range === 'daily' ? 'รายวัน' : 'รายเดือน'}
-                </button>
-              ))}
+                  >
+                    {range === 'daily' ? 'รายวัน' : 'รายเดือน'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {activeMalwareList.length > 0 ? (
+                activeMalwareList.map((malware, index) => {
+                  const maxCount = Math.max(...activeMalwareList.map(m => m.count), 1)
+                  const percentage = (malware.count / maxCount) * 100
+                  return (
+                    <div key={malware.type} className="group">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold
+                            ${index === 0 ? 'bg-amber-500/20 text-amber-400' : 
+                              index === 1 ? 'bg-slate-500/20 text-slate-400' :
+                              index === 2 ? 'bg-orange-500/20 text-orange-400' :
+                              'bg-white/10 text-slate-400'}`}>
+                            {index + 1}
+                          </div>
+                          <span className="text-white font-medium">{malware.type}</span>
+                        </div>
+                        <span className="text-slate-400 text-sm">{malware.count} ครั้ง</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-700"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="text-center py-12 text-slate-400">
+                  <i className="fas fa-chart-simple text-4xl mb-3 opacity-50" />
+                  <p>ไม่มีข้อมูลในขณะนี้</p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="space-y-4">
-            {activeMalwareList.map((malware, index) => (
-              <div key={truncate(malware.type, 25)} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
-                    <span className="text-cyan-400 font-bold text-sm">{index + 1}</span>
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">{malware.type}</p>
-                    <p className="text-blue-200/60 text-sm">{malware.count} ครั้ง</p>
-                  </div>
+          {/* Risk Scores */}
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/10">
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <i className="fas fa-shield-virus text-amber-400" />
+                คะแนนความเสี่ยง
+              </h3>
+              <p className="text-slate-400 text-sm mt-1">จำแนกตามประเภทไฟล์</p>
+            </div>
+            <div className="p-6 space-y-4">
+              {dashboardStats.riskScores.length > 0 ? (
+                dashboardStats.riskScores.map((item) => {
+                  const score = Math.min(Math.max(item.riskScore, 0), 100)
+                  const colors = getRiskScoreColor(score)
+                  return (
+                    <div key={item.fileType} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white text-sm font-medium">{item.fileType}</span>
+                        <span className={`text-sm font-bold ${colors.text}`}>{score.toFixed(0)}/100</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${colors.bar} rounded-full transition-all duration-700`}
+                          style={{ width: `${score}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="text-center py-12 text-slate-400">
+                  <i className="fas fa-chart-line text-4xl mb-3 opacity-50" />
+                  <p>ไม่มีข้อมูลความเสี่ยง</p>
                 </div>
-                <div className="w-20 bg-white/10 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-1000"
-                    style={{ width: `${(malware.count / maxMalwareCount) * 100}%` }}
-                  />
-                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <QuickActionCard
+            href="/scan"
+            icon="fas fa-cloud-upload-alt"
+            title="อัปโหลดไฟล์"
+            description="อัปโหลดไฟล์เพื่อสแกนหามัลแวร์"
+            gradient="from-cyan-500 to-blue-500"
+          />
+          <QuickActionCard
+            href="/reports"
+            icon="fas fa-chart-pie"
+            title="รายงานทั้งหมด"
+            description="ดูรายงานการวิเคราะห์ทั้งหมด"
+            gradient="from-purple-500 to-pink-500"
+          />
+          <QuickActionCard
+            href="/profile?m=report"
+            icon="fas fa-history"
+            title="ประวัติการวิเคราะห์"
+            description="ตรวจสอบประวัติไฟล์ของคุณ"
+            gradient="from-emerald-500 to-teal-500"
+          />
+        </div>
+
+        {/* Recent Activities */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
+            <div>
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <i className="fas fa-clock text-blue-400" />
+                กิจกรรมล่าสุด
+              </h3>
+              <p className="text-slate-400 text-sm mt-1">การอัปโหลดไฟล์ล่าสุด 10 รายการ</p>
+            </div>
+            <Link 
+              href="/profile?m=report" 
+              className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+            >
+              ดูทั้งหมด
+              <i className="fas fa-arrow-right text-xs" />
+            </Link>
+          </div>
+          <div className="divide-y divide-white/5">
+            {dashboardStats.recentActivities.length > 0 ? (
+              dashboardStats.recentActivities.slice(0, 10).map((activity) => {
+                const style = STATUS_STYLES[activity.status] || STATUS_STYLES.failed
+                return (
+                  <div key={activity.id} className="px-6 py-4 hover:bg-white/5 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 flex-1">
+                        <i className={`${style.icon} text-xl`} />
+                        <div className="flex-1">
+                          <p className="text-white font-medium">{truncate(activity.fileName, 50)}</p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-slate-500 text-xs">
+                              <i className="fas fa-file-alt mr-1" />
+                              {activity.fileType}
+                            </span>
+                            <span className="text-slate-500 text-xs">
+                              <i className="fas fa-calendar-alt mr-1" />
+                              {new Date(activity.timestamp).toLocaleString('th-TH')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-lg text-xs font-medium ${style.badge}`}>
+                        {style.label}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="text-center py-12 text-slate-400">
+                <i className="fas fa-inbox text-4xl mb-3 opacity-50" />
+                <p>ไม่มีกิจกรรมล่าสุด</p>
               </div>
-            ))}
+            )}
           </div>
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-white font-semibold">คะแนนความเสี่ยงไฟล์</h3>
-            <i className="fas fa-exclamation-triangle text-yellow-400 text-xl" />
-          </div>
-
-          <div className="space-y-4">
-            {safeArray(dashboardStats.riskScores).map((entry) => {
-              const score = safeNumber(entry.riskScore)
-              const normalizedScore = Math.min(score, 100)
-              const colors = getRiskScoreColor(normalizedScore)
-              return (
-                <div key={truncate(entry.fileType, 15)} className="p-3 bg-white/5 rounded-xl border border-white/10">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-white font-medium">{entry.fileType}</span>
-                    <span className={`text-lg font-bold ${colors.text}`}>
-                      {entry.riskScore.toFixed(1)}/100
-                    </span>
-                  </div>
-                  <div className="w-full bg-white/10 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-1000 ${colors.bar}`}
-                      style={{ width: `${normalizedScore}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-white font-semibold">กิจกรรมล่าสุด</h3>
-          <Link href="/profile?m=report" className="text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-colors duration-200">
-            ดูทั้งหมด
-          </Link>
-        </div>
-
-        <div className="space-y-3">
-          {safeArray(dashboardStats.recentActivities).map((activity) => {
-            const style =
-              STATUS_STYLES[activity.status] ??
-              STATUS_STYLES['failed']
-            return (
-              <div key={activity.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <p className="text-white font-medium">{truncate(activity.fileName, 35)}</p>
-                    <p className="text-blue-200/60 text-sm">{truncate(activity.fileType, 10)} • {truncate(activity.timestamp, 20)}</p>
-                  </div>
-                </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-medium ${style.badge}`}>
-                  {style.label}
-                </div>
-              </div>
-            )
-          })}
         </div>
       </div>
     </div>
   )
 }
 
-function FileStatsCard({
-  title,
-  icon,
-  iconColor,
-  borderHover,
-  stats,
-}: {
+// Components
+function StatCard({ title, value, icon, gradient, subtitle }: { 
   title: string
+  value: string | number
   icon: string
-  iconColor: string
-  borderHover: string
-  stats: FileStats
+  gradient: string
+  subtitle: string
 }) {
   return (
-    <div className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 ${borderHover} transition-all duration-300`}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white font-semibold">{title}</h3>
-        <i className={`fas ${icon} ${iconColor} text-xl`} />
-      </div>
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="text-blue-200/60">ทั้งหมด</span>
-          <span className="text-white font-bold text-xl">{safeNumber(stats?.total).toLocaleString()}</span>
+    <div className="group relative overflow-hidden bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-full -mr-16 -mt-16" />
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
+            <i className={`${icon} text-white text-xl`} />
+          </div>
+          <div className="text-right">
+            <p className="text-slate-400 text-sm">{title}</p>
+            <p className="text-3xl font-bold text-white mt-1">{value}</p>
+          </div>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-green-400">สำเร็จ</span>
-          <span className="text-white font-semibold">{safeNumber(stats?.success).toLocaleString()}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-yellow-400">รอวิเคราะห์</span>
-          <span className="text-white font-semibold">{safeNumber(stats?.pending).toLocaleString()}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-red-400">ไม่สำเร็จ</span>
-          <span className="text-white font-semibold">{safeNumber(stats?.failed).toLocaleString()}</span>
-        </div>
+        <p className="text-slate-500 text-sm">{subtitle}</p>
       </div>
     </div>
   )
 }
 
-function QuickActionLink({
-  href,
-  colorScheme,
-  icon,
-  label,
-}: {
+function QuickActionCard({ href, icon, title, description, gradient }: {
   href: string
-  colorScheme: 'cyan' | 'blue' | 'purple'
   icon: string
-  label: string
+  title: string
+  description: string
+  gradient: string
 }) {
-  const colors = {
-    cyan: 'bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30 text-cyan-400',
-    blue: 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 text-blue-400',
-    purple: 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-purple-400',
-  }
-
   return (
-    <Link
-      href={href}
-      className={`w-full border rounded-xl py-3 px-4 transition-all duration-300 flex items-center justify-center space-x-2 ${colors[colorScheme]}`}
-    >
-      <i className={`fas ${icon}`} />
-      <span>{label}</span>
+    <Link href={href} className="group">
+      <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:bg-white/10 transition-all duration-300 hover:scale-105">
+        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-all`}>
+          <i className={`${icon} text-white text-2xl`} />
+        </div>
+        <h3 className="text-white font-semibold text-lg mb-1">{title}</h3>
+        <p className="text-slate-400 text-sm">{description}</p>
+      </div>
     </Link>
   )
 }
