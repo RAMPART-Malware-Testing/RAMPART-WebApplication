@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtService, TokenType } from "@/services/jwt.service";
+import { jwtService } from "@/services/jwt.service";
 
-const GUEST_ONLY_ROUTES = ["/login", "/register", "/reset-passwd"];
-const PROTECTED_ROUTES  = ["/home", "/dashboard", "/scan", "/details"];
-const OTP_ONLY_ROUTE    = "/verify-otp";
-const OTP_TYPES: TokenType[] = ["login_confirm", "register_confirm", "reset_password_confirm"];
+// Pages that only make sense for a logged-out visitor. A signed-in user
+// hitting these gets bounced to /dashboard instead.
+const GUEST_ONLY_ROUTES = ["/login"];
+
+// Pages that require a valid session. Anonymous visitors get bounced to
+// /login (their original destination is not preserved - matches previous
+// behavior).
+const PROTECTED_ROUTES = ["/home", "/dashboard", "/scan", "/details", "/profile", "/reports"];
 
 function redirect(path: string, request: NextRequest, clearCookie = false) {
     const response = NextResponse.redirect(new URL(path, request.url));
@@ -13,72 +17,41 @@ function redirect(path: string, request: NextRequest, clearCookie = false) {
     return response;
 }
 
-function redirectToOtp(type: string, request: NextRequest) {
-    const url = new URL(OTP_ONLY_ROUTE, request.url);
-    url.searchParams.set("content", type);
-    return NextResponse.redirect(url);
-}
-
 function matchesAny(pathname: string, routes: string[]) {
-    return routes.some((r) => pathname.startsWith(r));
+    return routes.some((r) => pathname === r || pathname.startsWith(`${r}/`));
 }
 
+// Next.js 16 renamed the `middleware.ts` file convention to `proxy.ts`
+// (export function proxy(), same signature/behavior as before).
+// See: https://nextjs.org/docs/messages/middleware-to-proxy
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const token = request.cookies.get("access_token")?.value;
-
-    if (pathname === "/") {
-        const payload = token ? jwtService.verify(token) : null;
-        const tokenType = payload?.type as TokenType | undefined;
-
-        if (!payload) return NextResponse.next();
-        if (tokenType === "login_success")  return redirect("/dashboard", request);
-        if (OTP_TYPES.includes(tokenType!)) return redirectToOtp(tokenType!, request);
-
-        return redirect("/login", request, true);
-    }
+    const payload = token ? jwtService.verify(token) : null;
+    const isLoggedIn = payload?.type === "session" && !!payload.token;
 
     if (pathname.startsWith("/logout")) {
         return redirect("/login", request, true);
     }
 
-    const payload = token ? jwtService.verify(token) : null;
-    const tokenType = payload?.type as TokenType | undefined;
-    const isOtpToken = tokenType && OTP_TYPES.includes(tokenType);
-
-    if (!payload) {
-        if (matchesAny(pathname, PROTECTED_ROUTES) || pathname.startsWith(OTP_ONLY_ROUTE)) {
-            return redirect("/login", request, !!token);
-        }
-        if (!matchesAny(pathname, GUEST_ONLY_ROUTES)) {
-            return redirect("/login", request);
-        }
+    // "/" is public but redirects an already-signed-in user straight to the
+    // dashboard instead of showing the marketing landing page again.
+    if (pathname === "/") {
+        if (isLoggedIn) return redirect("/dashboard", request);
         return NextResponse.next();
     }
 
-    if (isOtpToken) {
-        if (!pathname.startsWith(OTP_ONLY_ROUTE)) {
-            return redirectToOtp(tokenType!, request);
-        }
-        const contentParam = request.nextUrl.searchParams.get("content");
-        if (contentParam !== tokenType) {
-            return redirectToOtp(tokenType!, request); // force correct content
-        }
-
+    if (matchesAny(pathname, PROTECTED_ROUTES)) {
+        if (!isLoggedIn) return redirect("/login", request, !!token);
         return NextResponse.next();
     }
 
-    if (tokenType === "login_success") {
-        if (matchesAny(pathname, GUEST_ONLY_ROUTES) || pathname.startsWith(OTP_ONLY_ROUTE)) {
-            return redirect("/dashboard", request);
-        }
-        if (!matchesAny(pathname, PROTECTED_ROUTES)) {
-            return redirect("/dashboard", request);
-        }
+    if (matchesAny(pathname, GUEST_ONLY_ROUTES)) {
+        if (isLoggedIn) return redirect("/dashboard", request);
         return NextResponse.next();
     }
 
-    return redirect("/login", request, true);
+    return NextResponse.next();
 }
 
 export const config = {
@@ -86,12 +59,11 @@ export const config = {
         "/",
         "/logout",
         "/login",
-        "/register",
-        "/reset-passwd",
-        "/verify-otp",
         "/dashboard/:path*",
         "/home/:path*",
         "/details/:path*",
         "/scan/:path*",
+        "/profile/:path*",
+        "/reports/:path*",
     ],
 };

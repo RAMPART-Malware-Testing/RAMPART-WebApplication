@@ -2,16 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import { resolveAvatarUrl, userInitials } from "@/lib/avatar";
 
 export default function NavbarComponent() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [user, setUser] = useState<RampartUser | null>(null);
     const router = useRouter();
 
-    const handleLogout = () => {
-        router.push('/');
+    useEffect(() => {
+        axios.get('/api/profile').then(({ data }) => {
+            if (data?.success) setUser(data.data as RampartUser);
+        }).catch(() => { });
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            await axios.post('/api/logout');
+        } finally {
+            router.push('/login');
+        }
     };
 
     const menuItems = [
@@ -20,6 +33,8 @@ export default function NavbarComponent() {
         { name: 'All Reports', href: '/reports', icon: '' },
         { name: 'My Reports', href: '/profile?m=report', icon: '' },
     ];
+
+    const avatarUrl = resolveAvatarUrl(user?.avatar_url);
 
     return (
         <nav className="bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-2xl mb-4 sticky top-0 z-50 text-xs">
@@ -90,12 +105,16 @@ export default function NavbarComponent() {
                                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                                 className="flex items-center space-x-3 bg-white/5 rounded-xl px-4 py-2 border border-white/10 hover:bg-white/10 transition-all duration-200 group"
                             >
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-lg">
-                                    SA
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-lg overflow-hidden relative">
+                                    {avatarUrl ? (
+                                        <Image src={avatarUrl} alt={user?.username ?? 'avatar'} fill className="object-cover" />
+                                    ) : (
+                                        userInitials(user?.username)
+                                    )}
                                 </div>
                                 <div className="text-left hidden sm:block">
-                                    <p className="text-white font-medium text-sm">Security Analyst</p>
-                                    <p className="text-blue-200/60 text-xs">admin@rampart.security</p>
+                                    <p className="text-white font-medium text-sm">{user?.username ?? '...'}</p>
+                                    <p className="text-blue-200/60 text-xs">{user?.email ?? ''}</p>
                                 </div>
                                 <svg
                                     className={`w-4 h-4 text-white/60 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`}
@@ -111,8 +130,8 @@ export default function NavbarComponent() {
                             {isProfileOpen && (
                                 <div className="absolute right-0 mt-2 w-56 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
                                     <div className="px-4 py-3 border-b border-white/10">
-                                        <p className="text-white font-medium">Security Analyst</p>
-                                        <p className="text-blue-200/60 text-sm">admin@rampart.security</p>
+                                        <p className="text-white font-medium">{user?.username ?? '...'}</p>
+                                        <p className="text-blue-200/60 text-sm">{user?.email ?? ''}</p>
                                     </div>
                                     <div className="py-2">
                                         <Link
@@ -123,13 +142,13 @@ export default function NavbarComponent() {
                                             <span>โปรไฟล์</span>
                                         </Link>
                                         <div className="border-t border-white/10 my-2"></div>
-                                        <Link href="/logout"
+                                        <button
                                             onClick={handleLogout}
                                             className="flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors w-full text-left"
                                         >
                                             <span>🚪</span>
                                             <span className="font-medium">ออกจากระบบ</span>
-                                        </Link>
+                                        </button>
                                     </div>
                                 </div>
                             )}

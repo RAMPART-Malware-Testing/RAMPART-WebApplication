@@ -2,10 +2,15 @@ import jwt, { SignOptions, JwtPayload } from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
-export type TokenType = "login_confirm" | "login_success" | "register_confirm" | "reset_password_confirm" | "device";
+// Auth is OAuth-only now (Google/GitHub via the backend) - there is a single
+// session token type, no more OTP/register/reset-password intermediate states.
+export type TokenType = "session";
 
 interface TokenPayload extends JwtPayload {
     type?: TokenType;
+    /** The raw backend access_token (a JWT itself), passed through as-is. */
+    token?: string;
+    data?: RampartUser;
     [key: string]: any;
 }
 
@@ -42,8 +47,6 @@ class JwtService {
 
 }
 
-// jwtService.sign({ uid: 1, type: "login_confirm" }, "5m");
-// jwtService.sign({ uid: 1, type: "login_success" }, "7d");
-// jwtService.sign({ uid: 1, type: "login_success" }, 3600); 
+// jwtService.sign({ token: backendAccessToken, data: user, type: "session" }, "7d");
 
 export const jwtService = new JwtService();

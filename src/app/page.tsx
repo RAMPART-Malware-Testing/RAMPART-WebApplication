@@ -344,7 +344,7 @@ export default function Home() {
               className="group px-10 py-4 bg-white text-black font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 flex items-center gap-3 text-lg"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
-              onClick={() => router.push("/register")}
+              onClick={() => router.push("/login")}
             >
               เริ่มต้นใช้งาน{" "}
               <i className="fas fa-shield-alt group-hover:rotate-12 transition"></i>
