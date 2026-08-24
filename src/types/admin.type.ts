@@ -96,6 +96,13 @@ interface AdminDashboardSummary {
     banned_count: number
     total_analyses: number
     malicious_count: number
+    /** Daily upload counts for the trailing window (oldest first), e.g. 14 days. */
+    upload_trend: { date: string; count: number }[]
+    status_breakdown: { status: string; count: number }[]
+    /** risk_level values: "Low" | "Caution" | "High" | "Critical" | "N/A" */
+    risk_level_breakdown: { risk_level: string; count: number }[]
+    file_type_breakdown: { file_type: string; count: number }[]
+    tool_usage: { tool: string; count: number }[]
     recent_actions: {
         log_id: string
         actor_username: string | null
