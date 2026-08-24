@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { kanit } from "@/lib/fonts";
 import ToastProvider from "@/components/ui/ToastProvider";
+import BannedGuard from "@/components/BannedGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${kanit.className}${inter.className}  text-white selection:bg-purple-500 selection:text-white`}
       >
         <ToastProvider>
+        <BannedGuard />
         {children}
         </ToastProvider>
       </body>

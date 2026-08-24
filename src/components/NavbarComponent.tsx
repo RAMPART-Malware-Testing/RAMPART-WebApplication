@@ -32,6 +32,9 @@ export default function NavbarComponent() {
         { name: 'Scan Files', href: '/scan', icon: '' },
         { name: 'All Reports', href: '/reports', icon: '' },
         { name: 'My Reports', href: '/profile?m=report', icon: '' },
+        ...(user?.role === 'admin' || user?.role === 'master'
+            ? [{ name: 'จัดการระบบ', href: '/admin', icon: '' }]
+            : []),
     ];
 
     const avatarUrl = resolveAvatarUrl(user?.avatar_url);

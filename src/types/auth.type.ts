@@ -7,7 +7,7 @@ interface RampartUser {
     username: string
     email: string
     avatar_url: string | null
-    role: "user" | "admin" | string
+    role: "user" | "admin" | "master"
     status: string
     created_at: string | null
 }
