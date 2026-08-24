@@ -3,6 +3,13 @@ import { cookies } from 'next/headers'
 import { ProfileService } from '@/services/profile.service'
 import { jwtService } from '@/services/jwt.service'
 
+// Mirrors the backend's allowlist (schemas/profile.py) so obviously-invalid
+// usernames fail fast here too, instead of relying solely on the backend's
+// 422 response. Not a substitute for the backend check - just avoids a
+// round-trip for the common case and keeps this proxy from being a looser
+// gate than the service it forwards to.
+const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,50}$/
+
 async function requireSession() {
   const cookie = await cookies()
   const token = cookie.get('access_token')
@@ -44,7 +51,17 @@ export async function PATCH(request: NextRequest) {
   if (!username || typeof username !== 'string') {
     return NextResponse.json({ success: false, message: 'username is required' }, { status: 400 })
   }
-  const res = await ProfileService.updateUsername(session.accessToken, username)
+  const trimmed = username.trim()
+  if (!USERNAME_RE.test(trimmed)) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Username must be 3-50 characters and may only contain letters, numbers, '.', '_' and '-'",
+      },
+      { status: 400 },
+    )
+  }
+  const res = await ProfileService.updateUsername(session.accessToken, trimmed)
   const response = NextResponse.json(res, { status: res.success ? 200 : 400 })
   if (res.success && res.data) {
     refreshSessionCookie(response, session.accessToken, res.data as RampartUser, session.remainingSeconds)

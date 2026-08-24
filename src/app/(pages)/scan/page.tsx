@@ -6,15 +6,63 @@ import axios, { AxiosError } from 'axios'
 import NavbarComponent from '@/components/NavbarComponent'
 import Image from "next/image";
 import HistoryFileComponent from '@/components/HistoryFileComponent'
+import { sha256Hex } from '@/lib/file-hash'
+import { translateToolNote } from '@/lib/tool-notes'
 
 interface UploadedFile {
   name: string
   size: number
-  status: 'uploading' | 'analyzing' | 'completed' | 'failed'
+  status: 'hashing' | 'uploading' | 'analyzing' | 'completed' | 'failed'
   progress: number
   privacy: boolean
   taskId?: string
   error?: string
+  /** True when this result came from a prior identical-content analysis
+   * (matched by client-side SHA-256 before any bytes were uploaded), so
+   * the UI can say "already analyzed" instead of "uploading". */
+  deduplicated?: boolean
+  /** Live per-tool stage while status === 'analyzing'. */
+  progressDetail?: AnalysisProgress | null
+  /** Set once status === 'completed', if any of virustotal/mobsf/cape
+   * were force-skipped due to errors/rate-limiting during this run. */
+  toolNotes?: ToolNotes | null
+}
+
+const STAGE_LABELS: Record<string, string> = {
+  worker: 'กำลังเริ่มกระบวนการวิเคราะห์',
+  virustotal: 'กำลังตรวจสอบกับ VirusTotal',
+  sandboxes: 'กำลังวิเคราะห์เชิงลึกด้วย MobSF และ CAPE Sandbox',
+  rampart_ai: 'กำลังจำแนกด้วย RAMPART AI',
+  gemini: 'กำลังสรุปผลด้วย Gemini AI',
+  complete: 'วิเคราะห์เสร็จสิ้น',
+  failed: 'การวิเคราะห์ล้มเหลว',
+}
+
+const TOOL_LABELS: { key: 'virustotal' | 'mobsf' | 'cape' | 'rampart_ai' | 'gemini'; label: string }[] = [
+  { key: 'virustotal', label: 'VirusTotal' },
+  { key: 'mobsf', label: 'MobSF' },
+  { key: 'cape', label: 'CAPE Sandbox' },
+  { key: 'rampart_ai', label: 'RAMPART AI' },
+  { key: 'gemini', label: 'Gemini AI' },
+]
+
+function toolStatusMeta(status: boolean | string | undefined | null, note?: string | null) {
+  if (status === true || status === 'success') {
+    return { label: 'เสร็จสิ้น', color: 'text-green-400', dot: 'bg-green-400', title: undefined as string | undefined }
+  }
+  if (status === 'skipped') {
+    if (note) {
+      return { label: 'ข้าม (มีปัญหา)', color: 'text-amber-400', dot: 'bg-amber-400', title: translateToolNote(note) }
+    }
+    return { label: 'ข้าม (ไม่รองรับ)', color: 'text-gray-400', dot: 'bg-gray-500', title: undefined as string | undefined }
+  }
+  if (status === 'pending' || status === 'processing' || status === 'waiting') {
+    return { label: 'กำลังดำเนินการ', color: 'text-yellow-400', dot: 'bg-yellow-400 animate-pulse', title: undefined as string | undefined }
+  }
+  if (status === 'failed') {
+    return { label: 'ล้มเหลว', color: 'text-red-400', dot: 'bg-red-400', title: undefined as string | undefined }
+  }
+  return { label: 'รอคิว', color: 'text-gray-500', dot: 'bg-gray-600', title: undefined as string | undefined }
 }
 
 interface GenerateTokenResponse {
@@ -34,6 +82,10 @@ interface ReportResponse {
   task_id: string
   status: 'processing' | 'success' | 'failed'
   message: string
+  progress?: AnalysisProgress
+  /** Present once status is 'success'/'failed' - which of virustotal/
+   * mobsf/cape (if any) were force-skipped after repeated errors. */
+  tool_notes?: ToolNotes | null
 }
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
@@ -44,6 +96,8 @@ export default function ScanFilesPage() {
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
   const [privacy, setPrivacy] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragCounterRef = useRef(0)
   const refreshHistoryRef = useRef<(() => void) | null>(null)
 
   async function getUploadToken(): Promise<string> {
@@ -57,9 +111,56 @@ export default function ScanFilesPage() {
   }
 
   async function uploadFile(selectedFile: File) {
+    // Hash the file locally first (SHA-256, Web Crypto API - no bytes sent
+    // yet) and ask the backend whether this exact content was already
+    // analyzed. On a hit, skip the upload entirely and jump straight to
+    // showing the existing/finished analysis.
+    try {
+      setFile(prev => prev ? { ...prev, status: 'hashing' } : null)
+      const sha256 = await sha256Hex(selectedFile)
+      const { data: hashCheck } = await axios.post<CheckHashResponse>('/api/check-hash', {
+        sha256,
+        file_name: selectedFile.name,
+        file_size: selectedFile.size,
+        privacy,
+      })
+
+      if (hashCheck.success && hashCheck.found && hashCheck.task_id) {
+        if (hashCheck.status === 'success') {
+          setFile(prev => prev ? {
+            ...prev,
+            status: 'completed',
+            progress: 100,
+            taskId: hashCheck.task_id,
+            deduplicated: true,
+          } : null)
+          refreshHistoryRef.current?.()
+          return
+        }
+        if (hashCheck.status !== 'failed') {
+          // Already queued/processing under someone else's upload - just
+          // attach to it and keep polling instead of re-uploading.
+          setFile(prev => prev ? {
+            ...prev,
+            status: 'analyzing',
+            progress: 100,
+            taskId: hashCheck.task_id,
+            deduplicated: true,
+          } : null)
+          pollAnalysisStatus(hashCheck.task_id)
+          return
+        }
+        // status === 'failed' -> fall through to a fresh upload below.
+      }
+    } catch {
+      // Hashing/dedup-check failures are non-fatal - fall back to a
+      // normal upload rather than blocking the user entirely.
+    }
+
     let uploadToken: string
 
     try {
+      setFile(prev => prev ? { ...prev, status: 'uploading' } : null)
       uploadToken = await getUploadToken()
     } catch (err) {
       setFile(prev => prev ? {
@@ -139,12 +240,14 @@ export default function ScanFilesPage() {
 
         if (data.status === 'success') {
           clearInterval(pollIntervalRef.current!)
-          setFile(prev => prev ? { ...prev, status: 'completed' } : null)
+          setFile(prev => prev ? { ...prev, status: 'completed', progressDetail: data.progress ?? null, toolNotes: data.tool_notes ?? null } : null)
           refreshHistoryRef.current?.()
         } else if (data.status === 'failed') {
           clearInterval(pollIntervalRef.current!)
-          setFile(prev => prev ? { ...prev, status: 'failed', error: data.message || 'การวิเคราะห์ล้มเหลว' } : null)
+          setFile(prev => prev ? { ...prev, status: 'failed', error: data.message || 'การวิเคราะห์ล้มเหลว', progressDetail: data.progress ?? null } : null)
           refreshHistoryRef.current?.()
+        } else if (data.progress) {
+          setFile(prev => prev ? { ...prev, progressDetail: data.progress ?? null } : null)
         }
 
       } catch (err) {
@@ -159,8 +262,20 @@ export default function ScanFilesPage() {
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
+    e.target.value = ''
     if (!selectedFile) return
+    processSelectedFile(selectedFile)
+  }
 
+  const isBusy = file?.status === 'hashing' || file?.status === 'uploading' || file?.status === 'analyzing'
+
+  const handleRetry = () => {
+    setFile(null)
+    setTimeout(() => fileInputRef.current?.click(), 100)
+  }
+
+  const processSelectedFile = (selectedFile: File) => {
+    if (isBusy) return
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
 
     if (selectedFile.size > 1024 * 1024 * 1024) {
@@ -168,14 +283,39 @@ export default function ScanFilesPage() {
       return
     }
 
-    setFile({ name: selectedFile.name, size: selectedFile.size, status: 'uploading', progress: 0, privacy: privacy })
-    e.target.value = ''
+    setFile({ name: selectedFile.name, size: selectedFile.size, status: 'hashing', progress: 0, privacy: privacy })
     uploadFile(selectedFile)
   }
 
-  const handleRetry = () => {
-    setFile(null)
-    setTimeout(() => fileInputRef.current?.click(), 100)
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (isBusy) return
+    dragCounterRef.current += 1
+    if (e.dataTransfer.types.includes('Files')) setIsDragging(true)
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!isBusy) e.dataTransfer.dropEffect = 'copy'
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1)
+    if (dragCounterRef.current === 0) setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current = 0
+    setIsDragging(false)
+    if (isBusy) return
+    const droppedFile = e.dataTransfer.files?.[0]
+    if (droppedFile) processSelectedFile(droppedFile)
   }
 
   return (
@@ -187,15 +327,22 @@ export default function ScanFilesPage() {
             {/* Gradient background with blur effect */}
             <div className="absolute -inset-4 bg-gradient-to-r from-blue-100/50 via-cyan-100/50 to-blue-100/50 rounded-3xl blur-2xl opacity-70"></div>
 
-            {/* Main card with outer shadow - now clickable */}
+            {/* Main card - dropzone: click OR drag-and-drop to upload */}
             <div
-              onClick={() => !(file?.status === 'uploading' || file?.status === 'analyzing') && fileInputRef.current?.click()}
+              onClick={() => !isBusy && fileInputRef.current?.click()}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
               className={`
-      relative bg-white p-8 rounded-2xl text-center border border-gray-100 
-      shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)] 
-      transition-all duration-300 cursor-pointer
-      ${file?.status === 'analyzing' ? 'opacity-70' : 'hover:shadow-[0_25px_45px_-15px_rgba(0,0,0,0.3)] hover:scale-[1.02]'}
-      ${file?.status === 'uploading' || file?.status === 'analyzing' ? 'cursor-not-allowed' : 'cursor-pointer group'}
+      relative bg-white p-8 rounded-2xl text-center border-2
+      shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)]
+      transition-all duration-300
+      ${isDragging
+                  ? 'border-blue-500 border-dashed bg-blue-50/60 scale-[1.02] shadow-[0_25px_45px_-15px_rgba(59,130,246,0.35)]'
+                  : 'border-dashed border-gray-300'}
+      ${file?.status === 'analyzing' ? 'opacity-70' : !isDragging && 'hover:border-blue-400 hover:bg-blue-50/30 hover:shadow-[0_25px_45px_-15px_rgba(0,0,0,0.3)] hover:scale-[1.02]'}
+      ${isBusy ? 'cursor-not-allowed' : 'cursor-pointer group'}
     `}
             >
               {/* Privacy Switch - Top Left */}
@@ -231,36 +378,38 @@ export default function ScanFilesPage() {
                 </div>
               </div>
 
-              {/* Click hint - shows on hover */}
-              {!(file?.status === 'uploading' || file?.status === 'analyzing') && (
-                <div className="absolute top-4 right-4 duration-300">
-                  <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    คลิกเพื่ออัปโหลด
-                  </div>
+              {/* Small brand mark - kept out of the main visual so it can't
+                  be mistaken for decoration instead of an upload control. */}
+              <div className="flex items-center justify-center gap-2 mb-6 opacity-70">
+                <div className="relative w-6 h-6 shrink-0">
+                  <Image src="/logo_none_white.png" alt="RAMPART" fill className="object-contain" priority />
                 </div>
-              )}
+                <span className="text-xs font-semibold tracking-widest text-gray-400 uppercase">RAMPART Security Scanner</span>
+              </div>
 
-              <div className="flex justify-center">
-                <div className="relative w-44 h-44 lg:w-84 lg:h-84">
-                  <Image
-                    src="/logo_none_white.png"
-                    alt="RAMPART Security"
-                    fill
-                    className="object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.1)] transition-transform duration-300 group-hover:scale-105"
-                    priority
-                  />
+              {/* Upload icon + zone state */}
+              <div className="flex justify-center mb-6">
+                <div className={`relative w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300 ${isDragging ? 'bg-blue-100 scale-110' : 'bg-blue-50 group-hover:bg-blue-100 group-hover:scale-105'
+                  }`}>
+                  {/* Upload cloud icon */}
+                  <svg
+                    className={`w-14 h-14 transition-colors duration-300 ${isDragging ? 'text-blue-600' : 'text-blue-500'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m0-9l-3.5 3.5M12 12l3.5 3.5" />
+                  </svg>
+
                   {file?.status === 'analyzing' && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm ">
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm rounded-full">
                       <div className="relative">
                         {/* Pulsing circles animation */}
                         <div className="absolute inset-0 rounded-full animate-ping bg-red-400/20"></div>
                         <div className="absolute inset-2 rounded-full animate-pulse bg-red-400/30"></div>
 
                         {/* Main spinner */}
-                        <div className="relative w-20 h-20">
+                        <div className="relative w-16 h-16">
                           <div className="absolute inset-0 rounded-full border-4 border-red-200"></div>
                           <div className="absolute inset-0 rounded-full border-4 border-red-600 border-t-transparent animate-spin"></div>
 
@@ -273,7 +422,7 @@ export default function ScanFilesPage() {
                         {/* Text bubble */}
                         <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                           <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-bounce">
-                            🔍 กำลังสแกนความปลอดภัย...
+                            🔍 {STAGE_LABELS[file.progressDetail?.stage ?? ''] ?? 'กำลังสแกนความปลอดภัย...'}
                           </div>
                         </div>
                       </div>
@@ -283,12 +432,16 @@ export default function ScanFilesPage() {
               </div>
 
               <h1 className={`
-      mb-8 text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-black bg-clip-text tracking-tight 
-      drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-all duration-300
-      ${file?.status === 'analyzing' ? 'opacity-50' : 'group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 group-hover:bg-clip-text'}
+      mb-2 text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight
+      transition-all duration-300
+      ${file?.status === 'analyzing' ? 'opacity-50' : ''}
+      ${isDragging ? 'text-blue-600' : ''}
     `}>
-                RAMPART
+                {isDragging ? 'ปล่อยไฟล์ตรงนี้เพื่ออัปโหลด' : 'ลากไฟล์มาวาง หรือคลิกเพื่ออัปโหลด'}
               </h1>
+              <p className="mb-6 text-sm text-gray-400">
+                รองรับไฟล์ทุกประเภท ขนาดไม่เกิน 1GB — ระบบจะวิเคราะห์ความปลอดภัยให้อัตโนมัติ
+              </p>
 
               {/* Privacy Mode Indicator */}
               {privacy === false && (
@@ -309,6 +462,21 @@ export default function ScanFilesPage() {
                 </div>
               )}
 
+              {!isBusy && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
+                    className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-md shadow-blue-500/20 transition-all duration-200 group-hover:shadow-lg group-hover:shadow-blue-500/30"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    เลือกไฟล์จากเครื่อง
+                  </button>
+                </div>
+              )}
+
               {/* Hidden file input */}
               <input
                 type="file"
@@ -316,13 +484,6 @@ export default function ScanFilesPage() {
                 onChange={handleFileInput}
                 className="hidden"
               />
-
-              {/* Optional: Show hint text when not uploading/analyzing */}
-              {!(file?.status === 'uploading' || file?.status === 'analyzing') && (
-                <div className="mt-4 text-sm text-gray-400 duration-300">
-                  คลิกที่ใดก็ได้เพื่อเลือกไฟล์
-                </div>
-              )}
             </div>
           </div>
 
@@ -374,7 +535,7 @@ export default function ScanFilesPage() {
                     <div className="text-white font-medium truncate group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-300 group-hover:bg-clip-text transition-all duration-300">
                       {file.name}
                     </div>
-                    <div className="text-xs text-blue-200/50 flex items-center gap-2 mt-1">
+                    <div className="text-xs text-blue-200/50 flex items-center gap-2 mt-1 flex-wrap">
                       <span>📦 {(file.size / 1024 / 1024).toFixed(2)} MB</span>
                       <span>•</span>
                       <span className={`capitalize ${file.status === 'completed' ? 'text-green-400' :
@@ -382,14 +543,28 @@ export default function ScanFilesPage() {
                           file.status === 'analyzing' ? 'text-yellow-400' :
                             'text-blue-400'
                         }`}>
-                        {file.status === 'uploading' ? '⏫ กำลังอัปโหลด' :
-                          file.status === 'analyzing' ? '🔍 กำลังวิเคราะห์' :
-                            file.status === 'completed' ? '✅ เสร็จสิ้น' :
-                              file.status === 'failed' ? '❌ ล้มเหลว' : file.status}
+                        {file.status === 'hashing' ? '🔑 กำลังตรวจสอบไฟล์ซ้ำ' :
+                          file.status === 'uploading' ? '⏫ กำลังอัปโหลด' :
+                            file.status === 'analyzing' ? '🔍 กำลังวิเคราะห์' :
+                              file.status === 'completed' ? '✅ เสร็จสิ้น' :
+                                file.status === 'failed' ? '❌ ล้มเหลว' : file.status}
                       </span>
+                      {file.deduplicated && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                          ไฟล์นี้เคยถูกวิเคราะห์แล้ว - ใช้ผลลัพธ์เดิม
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
+
+                {/* Hashing / dedup-check progress */}
+                {file.status === 'hashing' && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin shrink-0" />
+                    <div className="text-purple-300 text-sm">กำลังตรวจสอบว่าไฟล์นี้เคยถูกวิเคราะห์แล้วหรือไม่...</div>
+                  </div>
+                )}
 
                 {/* Uploading progress */}
                 {file.status === 'uploading' && (
@@ -427,7 +602,9 @@ export default function ScanFilesPage() {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="text-yellow-400 font-medium">กำลังสแกนไฟล์</div>
+                        <div className="text-yellow-400 font-medium">
+                          {STAGE_LABELS[file.progressDetail?.stage ?? ''] ?? 'กำลังสแกนไฟล์'}
+                        </div>
                         <div className="text-xs text-yellow-400/70">กำลังตรวจสอบความปลอดภัย กรุณารอสักครู่...</div>
                       </div>
                     </div>
@@ -436,6 +613,30 @@ export default function ScanFilesPage() {
                     <div className="relative h-1 bg-gray-700 rounded overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 animate-scan"></div>
                     </div>
+
+                    {/* Per-tool stage breakdown, driven by live Redis progress
+                        published from the Celery task (see /api/task_id). */}
+                    {file.progressDetail?.tools && (
+                      <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 pt-1">
+                        {TOOL_LABELS.map(({ key, label }) => {
+                          const toolState = file.progressDetail?.tools?.[key]
+                          const meta = toolStatusMeta(toolState?.status, toolState?.note)
+                          return (
+                            <div
+                              key={key}
+                              className="flex items-center justify-between gap-2 bg-black/20 rounded-lg px-3 py-1.5 border border-white/5"
+                              title={meta.title}
+                            >
+                              <span className="flex items-center gap-2 text-xs text-white/80">
+                                <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
+                                {label}
+                              </span>
+                              <span className={`text-[10px] font-medium ${meta.color}`}>{meta.label}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
 
                     {/* Scanning dots */}
                     <div className="flex gap-1 justify-center">
@@ -464,6 +665,13 @@ export default function ScanFilesPage() {
                       </div>
                       <span className="font-medium">วิเคราะห์เสร็จสิ้น</span>
                     </div>
+
+                    {file.toolNotes && Object.values(file.toolNotes).some(Boolean) && (
+                      <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 text-xs text-amber-300">
+                        <span className="shrink-0">⚠</span>
+                        <span>บางเครื่องมือข้ามการวิเคราะห์เนื่องจากปัญหาชั่วคราว ผลลัพธ์อาจไม่ครบถ้วน</span>
+                      </div>
+                    )}
 
                     <button
                       onClick={() => router.push(`/reports/${file.taskId}`)}

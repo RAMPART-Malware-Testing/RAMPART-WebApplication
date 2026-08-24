@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import axios from 'axios'
 import NavbarComponent from '@/components/NavbarComponent'
@@ -8,6 +8,7 @@ import Image from "next/image";
 import GeometricLoader from '@/components/GeometricLoader'
 import { redirect } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { translateToolNote, TOOL_NOTE_LABELS } from '@/lib/tool-notes'
 
 interface ReportData {
   task_id: string
@@ -15,6 +16,10 @@ interface ReportData {
   type: string
   score: number
   rampart_score: number
+  virustotal_score: number | null
+  mobsf_score: number | null
+  cape_score: number | null
+  rampart_ai_score: number | null
   risk_level: string
   recommendation: string
   analysis_summary: string
@@ -27,25 +32,59 @@ interface ReportData {
   file_size: number
   file_type: string
   file_hash: string
+  /** Persisted once status is 'success'/'failed' - which of virustotal/
+   * mobsf/cape (if any) were force-skipped after repeated errors, keyed
+   * by tool name, English human-unfriendly strings. null/absent = none. */
+  tool_notes?: ToolNotes | null
 
 }
 
 interface TaskResponse {
   success: boolean
   task_id: string
-  status: 'processing' | 'success' | 'failed'
-  report: Omit<ReportData, 'task_id'>
+  status: 'processing' | 'success' | 'failed' | string
+  message?: string
+  progress?: AnalysisProgress
+  report?: Omit<ReportData, 'task_id'>
+  /** Same data as report.tool_notes, also surfaced at the top level. */
+  tool_notes?: ToolNotes | null
+}
+
+const STAGE_LABELS: Record<string, string> = {
+  worker: 'กำลังเริ่มกระบวนการวิเคราะห์',
+  virustotal: 'กำลังตรวจสอบกับ VirusTotal',
+  sandboxes: 'กำลังวิเคราะห์เชิงลึกด้วย MobSF และ CAPE Sandbox',
+  rampart_ai: 'กำลังจำแนกด้วย RAMPART AI',
+  gemini: 'กำลังสรุปผลด้วย Gemini AI',
+  complete: 'วิเคราะห์เสร็จสิ้น',
+  failed: 'การวิเคราะห์ล้มเหลว',
 }
 
 
+
+/** Tool identifiers as recognized by the raw-report download/report_target
+ * API (backend schemas.analy.ALLOWED_REPORT_TOOLS) - not the same key
+ * shape used by the live progress stream (which uses "rampart_ai"). */
+const DOWNLOADABLE_TOOLS: { key: string; label: string; imagePath: string }[] = [
+  { key: 'virustotal', label: 'VirusTotal', imagePath: '/virustotal_logo.png' },
+  { key: 'mobsf', label: 'MobSF', imagePath: '/mobsf_logo.png' },
+  { key: 'cape', label: 'CAPE Sandbox', imagePath: '/cape_logo.png' },
+  { key: 'rampartai', label: 'RAMPART AI', imagePath: '/default_logo.png' },
+]
 
 export default function ReportDetailPage() {
   const params = useParams()
   const [report, setReport] = useState<ReportData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [status, setStatus] = useState<string | null>(null)
+  const [progress, setProgress] = useState<AnalysisProgress | null>(null)
+  const [notFound, setNotFound] = useState(false)
+  const [failedInfo, setFailedInfo] = useState<{ message: string; toolNotes: ToolNotes | null } | null>(null)
   const [downloadingTool, setDownloadingTool] = useState<string | null>(null)
   const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
   const router = useRouter()
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const handleDownload = async (tool: string, md5: string) => {
     if (downloadingTool) return
     try {
@@ -81,28 +120,173 @@ export default function ReportDetailPage() {
   }
 
   useEffect(() => {
-    async function fetchReport() {
+    const taskId = params.id
+    if (!taskId) return
+
+    let cancelled = false
+    let retryCount = 0
+    const MAX_RETRIES = 3
+
+    async function fetchOnce() {
       try {
-        const { data } = await axios.get<TaskResponse>(`/api/task_id/${params.id}`, { timeout: 10000 })
+        const { data } = await axios.get<TaskResponse>(`/api/task_id/${taskId}`, { timeout: 10000 })
+        if (cancelled) return
+        retryCount = 0
+
         if (!data.success) {
-          window.location.href = '/dashboard'
+          setNotFound(true)
+          if (pollRef.current) clearInterval(pollRef.current)
+          return
         }
-        if (data.success && data.status === 'success') {
+
+        setStatus(data.status)
+
+        if (data.status === 'success' && data.report) {
           setReport({ task_id: data.task_id, ...data.report })
+          if (pollRef.current) clearInterval(pollRef.current)
+        } else if (data.status === 'failed') {
+          if (pollRef.current) clearInterval(pollRef.current)
+          setProgress(data.progress ?? null)
+          setFailedInfo({
+            message: data.message || 'การวิเคราะห์ล้มเหลว',
+            toolNotes: data.tool_notes ?? null,
+          })
+        } else {
+          // Still processing - keep whatever progress detail the backend
+          // published for this stage so the UI can show it live instead
+          // of a bare "not found" screen.
+          setProgress(data.progress ?? null)
         }
       } catch {
-        setReport(null)
+        if (++retryCount >= MAX_RETRIES) {
+          setNotFound(true)
+          if (pollRef.current) clearInterval(pollRef.current)
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
-  
-    if (params.id) fetchReport()
+
+    fetchOnce()
+    pollRef.current = setInterval(fetchOnce, 5000)
+
+    return () => {
+      cancelled = true
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
   }, [params.id])
 
   if (isLoading) {
     return (
       <GeometricLoader />
+    )
+  }
+
+  if (!report && !notFound && status && status !== 'failed') {
+    return (
+      <div className="min-h-screen bg-slate-900 p-6">
+        <NavbarComponent />
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-4 text-white px-4">
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 rounded-full border-4 border-cyan-500/20"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-cyan-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-blue-200/70 text-center">
+            {STAGE_LABELS[progress?.stage ?? ''] ?? 'กำลังวิเคราะห์ไฟล์...'}
+          </p>
+          {progress?.tools && (
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 w-full max-w-sm">
+              {[
+                { key: 'virustotal', label: 'VirusTotal' },
+                { key: 'mobsf', label: 'MobSF' },
+                { key: 'cape', label: 'CAPE Sandbox' },
+                { key: 'rampart_ai', label: 'RAMPART AI' },
+                { key: 'gemini', label: 'Gemini AI' },
+              ].map(({ key, label }) => {
+                const toolState = progress.tools?.[key as keyof NonNullable<typeof progress.tools>]
+                const st = toolState?.status
+                const done = st === 'success' || (st as unknown) === true
+                const skipped = st === 'skipped'
+                const skippedWithNote = skipped && !!toolState?.note
+                const running = st === 'pending' || st === 'processing' || st === 'waiting'
+                return (
+                  <div key={key} className="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-1.5 border border-white/10">
+                    <span className="flex items-center gap-2 text-xs text-white/80">
+                      <span className={`w-1.5 h-1.5 rounded-full ${done ? 'bg-green-400' : skippedWithNote ? 'bg-amber-400' : skipped ? 'bg-gray-500' : running ? 'bg-yellow-400 animate-pulse' : 'bg-gray-600'}`} />
+                      {label}
+                      {skippedWithNote && (
+                        <span
+                          className="text-amber-400"
+                          title={translateToolNote(toolState!.note!)}
+                        >
+                          ⚠
+                        </span>
+                      )}
+                    </span>
+                    <span className={`text-[10px] font-medium ${done ? 'text-green-400' : skippedWithNote ? 'text-amber-400' : skipped ? 'text-gray-400' : running ? 'text-yellow-400' : 'text-gray-500'}`}>
+                      {done ? 'เสร็จสิ้น' : skippedWithNote ? 'ข้าม (มีปัญหา)' : skipped ? 'ข้าม' : running ? 'กำลังทำงาน' : 'รอคิว'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (failedInfo) {
+    const toolNoteEntries = Object.entries(failedInfo.toolNotes ?? {}).filter(([, note]) => !!note)
+    return (
+      <div className="min-h-screen bg-slate-900 p-6">
+        <NavbarComponent />
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-4 text-white px-4">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+
+          <h1 className="text-xl font-semibold text-red-400">การวิเคราะห์ไม่สำเร็จ</h1>
+          <p className="text-blue-200/60 text-center max-w-md">
+            ไม่สามารถวิเคราะห์ไฟล์นี้ได้สำเร็จ กรุณาลองอัปโหลดใหม่อีกครั้ง
+          </p>
+
+          {progress?.stage === 'failed' && failedInfo.message && (
+            <p className="text-[10px] text-gray-500 font-mono bg-white/5 border border-white/10 rounded-lg px-3 py-2 max-w-md break-all text-center">
+              {failedInfo.message}
+            </p>
+          )}
+
+          {toolNoteEntries.length > 0 && (
+            <div className="w-full max-w-sm bg-white/5 border border-amber-500/20 rounded-xl p-4 space-y-2">
+              <p className="text-xs text-amber-400 font-medium">เครื่องมือที่มีปัญหา</p>
+              <ul className="space-y-1.5">
+                {toolNoteEntries.map(([tool, note]) => (
+                  <li key={tool} className="text-xs text-blue-200/70 flex items-start gap-2">
+                    <span className="text-amber-400 shrink-0">⚠</span>
+                    <span>
+                      <span className="text-white/80 font-medium">{TOOL_NOTE_LABELS[tool] ?? tool}:</span>{' '}
+                      {translateToolNote(note as string)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <button
+            onClick={() => router.push('/scan')}
+            className="mt-2 inline-flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 text-sm font-medium px-5 py-2.5 rounded-full transition-all duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      </div>
     )
   }
 
@@ -254,55 +438,54 @@ export default function ReportDetailPage() {
               </div>
               <p className="text-[10px] sm:text-xs text-blue-200/40 break-all mt-4">MD5: {report.md5}</p>
             </div>
-            {/* Tools & Download */}
-            {/* <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
-              <h2 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">ดาวน์โหลดรายงาน</h2>
+            {/* Raw report download - full VT/MobSF/CAPE/RampartAI JSON, for
+                research/offline analysis. */}
+            <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
+              <h2 className="text-white font-semibold mb-1 sm:mb-2 text-sm sm:text-base">ดาวน์โหลดรายงานดิบ</h2>
+              <p className="text-blue-200/40 text-xs mb-3 sm:mb-4">
+                ข้อมูลดิบแบบเต็มจากแต่ละเครื่องมือ สำหรับนำไปวิเคราะห์หรือวิจัยต่อ
+              </p>
               <div className="flex flex-row gap-3 sm:gap-4 flex-wrap justify-center sm:justify-start">
-                {tools.map(tool => {
-                  const isDownloading = downloadingTool === tool
-                  const toolLabels: Record<string, { label: string; imagePath: string }> = {
-                    mobsf: { label: 'MobSF', imagePath: '/mobsf_logo.png' },
-                    virustotal: { label: 'VirusTotal', imagePath: '/virustotal_logo.png' },
-                    cape: { label: 'CAPE Sandbox', imagePath: '/cape_logo.png' },
-                  }
-                  const meta = toolLabels[tool] ?? { label: tool, imagePath: '/default_logo.png' }
-
-                  return (
-                    <button
-                      key={tool}
-                      disabled={!!downloadingTool}
-                      onClick={() => handleDownload(tool, report.md5)}
-                      className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 rounded-xl border transition text-sm sm:text-base
-                  ${isDownloading
-                          ? 'bg-cyan-500/20 border-cyan-500/40 cursor-not-allowed'
-                          : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-pointer'
-                        }`}
-                    >
-                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 ">
-                        <div className="relative w-5 h-5 sm:w-20 sm:h-20 shrink-0 bg-white/10 rounded-lg">
-                          <Image
-                            src={meta.imagePath}
-                            alt={meta.label}
-                            fill
-                            className="object-contain p-1"
-                          />
-                        </div>                                                                                                                          
-                        <span className="text-white font-medium truncate">{meta.label}</span>
-                      </div>
-                      {isDownloading ? (
-                        <div className="flex items-center gap-1 sm:gap-2 text-cyan-400 shrink-0">
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                          <span className="text-xs sm:text-sm">โหลด...</span>
+                {DOWNLOADABLE_TOOLS
+                  .filter(({ key }) => tools.includes(key === 'rampartai' ? 'rampart_ai' : key))
+                  .map(({ key, label, imagePath }) => {
+                    const isDownloading = downloadingTool === key
+                    return (
+                      <button
+                        key={key}
+                        disabled={!!downloadingTool}
+                        onClick={() => handleDownload(key, report.md5)}
+                        className={`flex items-center justify-between gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl border transition text-sm sm:text-base
+                    ${isDownloading
+                            ? 'bg-cyan-500/20 border-cyan-500/40 cursor-not-allowed'
+                            : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-pointer'
+                          }`}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                          <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 bg-white/10 rounded-lg">
+                            <Image
+                              src={imagePath}
+                              alt={label}
+                              fill
+                              className="object-contain p-1"
+                            />
+                          </div>
+                          <span className="text-white font-medium truncate">{label}</span>
                         </div>
-                      ) : (
-                        <span className="text-cyan-400 text-xs sm:text-sm shrink-0 pl-10">↓ JSON</span>
-                      )}
-                    </button>
-                  )
-                })}
+                        {isDownloading ? (
+                          <div className="flex items-center gap-1 sm:gap-2 text-cyan-400 shrink-0">
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-xs sm:text-sm">โหลด...</span>
+                          </div>
+                        ) : (
+                          <span className="text-cyan-400 text-xs sm:text-sm shrink-0">↓ JSON</span>
+                        )}
+                      </button>
+                    )
+                  })}
               </div>
               <p className="text-[10px] sm:text-xs text-blue-200/40 break-all mt-4">MD5: {report.md5}</p>
-            </div> */}
+            </div>
 
             {/* Gemini & VirusTotal */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50 shadow-xl">
@@ -344,7 +527,7 @@ export default function ReportDetailPage() {
                   {/* Security Score Card */}
                   <div className="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-gray-700/50">
                     <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 mb-4">
-                      <p className="text-gray-400 text-xs sm:text-sm">คะแนนความปลอดภัย</p>
+                      <p className="text-gray-400 text-xs sm:text-sm">คะแนนความอันตราย</p>
                       <div className="flex items-baseline gap-1">
                         <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">{report.score}</span>
                         <span className="text-gray-400 text-xs sm:text-sm">/100</span>
@@ -355,6 +538,26 @@ export default function ReportDetailPage() {
                         className={`h-3 sm:h-4 rounded-full transition-all ${c.bar}`}
                         style={{ width: `${report.score}%` }}
                       />
+                    </div>
+
+                    {/* Per-tool score breakdown - each engine contributes
+                        its own 0-100 signal; Gemini's synthesized score
+                        above is the final verdict, not a mechanical average
+                        of these. */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                      {[
+                        { label: 'VirusTotal', value: report.virustotal_score },
+                        { label: 'MobSF', value: report.mobsf_score },
+                        { label: 'CAPE', value: report.cape_score },
+                        { label: 'RAMPART AI', value: report.rampart_ai_score },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="bg-gray-900/50 rounded-lg px-2 py-2 text-center border border-gray-700/40">
+                          <p className="text-[10px] sm:text-xs text-gray-500 truncate">{label}</p>
+                          <p className="text-sm sm:text-base font-bold text-white">
+                            {value === null || value === undefined ? '-' : `${value}`}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   </div>
 

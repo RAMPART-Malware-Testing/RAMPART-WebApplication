@@ -54,6 +54,17 @@ class AnalysisService {
       return ERROR_RESPONSE;
     }
   }
+
+  async checkHash(token: string, sha256: string, fileName: string, fileSize: number, privacy: boolean) {
+    try {
+      const res = await this.http.post(`${this.uri}/api/analy/v1/check-hash`, {
+        token, sha256, file_name: fileName, file_size: fileSize, privacy,
+      });
+      return res.data;
+    } catch {
+      return ERROR_RESPONSE;
+    }
+  }
 }
 
 export const AnalyService = new AnalysisService();

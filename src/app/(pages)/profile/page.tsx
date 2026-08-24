@@ -10,6 +10,7 @@ import GeometricLoader from '@/components/GeometricLoader'
 import HistoryFileComponent from '@/components/HistoryFileComponent'
 import { useToast } from '@/components/ui/ToastProvider'
 import { resolveAvatarUrl, userInitials } from '@/lib/avatar'
+import { MAX_AVATAR_SIZE_BYTES, sniffImageMimeType } from '@/lib/image-validation'
 
 function ProfileContent() {
   const searchParams = useSearchParams()
@@ -56,8 +57,8 @@ function ProfileContent() {
 
   const handleSaveUsername = async () => {
     const trimmed = usernameValue.trim()
-    if (trimmed.length < 3) {
-      notify.warning('ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร')
+    if (!/^[a-zA-Z0-9_.-]{3,50}$/.test(trimmed)) {
+      notify.warning('ชื่อผู้ใช้ต้องมี 3-50 ตัวอักษร และใช้ได้เฉพาะ a-z, 0-9, "." "_" "-" เท่านั้น')
       return
     }
     setSavingUsername(true)
@@ -82,8 +83,18 @@ function ProfileContent() {
     e.target.value = ''
     if (!file) return
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_AVATAR_SIZE_BYTES) {
       notify.warning('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 5MB')
+      return
+    }
+
+    // Fast-fail on the actual file bytes, not just the browser-reported
+    // `file.type` (which is trivially spoofable). This is only a
+    // convenience check - the Next.js proxy route and the backend both
+    // re-validate independently, since a client can never be trusted.
+    const header = new Uint8Array(await file.slice(0, 12).arrayBuffer())
+    if (!sniffImageMimeType(header)) {
+      notify.warning('ไฟล์ที่เลือกไม่ใช่รูปภาพที่รองรับ (PNG, JPEG, WEBP)')
       return
     }
 
@@ -269,6 +280,8 @@ function ProfileContent() {
                                   autoFocus
                                   minLength={3}
                                   maxLength={50}
+                                  pattern="[a-zA-Z0-9_.-]{3,50}"
+                                  title="3-50 ตัวอักษร: a-z, A-Z, 0-9, '.', '_', '-' เท่านั้น"
                                 />
                                 <button
                                   onClick={handleSaveUsername}
