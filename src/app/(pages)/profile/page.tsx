@@ -11,6 +11,7 @@ import HistoryFileComponent from '@/components/HistoryFileComponent'
 import { useToast } from '@/components/ui/ToastProvider'
 import { resolveAvatarUrl, userInitials } from '@/lib/avatar'
 import { MAX_AVATAR_SIZE_BYTES, sniffImageMimeType } from '@/lib/image-validation'
+import { roleLabel } from '@/lib/roles'
 
 function ProfileContent() {
   const searchParams = useSearchParams()
@@ -192,7 +193,7 @@ function ProfileContent() {
                 <p className="text-slate-400 text-sm mt-1">{user?.email}</p>
                 <div className="flex items-center gap-2 mt-3">
                   <span className="px-3 py-1 bg-cyan-500/10 text-cyan-400 rounded-full text-xs font-medium border border-cyan-500/20">
-                    {user?.role === 'admin' ? 'ผู้ดูแลระบบ' : 'สมาชิกทั่วไป'}
+                    {roleLabel(user?.role)}
                   </span>
                 </div>
               </div>
@@ -332,7 +333,7 @@ function ProfileContent() {
                           <label className="block text-slate-400 text-sm mb-2">บทบาท</label>
                           <input
                             type="text"
-                            value={user?.role === 'admin' ? 'ผู้ดูแลระบบ' : 'สมาชิกทั่วไป'}
+                            value={roleLabel(user?.role)}
                             readOnly
                             className="w-full px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white cursor-default"
                           />

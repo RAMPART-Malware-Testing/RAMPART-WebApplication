@@ -6,12 +6,7 @@ import axios from 'axios'
 import Swal from 'sweetalert2'
 import NavbarComponent from '@/components/NavbarComponent'
 import { useToast } from '@/components/ui/ToastProvider'
-
-const ROLE_LABELS: Record<string, string> = {
-  user: 'ผู้ใช้ทั่วไป',
-  admin: 'ผู้ดูแลระบบ',
-  master: 'ผู้คุมสูงสุด',
-}
+import { ROLE_LABELS } from '@/lib/roles'
 
 const ROLE_BADGE: Record<string, string> = {
   user: 'text-blue-300 bg-blue-500/10 border border-blue-500/20',

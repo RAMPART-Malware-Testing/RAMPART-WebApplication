@@ -6,12 +6,7 @@ import Link from 'next/link'
 import axios from 'axios'
 import NavbarComponent from '@/components/NavbarComponent'
 import GeometricLoader from '@/components/GeometricLoader'
-
-const ROLE_LABELS: Record<string, string> = {
-  user: 'ผู้ใช้ทั่วไป',
-  admin: 'ผู้ดูแลระบบ',
-  master: 'ผู้คุมสูงสุด',
-}
+import { ROLE_LABELS } from '@/lib/roles'
 
 function formatSize(bytes: number | null) {
   if (!bytes) return '-'
