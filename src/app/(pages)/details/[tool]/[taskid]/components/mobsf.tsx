@@ -1,10 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Component, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import axios from "axios";
 import GeometricLoader from "@/components/GeometricLoader";
 import NavbarComponent from "@/components/NavbarComponent";
-import ServerMap from "./servermap";
+
+// react-leaflet touches `window`/`document` at import time and crashes during
+// server-side rendering — only load it in the browser.
+const ServerMap = dynamic(() => import("./servermap"), { ssr: false });
+
+// If the map library fails for any reason it must never take down the whole
+// report page — show a placeholder instead.
+class MapBoundary extends Component<{ children?: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
+          แผนที่ไม่สามารถแสดงได้ในขณะนี้ (ข้อมูลตำแหน่งยังมีครบ)
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 interface Datareport {
     success: boolean;
@@ -195,19 +218,30 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                         <div className="flex items-center gap-3">
                             <div>
                                 <h2 className="text-lg font-semibold">Signature Certificate</h2>
-                                <pre style={{ whiteSpace: "pre-line" }} className="text-sm text-gray-500">
-                                    {report.certificate_analysis.certificate_info}
-                                </pre>
+                                {report.certificate_analysis?.certificate_info ? (
+                                    <pre style={{ whiteSpace: "pre-line" }} className="text-sm text-gray-500">
+                                        {report.certificate_analysis.certificate_info}
+                                    </pre>
+                                ) : (
+                                    <p className="text-sm text-gray-500">ไม่มีข้อมูลใบรับรอง</p>
+                                )}
 
                             </div>
                         </div>
 
                     </div>
 
-                    {/* Word Map */}
-
+                    {/* World Map */}
                     <div className="w-full h-[500px] mb-50">
-                        <ServerMap domains={report.domains} />
+                        {report.domains && Object.keys(report.domains).length > 0 ? (
+                            <MapBoundary>
+                                <ServerMap domains={report.domains} />
+                            </MapBoundary>
+                        ) : (
+                            <div className="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
+                                ไม่มีข้อมูลตำแหน่ง server
+                            </div>
+                        )}
                     </div>
 
 
@@ -265,7 +299,8 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {Object.entries(report.domains).map(([domain, info], idx) => (
+                                        {report.domains && Object.keys(report.domains).length > 0 ? (
+                                            (Object.entries(report.domains) as [string, { bad: string; geolocation: { ip: string; country_long: string; region: string; city: string; latitude: number; longitude: number }; ofac: boolean }][]).map(([domain, info], idx) => (
                                             <tr key={idx}>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                                                     {domain}
@@ -274,19 +309,19 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                                                     {info.bad}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {info.geolocation.ip}
+                                                    {info.geolocation?.ip || "-"}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {info.geolocation.country_long}
+                                                    {info.geolocation?.country_long || "-"}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {info.geolocation.region}, {info.geolocation.city}
+                                                    {info.geolocation?.region}, {info.geolocation?.city}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     {info.ofac ? "Yes" : "No"}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {info.geolocation.latitude && info.geolocation.longitude ? (
+                                                    {info.geolocation?.latitude && info.geolocation?.longitude ? (
                                                         <a
                                                             href={`https://www.google.com/maps/search/?api=1&query=${info.geolocation.latitude},${info.geolocation.longitude}`}
                                                             target="_blank"
@@ -300,7 +335,10 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                                                     )}
                                                 </td>
                                             </tr>
-                                        ))}
+                                            ))
+                                        ) : (
+                                            <tr><td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">ไม่มีข้อมูล domain</td></tr>
+                                        )}
                                     </tbody>
                                 </table>
 

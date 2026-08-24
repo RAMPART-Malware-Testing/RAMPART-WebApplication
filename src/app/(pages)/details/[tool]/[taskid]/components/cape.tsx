@@ -47,12 +47,22 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
   const statistics = report?.statistics || {};
   const cape = report?.CAPE || {};
 
-  // ตรวจสอบว่ามี Error หรือไม่
-  const hasError = debug?.errors?.length > 0 || debug?.log?.includes("ERROR");
+  // ตรวจสอบว่าเป็น Failure จริงหรือไม่ — อย่าตัดสินจากบรรทัด log ที่มี "ERROR"
+  // (เช่น `No module named 'PIL'` ของ screenshot ซึ่งไม่ใช่ความล้มเหลว)
   const errorLog = debug?.log || "";
-  const errorMessage = debug?.errors?.[0] || (errorLog.includes("CuckooPackageError") ? 
-    "Analysis failed: Invalid package type. APK file was run with 'jar' package but Java is not available." : 
-    "Analysis failed with unknown error");
+  const realErrors = (debug?.errors || []).filter(Boolean);
+  const hasPackageError = /CuckooPackageError|Invalid package type/i.test(errorLog);
+  const hasRealFailure =
+    realErrors.length > 0 ||
+    /failed_analysis|analysis failed|analyzer.*(failed|error)/i.test(errorLog);
+  const hasError = hasPackageError || hasRealFailure;
+  const errorMessage = realErrors[0]
+    ? String(realErrors[0])
+    : hasPackageError
+      ? "Analysis failed: Invalid package type. APK file was run with 'jar' package but Java is not available."
+      : hasRealFailure
+        ? "Analysis failed with unknown error"
+        : "";
 
   return (
     <>
@@ -84,7 +94,7 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
             <div><span className="text-gray-400">Task ID:</span> <span className="font-mono text-xs">{reportData.task_id?.slice(0, 8)}...</span></div>
             <div><span className="text-gray-400">Started:</span> {info?.started || "N/A"}</div>
             <div><span className="text-gray-400">Duration:</span> {info?.duration || 0} seconds</div>
-            <div><span className="text-gray-400">Package Used:</span> <span className="text-yellow-400">{info?.package || "jar"} {hasError && "(❌ Incorrect)"}</span></div>
+            <div><span className="text-gray-400">Package Used:</span> <span className="text-yellow-400">{info?.package || "jar"} {hasPackageError && "(❌ Incorrect)"}</span></div>
             <div><span className="text-gray-400">Machine:</span> {info?.machine?.name || "N/A"}</div>
             <div><span className="text-gray-400">Score:</span> <span className="text-green-400">{report?.malscore || 0}</span></div>
             <div><span className="text-gray-400">Status:</span> <span className={hasError ? "text-red-400" : "text-green-400"}>{hasError ? "Failed" : "Success"}</span></div>

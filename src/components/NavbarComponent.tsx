@@ -1,142 +1,216 @@
-'use client';
+"use client"
 
-import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Image from "next/image"
+import Link from "next/link"
+import { useState, useEffect } from "react"
+import { useRouter, usePathname } from "next/navigation"
+import axios from "axios"
+import {
+  LayoutDashboard,
+  Scan,
+  FileText,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown,
+  Menu,
+  X,
+} from "lucide-react"
+
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
+
+const menuItems = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Scan Files", href: "/scan", icon: Scan },
+  { name: "All Reports", href: "/reports", icon: FileText },
+  { name: "My Reports", href: "/profile?m=report", icon: User },
+]
 
 export default function NavbarComponent() {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const router = useRouter();
+  const router = useRouter()
+  const pathname = usePathname()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [profile, setProfile] = useState<{ username?: string; email?: string; avatar?: string } | null>(null)
 
-    const handleLogout = () => {
-        router.push('/');
-    };
+  useEffect(() => {
+    let active = true
+    axios.get("/api/profile")
+      .then(({ data }) => {
+        if (!active || !data?.success || !data?.data) return
+        setProfile({
+          username: data.data.username,
+          email: data.data.email,
+          avatar: data.data.avatar_url,
+        })
+      })
+      .catch(() => { /* keep defaults */ })
+    return () => { active = false }
+  }, [])
 
-    const menuItems = [
-        { name: 'Dashboard', href: '/dashboard', icon: '' },
-        { name: 'Scan Files', href: '/scan', icon: '' },
-        { name: 'All Reports', href: '/reports', icon: '' },
-        { name: 'My Reports', href: '/profile?m=report', icon: '' },
-    ];
+  const displayName = profile?.username || "Security Analyst"
+  const displayEmail = profile?.email || "admin@rampart.security"
+  const initials = (displayName.trim().charAt(0) || "U").toUpperCase()
+  const avatarSrc = profile?.avatar ? `${SERVER_URL}${profile.avatar}` : null
 
-    return (
-        <nav className="bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-2xl mb-4 sticky top-0 z-50 text-xs">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center px-2 py-4">
-                {/* Logo & Title */}
-                <div className="flex items-center justify-between w-full lg:w-auto mb-4 lg:mb-0">
-                    <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 relative group">
-                            <Image
-                                src="/logo_bg_white.png"
-                                alt="RAMPART"
-                                fill
-                                className="object-contain group-hover:scale-110 transition-transform duration-300"
-                            />
-                        </div>
-                        <div>
-                            <h1 className="font-black bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent">
-                                RAMPART
-                            </h1>
-                            <p className="text-blue-200/60 text-sm">
-                                แพลตฟอร์มตรวจสอบมัลแวร์จากระยะไกลด้วยการทดสอบการทำงานแบบอัตโนมัติ
-                            </p>
-                        </div>
-                    </div>
+  const handleLogout = () => {
+    router.push("/logout")
+  }
 
-                    {/* Mobile Menu Button */}
-                    <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="lg:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {isMenuOpen ? (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            ) : (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            )}
-                        </svg>
-                    </button>
-                </div>
+  return (
+    <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#050510]/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#050510]/60">
+      {/* Subtle top glow */}
+      <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
 
-                {/* Desktop Menu & User Section */}
-                <div className={`${isMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row items-start lg:items-center space-y-4 lg:space-y-0 lg:space-x-6 w-full lg:w-auto`}>
-                    {/* Navigation Menu */}
-                    <div className="flex flex-col lg:flex-row lg:items-center space-y-2 lg:space-y-0 lg:space-x-2 w-full lg:w-auto">
-                        {menuItems.map((item) => (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                className="px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 flex items-center space-x-2 group"
-                            >
-                                <span className="group-hover:scale-125 transition-transform duration-200">{item.icon}</span>
-                                <span className="font-medium">{item.name}</span>
-                            </Link>
-                        ))}
-                    </div>
-
-                    {/* Status & User Profile */}
-                    <div className="flex items-center space-x-4 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-white/10">
-                        {/* System Status */}
-                        <div className="flex items-center space-x-2 bg-white/5 rounded-xl px-4 py-2 border border-white/10 hover:bg-white/10 transition-colors">
-                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
-                            <span className="text-white font-medium">ระบบพร้อมใช้งาน</span>
-                        </div>
-
-                        {/* User Profile Dropdown */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                className="flex items-center space-x-3 bg-white/5 rounded-xl px-4 py-2 border border-white/10 hover:bg-white/10 transition-all duration-200 group"
-                            >
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-lg">
-                                    SA
-                                </div>
-                                <div className="text-left hidden sm:block">
-                                    <p className="text-white font-medium text-sm">Security Analyst</p>
-                                    <p className="text-blue-200/60 text-xs">admin@rampart.security</p>
-                                </div>
-                                <svg
-                                    className={`w-4 h-4 text-white/60 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-
-                            {/* Dropdown Menu */}
-                            {isProfileOpen && (
-                                <div className="absolute right-0 mt-2 w-56 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
-                                    <div className="px-4 py-3 border-b border-white/10">
-                                        <p className="text-white font-medium">Security Analyst</p>
-                                        <p className="text-blue-200/60 text-sm">admin@rampart.security</p>
-                                    </div>
-                                    <div className="py-2">
-                                        <Link
-                                            href="/profile"
-                                            className="flex items-center space-x-3 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-                                        >
-                                            <span>👤</span>
-                                            <span>โปรไฟล์</span>
-                                        </Link>
-                                        <div className="border-t border-white/10 my-2"></div>
-                                        <Link href="/logout"
-                                            onClick={handleLogout}
-                                            className="flex items-center space-x-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors w-full text-left"
-                                        >
-                                            <span>🚪</span>
-                                            <span className="font-medium">ออกจากระบบ</span>
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="flex h-16 items-center justify-between gap-4">
+          {/* Logo */}
+          <Link href="/dashboard" className="flex items-center gap-3 shrink-0 group">
+            <div className="relative h-9 w-9 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10 group-hover:ring-blue-500/40 transition-all duration-300">
+              <Image
+                src="/logo_bg_white.png"
+                alt="RAMPART"
+                fill
+                className="object-contain p-1 group-hover:scale-110 transition-transform duration-300"
+              />
             </div>
-        </nav>
-    );
+            <div className="hidden sm:block">
+              <span className="text-lg font-black tracking-tight bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
+                RAM<span className="text-blue-400">PART</span>
+              </span>
+            </div>
+          </Link>
+
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-1">
+            {menuItems.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`relative flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "text-white bg-white/10"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+                  )}
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Right section */}
+          <div className="flex items-center gap-2">
+            {/* Status indicator */}
+            <div className="hidden lg:flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 border border-emerald-500/20">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              <span className="text-xs font-medium text-emerald-400">Online</span>
+            </div>
+
+            {/* Profile */}
+            <div className="relative">
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center gap-2.5 rounded-xl bg-white/5 px-3 py-1.5 border border-white/[0.08] hover:bg-white/10 hover:border-white/15 transition-all duration-200"
+              >
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-blue-500/20 overflow-hidden">
+                  {avatarSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <div className="hidden sm:block text-left leading-tight">
+                  <p className="text-xs font-medium text-white">{displayName}</p>
+                  <p className="text-[10px] text-slate-500">{displayEmail}</p>
+                </div>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 text-slate-500 transition-transform duration-200 ${
+                    isProfileOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isProfileOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
+                  <div className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-white/[0.08] bg-slate-900/95 backdrop-blur-2xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-4 py-3 border-b border-white/[0.06]">
+                      <p className="text-sm font-medium text-white">{displayName}</p>
+                      <p className="text-xs text-slate-500">{displayEmail}</p>
+                    </div>
+                    <div className="py-1.5">
+                      <Link
+                        href="/profile"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                      >
+                        <Settings className="h-4 w-4" />
+                        Profile Settings
+                      </Link>
+                    </div>
+                    <div className="border-t border-white/[0.06] py-1.5">
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Log Out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Mobile menu toggle */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden flex items-center justify-center h-9 w-9 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden border-t border-white/[0.06] bg-[#050510]/95 backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="mx-auto max-w-7xl px-4 py-3 space-y-1">
+            {menuItems.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "text-white bg-blue-500/10 border border-blue-500/20"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </nav>
+  )
 }

@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "leaflet/dist/leaflet.css";
 
 :root {
   --background: #ffffff;
@@ -143,38 +142,6 @@ body {
   z-index: 0;
 }
 
-.cursor-dot {
-  width: 8px;
-  height: 8px;
-  background: #a78bfa;
-  border-radius: 50%;
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  transition: transform 0.08s linear;
-  mix-blend-mode: difference;
-}
-
-.cursor-outline {
-  width: 40px;
-  height: 40px;
-  border: 2px solid rgba(167, 139, 250, 0.7);
-  border-radius: 50%;
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  transition: all 0.12s ease-out;
-  mix-blend-mode: difference;
-}
-
-@media (max-width: 768px) {
-
-  .cursor-dot,
-  .cursor-outline {
-    display: none;
-  }
-}
-
 html {
   scroll-behavior: smooth;
 }
@@ -210,6 +177,44 @@ body {
 
 .delay-1500 {
   animation-delay: 1.5s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
+}
+
+.animate-scan {
+  animation: scan 2.5s linear infinite;
 }
 
 /* Custom scrollbar */

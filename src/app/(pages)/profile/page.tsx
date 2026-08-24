@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import axios from 'axios'
 import NavbarComponent from '@/components/NavbarComponent'
 import GeometricLoader from "@/components/GeometricLoader";
+
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
 interface UserProfile {
   username: string
@@ -66,6 +69,8 @@ function ProfileContent() {
   })
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (modeParam === 'report') {
@@ -74,14 +79,6 @@ function ProfileContent() {
   }, [modeParam])
 
   useEffect(() => {
-    const mockUser: UserProfile = {
-      username: 'security_analyst',
-      email: 'analyst@rampart.security',
-      role: 'user',
-      joinDate: '2024-01-15 09:30:00',
-      lastLogin: '2024-01-20 14:25:00'
-    }
-
     const mockLoginHistory: LoginHistory[] = [
       {
         id: '1',
@@ -123,27 +120,55 @@ function ProfileContent() {
       { id: '3', changedAt: '2024-01-01 11:15:00', changedBy: 'user' }
     ]
 
-    const mockUploadHistory: UploadHistory[] = [
-      { id: '1', fileName: 'suspicious_app.apk', fileType: 'apk', timestamp: '2024-01-20 14:30:25', status: 'completed', riskScore: 8.5 },
-      { id: '2', fileName: 'system_tool.exe', fileType: 'exe', timestamp: '2024-01-20 13:15:10', status: 'analyzing' },
-      { id: '3', fileName: 'document_reader.msi', fileType: 'msi', timestamp: '2024-01-20 12:45:30', status: 'failed' },
-      { id: '4', fileName: 'backup_script.bat', fileType: 'bat', timestamp: '2024-01-20 11:20:15', status: 'completed', riskScore: 3.2 }
-    ]
-
     const mockDownloadHistory: DownloadHistory[] = [
       { id: '1', fileName: 'suspicious_app_analysis.pdf', reportType: 'PDF Report', timestamp: '2024-01-20 14:35:00', fileSize: 2457600 },
       { id: '2', fileName: 'system_tool_analysis.json', reportType: 'JSON Data', timestamp: '2024-01-20 13:20:00', fileSize: 1567800 },
       { id: '3', fileName: 'monthly_report.pdf', reportType: 'PDF Report', timestamp: '2024-01-19 10:15:00', fileSize: 3891200 }
     ]
 
-    setTimeout(() => {
-      setUser(mockUser)
+    const loadProfile = async () => {
+      try {
+        const { data } = await axios.get('/api/profile')
+        if (data?.success && data?.data) {
+          const p = data.data
+          setUser({
+            username: p.username || 'ผู้ใช้',
+            email: p.email || '',
+            role: p.role || 'user',
+            joinDate: p.created_at || '',
+            lastLogin: p.created_at || '',
+            avatar: p.avatar_url || undefined,
+          })
+        }
+      } catch {
+        setUser(null)
+      }
+
+      // ประวัติอัพโหลด — จาก API จริง (/api/analy/v1/history)
+      try {
+        const { data } = await axios.post('/api/analy/history', { page: 1, limit: 50 })
+        if (data?.success && Array.isArray(data.data)) {
+          setUploadHistory(data.data.map((it: any) => ({
+            id: it.task_id || it.aid,
+            fileName: it.file_name || '-',
+            fileType: it.file_type || 'file',
+            timestamp: it.created_at || '',
+            status: it.status === 'success' ? 'completed' as const : it.status === 'failed' ? 'failed' as const : 'analyzing' as const,
+            riskScore: it.report?.score != null ? Math.round((it.report.score / 10) * 10) / 10 : undefined,
+          })))
+        }
+      } catch {
+        setUploadHistory([])
+      }
+
       setLoginHistory(mockLoginHistory)
       setPasswordHistory(mockPasswordHistory)
-      setUploadHistory(mockUploadHistory)
       setDownloadHistory(mockDownloadHistory)
       setIsLoading(false)
-    }, 1000)
+    }
+
+    const timer = setTimeout(loadProfile, 500)
+    return () => clearTimeout(timer)
   }, [])
 
   const handlePasswordChange = (e: React.FormEvent) => {
@@ -162,12 +187,49 @@ function ProfileContent() {
     setEditValue(currentValue)
   }
 
-  const handleSaveEdit = () => {
-    if (user && editingField) {
-      setUser({ ...user, [editingField]: editValue })
+  const handleSaveEdit = async () => {
+    if (user && editingField === 'username' && editValue) {
+      try {
+        const { data } = await axios.patch('/api/profile', { username: editValue })
+        if (data?.success) {
+          setUser((prev) => prev ? { ...prev, username: data.data?.username || editValue } : prev)
+        }
+      } catch {
+        // keep the previous value on failure
+      }
     }
     setEditingField(null)
     setEditValue('')
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      alert('กรุณาเลือกไฟล์รูปภาพ (PNG/JPEG/WEBP)')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('รูปโปรไฟล์ต้องมีขนาดไม่เกิน 5MB')
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      const body = new FormData()
+      body.append('file', file)
+      const { data } = await axios.post('/api/profile/avatar', body)
+      if (data?.success && data?.data) {
+        setUser((prev) => prev ? { ...prev, avatar: data.data.avatar_url || undefined } : prev)
+      } else {
+        alert(data?.message || 'อัปโหลดรูปโปรไฟล์ไม่สำเร็จ')
+      }
+    } catch {
+      alert('อัปโหลดรูปโปรไฟล์ไม่สำเร็จ')
+    } finally {
+      setUploadingAvatar(false)
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -241,7 +303,7 @@ function ProfileContent() {
   }
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="p-6 min-h-screen bg-[#050510]">
       <NavbarComponent />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -258,8 +320,40 @@ function ProfileContent() {
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
               <div className="relative h-24 bg-gradient-to-r from-cyan-500 to-blue-600">
                 <div className="absolute -bottom-12 left-6">
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center border-4 border-slate-900 shadow-xl">
-                    <i className="fas fa-user-shield text-white text-3xl"></i>
+                  <div className="relative w-24 h-24">
+                    {user?.avatar ? (
+                      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center border-4 border-slate-900 shadow-xl overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`${SERVER_URL}${user.avatar}`}
+                          alt="avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center border-4 border-slate-900 shadow-xl">
+                        <i className="fas fa-user-shield text-white text-3xl"></i>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      title="เปลี่ยนรูปโปรไฟล์"
+                      className="absolute -bottom-0 -right-0 w-8 h-8 rounded-full bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center border-2 border-slate-900 shadow-lg transition disabled:opacity-50"
+                    >
+                      {uploadingAvatar ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <i className="fas fa-camera text-xs"></i>
+                      )}
+                    </button>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                    />
                   </div>
                 </div>
               </div>
@@ -566,7 +660,7 @@ function ProfileContent() {
                   {uploadHistory.map((upload) => (
                     <Link
                       key={upload.id}
-                      href={`/reports/${upload.id}`}
+                      href={`/scan/analysis?taskId=${upload.id}`}
                       className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300 group cursor-pointer"
                     >
                       <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">

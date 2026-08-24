@@ -108,9 +108,9 @@ export default function ReportDetailPage() {
 
   if (!report) {
     return (
-      <div className="min-h-screen bg-slate-900 p-6">
+      <div className="min-h-screen bg-[#050510] p-6">
         <NavbarComponent />
-        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-3 text-white">
+        <div className="min-h-screen bg-[#050510] flex flex-col items-center justify-center gap-3 text-white">
 
           <div className="text-4xl">🔍</div>
 
@@ -127,15 +127,15 @@ export default function ReportDetailPage() {
   }
 
   const colorKey =
-    report.risk_level.toLowerCase().includes('high') ? 'red' :
-      report.risk_level.toLowerCase().includes('medium') ? 'yellow' : 'green'
+    (report.risk_level ?? '').toLowerCase().includes('high') ? 'red' :
+      (report.risk_level ?? '').toLowerCase().includes('medium') ? 'yellow' : 'green'
 
   const c = colorMap[colorKey]
-  const tools = report.tools.split(',').map(t => t.trim()).filter(Boolean)
+  const tools = (report.tools ?? '').split(',').map(t => t.trim()).filter(Boolean)
 
   return (
     <>
-      <div className="min-h-screen bg-slate-900 p-4 sm:p-6">
+      <div className="min-h-screen bg-[#050510] p-4 sm:p-6">
         <NavbarComponent />
         {/* Main Content - Responsive Stack */}
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mt-4 sm:mt-6 justify-center">
@@ -153,7 +153,7 @@ export default function ReportDetailPage() {
                         {report.file_name}
                       </h1>
                       <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-blue-200/50">
-                        <span>ขนาด: {(report.file_size / 1024 / 1024).toFixed(2)} MB</span>
+                        <span>ขนาด: {(report.file_size ? (report.file_size / 1024 / 1024).toFixed(2) : 0)} MB</span>
                         <span className="hidden xs:inline">•</span>
                         <span>ประเภท: {report.file_type?.toUpperCase()}</span>
                       </div>
@@ -380,7 +380,7 @@ export default function ReportDetailPage() {
                       Risk Indicators
                     </h2>
                     <ul className="space-y-2 sm:space-y-3">
-                      {report.risk_indicators.map((item, i) => (
+                      {(report.risk_indicators ?? []).map((item, i) => (
                         <li key={i} className="flex items-start gap-2 sm:gap-3 text-gray-300 group hover:text-white transition-colors">
                           <span className={`mt-1.5 sm:mt-2 w-1.5 h-1.5 sm:w-2 sm:h-2 shrink-0 rounded-full ${c.dot} group-hover:scale-125 transition-transform`} />
                           <span className="text-xs sm:text-sm">{item}</span>

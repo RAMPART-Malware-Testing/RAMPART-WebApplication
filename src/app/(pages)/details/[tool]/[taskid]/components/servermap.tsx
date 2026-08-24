@@ -1,3 +1,5 @@
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, ZoomControl } from "react-leaflet";
 
 type DomainInfo = {
@@ -104,10 +106,10 @@ const markerStyles = `
 export default function ServerMap({ domains }: ServerMapProps) {
     // คำนวณ center แบบ dynamic
     const positions = Object.values(domains)
-        .filter(d => d.geolocation.latitude && d.geolocation.longitude)
+        .filter(d => d.geolocation && d.geolocation.latitude && d.geolocation.longitude)
         .map(d => ({
-            lat: parseFloat(d.geolocation.latitude),
-            lng: parseFloat(d.geolocation.longitude)
+            lat: parseFloat(d.geolocation!.latitude!),
+            lng: parseFloat(d.geolocation!.longitude!)
         }));
     
     const center = positions.length > 0 
@@ -159,6 +161,7 @@ export default function ServerMap({ domains }: ServerMapProps) {
                     />
 
                     {Object.entries(domains).map(([domain, info], idx) => {
+                        if (!info.geolocation) return null;
                         const lat = parseFloat(info.geolocation.latitude);
                         const lng = parseFloat(info.geolocation.longitude);
                         const isBad = info.bad === "yes";

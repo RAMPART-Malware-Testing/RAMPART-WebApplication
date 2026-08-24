@@ -6,7 +6,7 @@ import { jwtService } from '@/services/jwt.service';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { taskid: string } }
+    { params }: { params: Promise<{ taskid: string }> }
 ) {
     try {
         const { taskid } = await params;

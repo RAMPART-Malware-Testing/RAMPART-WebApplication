@@ -2,10 +2,9 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import axios, { AxiosError } from 'axios'
-import NavbarComponent from '@/components/NavbarComponent'
-import Image from "next/image";
-import HistoryFileComponent from '@/components/HistoryFileComponent'
+import axios from 'axios'
+import NavbarComponent from "@/components/NavbarComponent"
+import GeometricLoader from '@/components/GeometricLoader'
 
 interface UploadedFile {
   name: string
@@ -29,22 +28,19 @@ interface UploadResponse {
   message: string
 }
 
-interface ReportResponse {
-  success: boolean
-  task_id: string
-  status: 'processing' | 'success' | 'failed'
-  message: string
-}
-
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
 export default function ScanFilesPage() {
   const [file, setFile] = useState<UploadedFile | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
-  const [privacy, setPrivacy] = useState(false)
-  const refreshHistoryRef = useRef<(() => void) | null>(null)
+  // Privacy is set at upload time only (the backend has no endpoint to change
+  // it after analysis). Default to private; public sharing can be revisited
+  // once the backend exposes a post-analysis privacy update.
+  const privacy = false
+  const [showLoader, setShowLoader] = useState(false)
+  const redirectTaskId = useRef<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   async function getUploadToken(): Promise<string> {
     const res = await axios.post<GenerateTokenResponse>('/api/generate-token', {}, {
@@ -89,14 +85,10 @@ export default function ScanFilesPage() {
         try {
           const response: UploadResponse = JSON.parse(xhr.responseText)
           if (xhr.status === 200 && response.success && response.task_id) {
-            setFile(prev => prev ? {
-              ...prev,
-              status: 'analyzing',
-              progress: 100,
-              taskId: response.task_id
-            } : null)
-            pollAnalysisStatus(response.task_id)
+            setFile(prev => prev ? { ...prev, status: 'completed', progress: 100, taskId: response.task_id } : null)
             resolve()
+            redirectTaskId.current = response.task_id
+            setShowLoader(true)
           } else {
             throw new Error(response.message || `Server error: ${xhr.status}`)
           }
@@ -126,51 +118,28 @@ export default function ScanFilesPage() {
     })
   }
 
-  function pollAnalysisStatus(taskId: string) {
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
-
-    let retryCount = 0
-    const MAX_RETRIES = 3
-
-    pollIntervalRef.current = setInterval(async () => {
-      try {
-        const { data } = await axios.get<ReportResponse>(`/api/task_id/${taskId}`, { timeout: 10000 })
-        retryCount = 0
-
-        if (data.status === 'success') {
-          clearInterval(pollIntervalRef.current!)
-          setFile(prev => prev ? { ...prev, status: 'completed' } : null)
-          refreshHistoryRef.current?.()
-        } else if (data.status === 'failed') {
-          clearInterval(pollIntervalRef.current!)
-          setFile(prev => prev ? { ...prev, status: 'failed', error: data.message || 'การวิเคราะห์ล้มเหลว' } : null)
-          refreshHistoryRef.current?.()
-        }
-
-      } catch (err) {
-        if (++retryCount >= MAX_RETRIES) {
-          clearInterval(pollIntervalRef.current!)
-          const error = err instanceof AxiosError ? `เชื่อมต่อ server ไม่ได้ (${err.message})` : 'ไม่สามารถตรวจสอบสถานะได้'
-          setFile(prev => prev ? { ...prev, status: 'failed', error } : null)
-        }
-      }
-    }, 5000)
+  const startUpload = (selectedFile: File) => {
+    if (!selectedFile) return
+    if (selectedFile.size > 1024 * 1024 * 1024) {
+      alert('ไฟล์ใหญ่เกิน 1GB')
+      return
+    }
+    setFile({ name: selectedFile.name, size: selectedFile.size, status: 'uploading', progress: 0, privacy })
+    uploadFile(selectedFile)
   }
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
-
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
-
-    if (selectedFile.size > 1024 * 1024 * 1024) {
-      alert('ไฟล์ใหญ่เกิน 1GB')
-      return
-    }
-
-    setFile({ name: selectedFile.name, size: selectedFile.size, status: 'uploading', progress: 0, privacy: privacy })
     e.target.value = ''
-    uploadFile(selectedFile)
+    startUpload(selectedFile)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const selectedFile = e.dataTransfer.files?.[0]
+    if (selectedFile) startUpload(selectedFile)
   }
 
   const handleRetry = () => {
@@ -178,366 +147,154 @@ export default function ScanFilesPage() {
     setTimeout(() => fileInputRef.current?.click(), 100)
   }
 
+  const busy = file?.status === 'uploading' || file?.status === 'analyzing'
+
   return (
-    <div className="min-h-screen bg-slate-900 p-6">
+    <div className="min-h-screen bg-[#050510]">
       <NavbarComponent />
-      <div className="flex flex-col lg:flex-row  max-w-6xl mx-auto mt-10 gap-10">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <div className="relative ">
-            {/* Gradient background with blur effect */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-blue-100/50 via-cyan-100/50 to-blue-100/50 rounded-3xl blur-2xl opacity-70"></div>
-
-            {/* Main card with outer shadow - now clickable */}
-            <div
-              onClick={() => !(file?.status === 'uploading' || file?.status === 'analyzing') && fileInputRef.current?.click()}
-              className={`
-      relative bg-white p-8 rounded-2xl text-center border border-gray-100 
-      shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)] 
-      transition-all duration-300 cursor-pointer
-      ${file?.status === 'analyzing' ? 'opacity-70' : 'hover:shadow-[0_25px_45px_-15px_rgba(0,0,0,0.3)] hover:scale-[1.02]'}
-      ${file?.status === 'uploading' || file?.status === 'analyzing' ? 'cursor-not-allowed' : 'cursor-pointer group'}
-    `}
-            >
-              {/* Privacy Switch - Top Left */}
-              <div className="absolute top-4 left-4 z-10" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full p-1 shadow-lg border border-gray-200">
-                  {/* Public Option */}
-                  <button
-                    onClick={() => setPrivacy(true)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${privacy === true
-                        ? 'bg-blue-500 text-white shadow-md'
-                        : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Public
-                  </button>
-
-                  {/* Private Option */}
-                  <button
-                    onClick={() => setPrivacy(false)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${privacy === false
-                        ? 'bg-purple-500 text-white shadow-md'
-                        : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    Private
-                  </button>
-                </div>
-              </div>
-
-              {/* Click hint - shows on hover */}
-              {!(file?.status === 'uploading' || file?.status === 'analyzing') && (
-                <div className="absolute top-4 right-4 duration-300">
-                  <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    คลิกเพื่ออัปโหลด
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-center">
-                <div className="relative w-44 h-44 lg:w-84 lg:h-84">
-                  <Image
-                    src="/logo_none_white.png"
-                    alt="RAMPART Security"
-                    fill
-                    className="object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.1)] transition-transform duration-300 group-hover:scale-105"
-                    priority
-                  />
-                  {file?.status === 'analyzing' && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm ">
-                      <div className="relative">
-                        {/* Pulsing circles animation */}
-                        <div className="absolute inset-0 rounded-full animate-ping bg-red-400/20"></div>
-                        <div className="absolute inset-2 rounded-full animate-pulse bg-red-400/30"></div>
-
-                        {/* Main spinner */}
-                        <div className="relative w-20 h-20">
-                          <div className="absolute inset-0 rounded-full border-4 border-red-200"></div>
-                          <div className="absolute inset-0 rounded-full border-4 border-red-600 border-t-transparent animate-spin"></div>
-
-                          {/* Inner content */}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                          </div>
-                        </div>
-
-                        {/* Text bubble */}
-                        <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                          <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-bounce">
-                            🔍 กำลังสแกนความปลอดภัย...
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <h1 className={`
-      mb-8 text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-black bg-clip-text tracking-tight 
-      drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-all duration-300
-      ${file?.status === 'analyzing' ? 'opacity-50' : 'group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 group-hover:bg-clip-text'}
-    `}>
-                RAMPART
-              </h1>
-
-              {/* Privacy Mode Indicator */}
-              {privacy === false && (
-                <div className="mb-4 inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  ส่วนตัว - เฉพาะคุณเท่านั้นที่เห็นรายงานนี้
-                </div>
-              )}
-
-              {privacy === true && (
-                <div className="mb-4 inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  สาธารณะ - ทุกคนสามารถเห็นรายงานนี้
-                </div>
-              )}
-
-              {/* Hidden file input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileInput}
-                className="hidden"
-              />
-
-              {/* Optional: Show hint text when not uploading/analyzing */}
-              {!(file?.status === 'uploading' || file?.status === 'analyzing') && (
-                <div className="mt-4 text-sm text-gray-400 duration-300">
-                  คลิกที่ใดก็ได้เพื่อเลือกไฟล์
-                </div>
-              )}
-            </div>
-          </div>
-
-          {file && (
-            <div className="relative group">
-              {/* Background glow effect */}
-              <div className={`absolute -inset-1 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${file.status === 'completed' ? 'bg-green-500/20' :
-                file.status === 'failed' ? 'bg-red-500/20' :
-                  file.status === 'analyzing' ? 'bg-yellow-500/20' :
-                    'bg-blue-500/20'
-                }`}></div>
-
-              <div className={`relative bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-sm p-6 rounded-xl space-y-4 border transition-all duration-300 ${file.status === 'completed' ? 'border-green-500/30 shadow-lg shadow-green-500/10' :
-                file.status === 'failed' ? 'border-red-500/30 shadow-lg shadow-red-500/10' :
-                  file.status === 'analyzing' ? 'border-yellow-500/30 shadow-lg shadow-yellow-500/10 animate-pulse' :
-                    'border-blue-500/30 shadow-lg shadow-blue-500/10'
-                }`}>
-
-                {/* Header with icon and filename */}
-                <div className="flex items-start space-x-3">
-                  <div className={`p-2 rounded-lg ${file.status === 'completed' ? 'bg-green-500/20' :
-                    file.status === 'failed' ? 'bg-red-500/20' :
-                      file.status === 'analyzing' ? 'bg-yellow-500/20' :
-                        'bg-blue-500/20'
-                    }`}>
-                    {file.status === 'completed' && (
-                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                    {file.status === 'failed' && (
-                      <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                    {file.status === 'analyzing' && (
-                      <svg className="w-5 h-5 text-yellow-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    )}
-                    {file.status === 'uploading' && (
-                      <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                    )}
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="text-white font-medium truncate group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-300 group-hover:bg-clip-text transition-all duration-300">
-                      {file.name}
-                    </div>
-                    <div className="text-xs text-blue-200/50 flex items-center gap-2 mt-1">
-                      <span>📦 {(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                      <span>•</span>
-                      <span className={`capitalize ${file.status === 'completed' ? 'text-green-400' :
-                        file.status === 'failed' ? 'text-red-400' :
-                          file.status === 'analyzing' ? 'text-yellow-400' :
-                            'text-blue-400'
-                        }`}>
-                        {file.status === 'uploading' ? '⏫ กำลังอัปโหลด' :
-                          file.status === 'analyzing' ? '🔍 กำลังวิเคราะห์' :
-                            file.status === 'completed' ? '✅ เสร็จสิ้น' :
-                              file.status === 'failed' ? '❌ ล้มเหลว' : file.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Uploading progress */}
-                {file.status === 'uploading' && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-cyan-400 flex items-center gap-1">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                        </span>
-                        กำลังอัปโหลด...
-                      </span>
-                      <span className="text-cyan-400 font-mono">{file.progress}%</span>
-                    </div>
-                    <div className="relative w-full h-3 bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300"
-                        style={{ width: `${file.progress}%` }}
-                      >
-                        {/* Shine effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine"></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Analyzing status with animation */}
-                {file.status === 'analyzing' && (
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <div className="w-8 h-8 border-4 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin"></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-yellow-400 font-medium">กำลังสแกนไฟล์</div>
-                        <div className="text-xs text-yellow-400/70">กำลังตรวจสอบความปลอดภัย กรุณารอสักครู่...</div>
-                      </div>
-                    </div>
-
-                    {/* Scanning animation */}
-                    <div className="relative h-1 bg-gray-700 rounded overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 animate-scan"></div>
-                    </div>
-
-                    {/* Scanning dots */}
-                    <div className="flex gap-1 justify-center">
-                      {[...Array(3)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="w-1 h-1 bg-yellow-500 rounded-full animate-bounce"
-                          style={{ animationDelay: `${i * 0.2}s` }}
-                        ></div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Completed status */}
-                {file.status === 'completed' && file.taskId && (
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2 text-green-400 bg-green-500/10 p-3 rounded-lg">
-                      <div className="relative">
-                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <div className="absolute inset-0 rounded-full animate-ping bg-green-500/20"></div>
-                      </div>
-                      <span className="font-medium">วิเคราะห์เสร็จสิ้น</span>
-                    </div>
-
-                    <button
-                      onClick={() => router.push(`/reports/${file.taskId}`)}
-                      className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 text-white font-medium transition-all duration-300 hover:shadow-lg hover:shadow-green-500/25"
-                    >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        ดูผลการวิเคราะห์
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-0 bg-gradient-to-r from-green-600 to-green-700 transition-transform duration-300"></div>
-                    </button>
-                  </div>
-                )}
-
-                {/* Failed status */}
-                {file.status === 'failed' && (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="relative">
-                        <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm">!</div>
-                        <div className="absolute inset-0 rounded-full animate-ping bg-red-500/20"></div>
-                      </div>
-                      <span className="font-medium text-red-400">การวิเคราะห์ล้มเหลว</span>
-                    </div>
-
-                    <div className="text-sm text-red-300 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-                      {file.error || 'ไม่สามารถวิเคราะห์ไฟล์ได้ กรุณาลองใหม่อีกครั้ง'}
-                    </div>
-
-                    <button
-                      onClick={handleRetry}
-                      className="group relative w-full overflow-hidden rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 px-4 py-2 text-red-300 text-sm font-medium transition-all duration-300"
-                    >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        <svg className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        ลองใหม่อีกครั้ง
-                      </span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+      <div className="max-w-2xl mx-auto mt-8 px-4 sm:px-6 space-y-5">
+        <div>
+          <h1 className="text-2xl font-bold text-white">สแกนไฟล์</h1>
+          <p className="text-slate-400 text-sm mt-1">อัปโหลดไฟล์เพื่อวิเคราะห์มัลแวร์ด้วยเครื่องมือหลายตัว</p>
         </div>
 
-        {/* Add custom keyframes for animations */}
-        <style jsx>{`
-          @keyframes shine {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-          
-          @keyframes scan {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-          
-          .animate-shine {
-            animation: shine 2s infinite;
-          }
-          
-          .animate-scan {
-            animation: scan 1.5s ease-in-out infinite;
-          }
-        `}
-        </style>
-        <HistoryFileComponent onRegisterRefresh={(fn) => { refreshHistoryRef.current = fn }} />
-      </div>
+          {/* Dropzone */}
+          <div
+            onClick={() => !busy && fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            className={`
+              relative rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-300
+              ${busy
+                ? 'border-white/10 bg-white/[0.02] cursor-not-allowed'
+                : isDragging
+                  ? 'border-purple-400 bg-purple-500/10 scale-[1.01] cursor-pointer'
+                  : 'border-white/15 bg-white/[0.03] hover:border-purple-400/60 hover:bg-white/[0.05] cursor-pointer'}
+            `}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileInput}
+              className="hidden"
+            />
 
+            {!file && (
+              <div className="flex flex-col items-center gap-3 py-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-xl shadow-purple-500/20">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                </div>
+                <p className="text-white font-medium">
+                  {isDragging ? 'วางไฟล์ที่นี่' : 'คลิกหรือลากไฟล์มาวางที่นี่'}
+                </p>
+                <p className="text-slate-400 text-sm">รองรับไฟล์ทุกประเภท สูงสุด 1GB</p>
 
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="mt-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:opacity-90 transition disabled:opacity-50"
+                >
+                  เลือกไฟล์
+                </button>
+              </div>
+            )}
+
+            {file && (
+              <div className="py-2 text-left">
+                {/* File row */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                    file.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400'
+                      : file.status === 'failed' ? 'bg-rose-500/15 text-rose-400'
+                      : file.status === 'analyzing' ? 'bg-amber-500/15 text-amber-400'
+                      : 'bg-blue-500/15 text-blue-400'
+                  }`}>
+                    {file.status === 'uploading' && <i className="fas fa-cloud-upload-alt text-lg"></i>}
+                    {file.status === 'analyzing' && <i className="fas fa-spinner fa-spin text-lg"></i>}
+                    {file.status === 'completed' && <i className="fas fa-check-circle text-lg"></i>}
+                    {file.status === 'failed' && <i className="fas fa-times-circle text-lg"></i>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium truncate">{file.name}</p>
+                    <p className="text-slate-400 text-xs">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <span className={`text-xs font-medium ${
+                    file.status === 'uploading' ? 'text-cyan-400'
+                      : file.status === 'analyzing' ? 'text-amber-400'
+                      : file.status === 'completed' ? 'text-emerald-400'
+                      : 'text-rose-400'
+                  }`}>
+                    {file.status === 'uploading' ? `อัปโหลด ${file.progress}%`
+                      : file.status === 'analyzing' ? 'กำลังวิเคราะห์'
+                      : file.status === 'completed' ? 'เสร็จสิ้น'
+                      : 'ล้มเหลว'}
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                {(file.status === 'uploading' || file.status === 'analyzing') && (
+                  <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
+                      style={{ width: `${file.status === 'analyzing' ? 100 : file.progress}%` }}
+                    />
+                  </div>
+                )}
+
+                {/* Failed error + retry */}
+                {file.status === 'failed' && (
+                  <div className="mt-4">
+                    <p className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-lg p-3">
+                      {file.error || 'ไม่สามารถวิเคราะห์ไฟล์ได้'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleRetry}
+                      className="mt-3 w-full py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-semibold transition"
+                    >
+                      ลองใหม่อีกครั้ง
+                    </button>
+                  </div>
+                )}
+
+                {/* Completed hint */}
+                {file.status === 'completed' && (
+                  <p className="text-sm text-emerald-300 mt-3 text-center">
+                    อัปโหลดสำเร็จ — กำลังนำไปหน้าวิเคราะห์...
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Privacy info */}
+          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <div>
+              <p className="text-white font-medium text-sm">ความเป็นส่วนตัวของรายงาน</p>
+              <p className="text-slate-400 text-xs mt-0.5">ตั้งค่าเป็นส่วนตัวโดยค่าเริ่มต้น</p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              ส่วนตัว
+            </span>
+          </div>
+        </div>
+
+      {showLoader && (
+        <GeometricLoader
+          isVisible={showLoader}
+          loadingText="กำลังนำไปหน้าวิเคราะห์"
+          duration={1200}
+          onLoadingComplete={() => {
+            setShowLoader(false)
+            if (redirectTaskId.current) {
+              router.push(`/scan/analysis?taskId=${redirectTaskId.current}`)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }
