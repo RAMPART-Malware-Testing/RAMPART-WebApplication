@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
-import NavbarComponent from '@/components/NavbarComponent'
 import GeometricLoader from '@/components/GeometricLoader'
 import { ROLE_LABELS } from '@/lib/roles'
 
@@ -86,24 +85,18 @@ export default function AdminUserDetailPage() {
 
   if (notFound || !user) {
     return (
-      <div className="min-h-screen bg-slate-900 p-6">
-        <NavbarComponent />
-        <div className="max-w-3xl mx-auto text-center py-24">
-          <div className="text-5xl mb-4">🚫</div>
-          <p className="text-white text-lg font-medium">ไม่พบผู้ใช้ที่ต้องการ</p>
-          <Link href="/admin/users" className="text-cyan-400 hover:text-cyan-300 transition mt-4 inline-block">
-            ← กลับไปหน้ารายชื่อผู้ใช้
-          </Link>
-        </div>
+      <div className="max-w-3xl mx-auto text-center py-24">
+        <div className="text-5xl mb-4">🚫</div>
+        <p className="text-white text-lg font-medium">ไม่พบผู้ใช้ที่ต้องการ</p>
+        <Link href="/admin/users" className="text-cyan-400 hover:text-cyan-300 transition mt-4 inline-block">
+          ← กลับไปหน้ารายชื่อผู้ใช้
+        </Link>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6">
-      <NavbarComponent />
-
-      <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-5">
         <Link href="/admin/users" className="text-cyan-400 hover:text-cyan-300 transition text-sm inline-block">
           ← กลับไปหน้ารายชื่อผู้ใช้
         </Link>
@@ -232,7 +225,6 @@ export default function AdminUserDetailPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   )
 }

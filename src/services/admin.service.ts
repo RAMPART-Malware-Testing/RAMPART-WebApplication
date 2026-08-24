@@ -8,7 +8,7 @@ const SERVER_URL = process.env.SERVER_URL || "http://localhost:8006";
  * the caller's access token travels in the JSON body (not an Authorization
  * header), matching this project's existing convention everywhere else. */
 class AdminServiceClass {
-    async listUsers(token: string, params: { page?: number; limit?: number; q?: string; role?: string; banned?: boolean }) {
+    async listUsers(token: string, params: { page?: number; limit?: number; q?: string; role?: string | string[]; banned?: boolean }) {
         try {
             const res = await axios.post(`${SERVER_URL}/api/admin/users`, { token, ...params });
             return res.data;
@@ -74,6 +74,33 @@ class AdminServiceClass {
     async auditLogs(token: string, params: { page?: number; limit?: number; actor_uid?: string; action?: string }) {
         try {
             const res = await axios.post(`${SERVER_URL}/api/admin/audit-logs`, { token, ...params });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async listFiles(token: string, params: { page?: number; limit?: number; q?: string; status?: string; file_type?: string; privacy?: boolean }) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/files`, { token, ...params });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async deleteFile(token: string, aid: string, reason: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/files/delete`, { token, aid, reason });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async listReports(token: string, params: { page?: number; limit?: number; q?: string; risk_level?: string; file_type?: string }) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/reports`, { token, ...params });
             return res.data;
         } catch {
             return ERROR_RESPONSE;

@@ -128,3 +128,43 @@ interface AdminActionResponse {
     message: string
     data: AdminUserListItem | null
 }
+
+/** One row from /api/admin/files or /api/admin/reports - system-wide
+ * (cross-user) file listing, unlike AdminUserHistoryItem which is scoped
+ * to one target user. Mirrors services.admin.admin_service._serialize_file_row. */
+interface AdminFileListItem {
+    aid: string
+    task_id: string | null
+    file_name: string | null
+    file_size: number | null
+    file_type: string | null
+    file_hash: string | null
+    md5: string | null
+    tools: string | null
+    status: string | null
+    privacy: boolean
+    is_malicious: boolean | null
+    created_at: string | null
+    owner_uid: string | null
+    owner_username: string | null
+    report: {
+        score: number | null
+        risk_level: string | null
+        virustotal_score: number | null
+        mobsf_score: number | null
+        cape_score: number | null
+    } | null
+}
+
+interface AdminFileListResponse {
+    success: boolean
+    data: AdminFileListItem[]
+    pagination: AdminPagination
+}
+
+interface AdminDeleteFileResponse {
+    success: boolean
+    status: string
+    message: string
+    data: { aid: string; deleted_at: string | null } | null
+}

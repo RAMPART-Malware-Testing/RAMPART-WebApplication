@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
 import Swal from 'sweetalert2'
-import NavbarComponent from '@/components/NavbarComponent'
 import { useToast } from '@/components/ui/ToastProvider'
 import { ROLE_LABELS } from '@/lib/roles'
 
@@ -19,7 +18,6 @@ export default function AdminUsersPage() {
   const [pagination, setPagination] = useState<AdminPagination | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState('all')
   const [bannedFilter, setBannedFilter] = useState('all')
   const [page, setPage] = useState(1)
   const [busyUid, setBusyUid] = useState<string | null>(null)
@@ -40,14 +38,14 @@ export default function AdminUsersPage() {
   }, [])
 
   const isMaster = viewerRole === 'master'
-  const canActOn = (targetRole: string) => targetRole === 'user' || (targetRole === 'admin' && isMaster)
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true)
     try {
-      const body: Record<string, unknown> = { page, limit: 20 }
+      // This page is fixed to plain "user" rows only - /admin/admins is
+      // the dedicated view for admin/master accounts.
+      const body: Record<string, unknown> = { page, limit: 20, role: 'user' }
       if (search) body.q = search
-      if (roleFilter !== 'all') body.role = roleFilter
       if (bannedFilter !== 'all') body.banned = bannedFilter === 'banned'
 
       const { data } = await axios.post<AdminUserListResponse>('/api/admin/users', body)
@@ -62,7 +60,7 @@ export default function AdminUsersPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, search, roleFilter, bannedFilter])
+  }, [page, search, bannedFilter])
 
   useEffect(() => {
     fetchUsers()
@@ -70,7 +68,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [search, roleFilter, bannedFilter])
+  }, [search, bannedFilter])
 
   const handleBan = async (user: AdminUserListItem) => {
     const { value: reason, isConfirmed } = await Swal.fire({
@@ -167,20 +165,17 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6">
-      <NavbarComponent />
-
-      <div className="max-w-6xl mx-auto space-y-5">
+    <div className="max-w-6xl mx-auto space-y-5">
         <div>
           <h1 className="text-2xl font-bold text-white">จัดการผู้ใช้งาน</h1>
           <p className="text-blue-200/50 text-sm mt-1">
-            แบน / ปลดแบน / เปลี่ยนสิทธิ์ผู้ใช้ (ผู้ดูแลไม่สามารถดำเนินการกับผู้ดูแลด้วยกัน หรือผู้คุมสูงสุดได้)
+            รายชื่อสมาชิกทั่วไป — แบน / ปลดแบน / เลื่อนขึ้นเป็นผู้ดูแลระบบ (เฉพาะ master)
           </p>
         </div>
 
         {/* Filters */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-blue-200/60 mb-2">ค้นหา</label>
               <input
@@ -190,19 +185,6 @@ export default function AdminUsersPage() {
                 placeholder="ค้นหาด้วยชื่อผู้ใช้หรืออีเมล..."
                 className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-blue-200/30 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition"
               />
-            </div>
-            <div>
-              <label className="block text-sm text-blue-200/60 mb-2">บทบาท</label>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition"
-              >
-                <option value="all" className="bg-slate-800">ทั้งหมด</option>
-                <option value="user" className="bg-slate-800">ผู้ใช้ทั่วไป</option>
-                <option value="admin" className="bg-slate-800">ผู้ดูแลระบบ</option>
-                <option value="master" className="bg-slate-800">ผู้คุมสูงสุด</option>
-              </select>
             </div>
             <div>
               <label className="block text-sm text-blue-200/60 mb-2">สถานะ</label>
@@ -263,47 +245,37 @@ export default function AdminUsersPage() {
                     </div>
                   </Link>
 
-                  {/* Actions - admin/master rule enforcement happens server-side;
-                      buttons are hidden here as a UX nicety only. */}
-                  {canActOn(user.role) && (
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      {user.is_banned ? (
-                        <button
-                          disabled={busyUid === user.uid}
-                          onClick={() => handleUnban(user)}
-                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition disabled:opacity-40"
-                        >
-                          ปลดแบน
-                        </button>
-                      ) : (
-                        <button
-                          disabled={busyUid === user.uid}
-                          onClick={() => handleBan(user)}
-                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition disabled:opacity-40"
-                        >
-                          แบน
-                        </button>
-                      )}
-                      {isMaster && user.role === 'user' && (
-                        <button
-                          disabled={busyUid === user.uid}
-                          onClick={() => handleRoleChange(user, 'admin')}
-                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition disabled:opacity-40"
-                        >
-                          ตั้งเป็นผู้ดูแล
-                        </button>
-                      )}
-                      {isMaster && user.role === 'admin' && (
-                        <button
-                          disabled={busyUid === user.uid}
-                          onClick={() => handleRoleChange(user, 'user')}
-                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/5 text-blue-200/70 border border-white/10 hover:bg-white/10 transition disabled:opacity-40"
-                        >
-                          ถอดสิทธิ์ผู้ดูแล
-                        </button>
-                      )}
-                    </div>
-                  )}
+                  {/* Every row here is role=user, so admin AND master can
+                      always act - the admin-vs-admin restriction only
+                      applies on the /admin/admins page. */}
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {user.is_banned ? (
+                      <button
+                        disabled={busyUid === user.uid}
+                        onClick={() => handleUnban(user)}
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition disabled:opacity-40"
+                      >
+                        ปลดแบน
+                      </button>
+                    ) : (
+                      <button
+                        disabled={busyUid === user.uid}
+                        onClick={() => handleBan(user)}
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition disabled:opacity-40"
+                      >
+                        แบน
+                      </button>
+                    )}
+                    {isMaster && (
+                      <button
+                        disabled={busyUid === user.uid}
+                        onClick={() => handleRoleChange(user, 'admin')}
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition disabled:opacity-40"
+                      >
+                        ตั้งเป็นผู้ดูแล
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -332,7 +304,6 @@ export default function AdminUsersPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   )
 }

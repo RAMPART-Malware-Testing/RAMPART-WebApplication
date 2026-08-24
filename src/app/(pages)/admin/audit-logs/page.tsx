@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
-import NavbarComponent from '@/components/NavbarComponent'
 
 const ACTION_LABELS: Record<string, string> = {
   ban_user: 'แบนผู้ใช้',
@@ -11,6 +10,7 @@ const ACTION_LABELS: Record<string, string> = {
   role_change: 'เปลี่ยนสิทธิ์',
   view_user_detail: 'ดูข้อมูลผู้ใช้',
   view_private_history: 'ดูประวัติไฟล์ (รวม private)',
+  delete_file: 'ลบไฟล์',
 }
 
 const ACTION_BADGE: Record<string, string> = {
@@ -19,6 +19,7 @@ const ACTION_BADGE: Record<string, string> = {
   role_change: 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/20',
   view_user_detail: 'text-blue-300 bg-blue-500/10 border border-blue-500/20',
   view_private_history: 'text-amber-300 bg-amber-500/10 border border-amber-500/20',
+  delete_file: 'text-orange-400 bg-orange-500/10 border border-orange-500/20',
 }
 
 function formatDate(dateStr: string | null) {
@@ -60,10 +61,7 @@ export default function AdminAuditLogsPage() {
   }, [actionFilter])
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6">
-      <NavbarComponent />
-
-      <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <h1 className="text-2xl font-bold text-white">ประวัติการดำเนินการของผู้ดูแล</h1>
@@ -158,7 +156,6 @@ export default function AdminAuditLogsPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   )
 }

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
-import NavbarComponent from '@/components/NavbarComponent'
 import GeometricLoader from '@/components/GeometricLoader'
 import UploadTrendChart from '@/components/admin/charts/UploadTrendChart'
 import DoughnutBreakdownChart from '@/components/admin/charts/DoughnutBreakdownChart'
@@ -16,6 +15,7 @@ const ACTION_LABELS: Record<string, string> = {
   role_change: 'เปลี่ยนสิทธิ์',
   view_user_detail: 'ดูข้อมูลผู้ใช้',
   view_private_history: 'ดูประวัติไฟล์ (รวม private)',
+  delete_file: 'ลบไฟล์',
 }
 
 const ACTION_ICON: Record<string, string> = {
@@ -24,6 +24,7 @@ const ACTION_ICON: Record<string, string> = {
   role_change: 'fas fa-user-shield text-cyan-400',
   view_user_detail: 'fas fa-eye text-blue-400',
   view_private_history: 'fas fa-folder-open text-amber-400',
+  delete_file: 'fas fa-trash text-orange-400',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -131,10 +132,7 @@ export default function AdminDashboardPage() {
   const adminCount = summary ? summary.role_breakdown.admin + summary.role_breakdown.master : 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br p-6 from-slate-900 via-slate-800 to-slate-900">
-      <NavbarComponent />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -337,7 +335,6 @@ export default function AdminDashboardPage() {
             </div>
           </>
         )}
-      </div>
     </div>
   )
 }
