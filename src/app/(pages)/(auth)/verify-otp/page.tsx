@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic"
 
-import { useState, useRef, Suspense } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import axios from 'axios'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -63,7 +63,23 @@ function VerifyOtpPageContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null)
+  const [lockedSecondsRemaining, setLockedSecondsRemaining] = useState<number | null>(null)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  useEffect(() => {
+    if (lockedSecondsRemaining === null || lockedSecondsRemaining <= 0) return
+    const timer = setInterval(() => {
+      setLockedSecondsRemaining((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(timer)
+          return null
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [lockedSecondsRemaining])
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length <= 1 && /^\d*$/.test(value)) {
@@ -91,7 +107,6 @@ function VerifyOtpPageContent() {
 
   const handleLogout = async () => {
     try {
-      // เรียก logout api เพื่อล้าง cookie/session ฝั่ง server
       await axios.get('/logout')
     } catch (err) {
       console.error("เกิดข้อผิดพลาดในการออกจากระบบ", err)
@@ -103,6 +118,10 @@ function VerifyOtpPageContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (lockedSecondsRemaining !== null && lockedSecondsRemaining > 0) {
+      return
+    }
 
     const otpString = otp.join('')
     if (otpString.length !== 6) {
@@ -130,25 +149,43 @@ function VerifyOtpPageContent() {
       if (config.requirePassword) payload.newPasswd = newPassword
 
       const res = await axios.post('/api/auth/verify-otp', payload)
-      console.log(res.data)
-      if (res.data.status === 1400) {
-        notify.warning(res.data.message || 'ไม่พบโทเค็นการเข้าถึง กรุณาล็อกอินใหม่อีกครั้ง.')
-        setTimeout(() => {
-          window.location.href = '/login'
-        }, 1500);
-        return
-      }
+
       if (res.data.success) {
         setIsSuccessful(true)
         setTimeout(() => {
           setIsSuccessful(false)
           window.location.href = config.redirectOnSuccess
         }, 2000);
-
         return
       }
-      setError(res.data.message || 'รหัส OTP ไม่ถูกต้อง.')
-      notify.error(res.data.message || 'รหัส OTP ไม่ถูกต้อง.')
+
+      const status = res.data.status as string | undefined
+
+      if (status === 'OTP_LOCKED') {
+        const seconds = res.data.data?.locked_seconds_remaining ?? null
+        setLockedSecondsRemaining(seconds)
+        setAttemptsRemaining(0)
+        setOtp(['', '', '', '', '', ''])
+        inputRefs.current[0]?.focus()
+        setError(res.data.message || 'คุณกรอกรหัส OTP ผิดครบจำนวนครั้งที่กำหนดแล้ว กรุณารอสักครู่')
+        notify.error(res.data.message || 'คุณกรอกรหัส OTP ผิดครบจำนวนครั้งที่กำหนดแล้ว')
+        return
+      }
+
+      if (status === 'OTP_WRONG') {
+        const remaining = res.data.data?.attempts_remaining ?? null
+        setAttemptsRemaining(remaining)
+        setOtp(['', '', '', '', '', ''])
+        inputRefs.current[0]?.focus()
+        setError(res.data.message || 'รหัส OTP ไม่ถูกต้อง')
+        notify.error(res.data.message || 'รหัส OTP ไม่ถูกต้อง')
+        return
+      }
+
+      notify.warning(res.data.message || 'เซสชันหมดอายุ กรุณาเริ่มดำเนินการใหม่อีกครั้ง')
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 1500)
     } catch {
       notify.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง.')
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง.')
@@ -156,6 +193,8 @@ function VerifyOtpPageContent() {
       setIsLoading(false)
     }
   }
+
+  const isLocked = lockedSecondsRemaining !== null && lockedSecondsRemaining > 0
 
   return (
     <>
@@ -220,6 +259,25 @@ function VerifyOtpPageContent() {
                     </div>
                   )}
 
+                  {isLocked && (
+                    <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
+                      <div className="flex items-center gap-3 text-orange-400">
+                        <i className="fas fa-lock"></i>
+                        <p className="text-sm font-medium">
+                          กรุณารออีก {lockedSecondsRemaining} วินาที ก่อนลองใหม่อีกครั้ง
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isLocked && attemptsRemaining !== null && attemptsRemaining > 0 && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-center">
+                      <p className="text-amber-400 text-sm font-medium">
+                        เหลือโอกาสกรอกรหัสอีก {attemptsRemaining} ครั้ง
+                      </p>
+                    </div>
+                  )}
+
                   {/* OTP Inputs */}
                   <div className="space-y-3">
                     <div className="flex justify-between gap-2 sm:gap-3" onPaste={handlePaste}>
@@ -235,7 +293,8 @@ function VerifyOtpPageContent() {
                           value={digit}
                           onChange={(e) => handleOtpChange(index, e.target.value)}
                           onKeyDown={(e) => handleKeyDown(index, e)}
-                          className="w-full h-14 sm:h-16 text-center bg-white/5 border border-white/10 rounded-xl text-white text-2xl font-bold focus:ring-2 focus:ring-purple-500 focus:bg-white/10 transition-all outline-none"
+                          disabled={isLocked}
+                          className="w-full h-14 sm:h-16 text-center bg-white/5 border border-white/10 rounded-xl text-white text-2xl font-bold focus:ring-2 focus:ring-purple-500 focus:bg-white/10 transition-all outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                           autoFocus={index === 0}
                         />
                       ))}
@@ -284,7 +343,7 @@ function VerifyOtpPageContent() {
                   <div className="space-y-3 pt-2">
                     <button
                       type="submit"
-                      disabled={isLoading || otp.join("").length < 6}
+                      disabled={isLoading || isLocked || otp.join("").length < 6}
                       className="group relative w-full bg-gradient-to-r from-purple-600 to-indigo-600 py-4 rounded-2xl font-bold text-white shadow-[0_8px_32px_rgba(128,90,213,0.4)] hover:shadow-[0_12px_40px_rgba(128,90,213,0.7)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-3 overflow-hidden"
                     >
                       <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>

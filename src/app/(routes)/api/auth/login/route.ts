@@ -53,6 +53,15 @@ export async function POST(request: NextRequest) {
       httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/',
       maxAge: 60 * 60 * 24 * 7,
     })
+
+    if (res.data.device_token) {
+      const wrappedDevice = jwtService.sign({ deviceToken: res.data.device_token, type: 'device' }, '7d')
+      response.cookies.set('deviceToken', wrappedDevice, {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+      })
+    }
+
     return response
 
   } catch (error) {

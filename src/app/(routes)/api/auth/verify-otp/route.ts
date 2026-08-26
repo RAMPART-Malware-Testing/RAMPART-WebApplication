@@ -40,8 +40,12 @@ export async function POST(request: NextRequest) {
     else result = await authService.resetPasswordConfirm(token, otp, newPasswd);
 
     if (!result.success) {
-      const expired = String(result.message || '').toLowerCase().includes('expired') || String(result.message || '').includes('หมดอายุ');
-      return NextResponse.json({ success: false, status: expired ? 1400 : 400, message: result.message || 'การยืนยัน OTP ล้มเหลว' });
+      return NextResponse.json({
+        success: false,
+        status: result.status || 'OTP_EXPIRED',
+        message: result.message || 'การยืนยัน OTP ล้มเหลว',
+        data: result.data ?? null,
+      });
     }
 
     const response = NextResponse.json(
@@ -60,6 +64,15 @@ export async function POST(request: NextRequest) {
         httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/',
         maxAge: 60 * 60 * 24 * 7,
       })
+
+      const deviceTokenRaw = result.data?.deiveToken
+      if (deviceTokenRaw) {
+        const wrappedDevice = jwtService.sign({ deviceToken: deviceTokenRaw, type: 'device' }, '7d')
+        response.cookies.set('deviceToken', wrappedDevice, {
+          httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/',
+          maxAge: 60 * 60 * 24 * 7,
+        })
+      }
     }
 
     return response;

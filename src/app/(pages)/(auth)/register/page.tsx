@@ -30,14 +30,16 @@ export default function RegisterPage() {
 
   const notify = useToast();
 
+  const EMAIL_PATTERN = /^[^\s@+]+@[^\s@]+\.[^\s@]+$/
+
   const validateForm = () => {
     if (username.length < 3) {
 
       return 'Username ต้องมีอย่างน้อย 3 ตัวอักษร'
     }
 
-    if (!email.includes('@')) {
-      return 'รูปแบบ Email ไม่ถูกต้อง'
+    if (!EMAIL_PATTERN.test(email.trim())) {
+      return 'รูปแบบ Email ไม่ถูกต้อง หรือไม่รองรับ Email ที่มีเครื่องหมาย +'
     }
 
     const passError = validatePassword(password)

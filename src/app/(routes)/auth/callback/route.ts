@@ -22,6 +22,7 @@ async function fetchProfile(accessToken: string) {
 export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const accessToken = searchParams.get("access_token");
+    const deviceTokenRaw = searchParams.get("device_token");
     const error = searchParams.get("error");
     const message = searchParams.get("message");
 
@@ -51,5 +52,17 @@ export async function GET(request: NextRequest) {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
     });
+
+    if (deviceTokenRaw) {
+        const wrappedDevice = jwtService.sign({ deviceToken: deviceTokenRaw, type: "device" }, "7d");
+        response.cookies.set("deviceToken", wrappedDevice, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+            maxAge: 60 * 60 * 24 * 7,
+        });
+    }
+
     return response;
 }
