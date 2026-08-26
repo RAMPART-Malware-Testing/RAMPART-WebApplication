@@ -20,5 +20,5 @@ export async function POST(request: NextRequest) {
     if (!res.success){
         return NextResponse.json(res)
     }
-    return NextResponse.json(res)
+    return NextResponse.json({success:true, data:res})
 }

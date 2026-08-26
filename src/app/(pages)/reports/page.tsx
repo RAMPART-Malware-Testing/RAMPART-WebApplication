@@ -141,10 +141,10 @@ export default function ReportsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#050510] p-6">
+    <div className="min-h-screen bg-slate-900 p-6">
       <NavbarComponent />
 
-      <div className="max-w-6xl mx-auto space-y-5 mt-6">
+      <div className="max-w-6xl mx-auto space-y-5">
 
         {/* Filters */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
@@ -239,7 +239,7 @@ export default function ReportsPage() {
               {items.map(item => (
                 <Link
                   key={item.aid}
-                  href={`/scan/analysis?taskId=${item.task_id}`}
+                  href={`/reports/${item.task_id}`}
                   className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 transition group"
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">

@@ -45,22 +45,7 @@ export default function Navbarservice() {
             >
               เข้าสู่ระบบ
             </button>
-          )
-
-          }
-
-          {
-            pathname !== "/register" && (
-              <button
-                onClick={() => router.push("/register")}
-                className="px-5 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm text-sm font-semibold hover:bg-purple-600/40 hover:border-purple-400 transition-all duration-300"
-              >
-                สมัครสมาชิก
-              </button>
-            )
-          }
-
-
+          )}
 
         </div>
 

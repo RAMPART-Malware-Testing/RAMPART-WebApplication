@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
         { status: 401 }
     );
     const res = await DashboardService.summary(verify.token || "");
-    // Backend returns the raw summary dict (no `success` wrapper), and the
-    // dashboard page reads totalFiles/userFiles/etc directly off the body.
-    return NextResponse.json(res)
+    if (!res.success){
+        return NextResponse.json(res)
+    }
+    return NextResponse.json({success:true, data:res})
 }
