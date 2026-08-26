@@ -128,6 +128,13 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
         }
     }
 
+    const scoreInfo = (score?: number) => {
+        if (score == null) return { text: 'text-blue-300', label: '' }
+        if (score < 30) return { text: 'text-emerald-400', label: 'ปลอดภัย' }
+        if (score < 60) return { text: 'text-amber-400', label: 'ปานกลาง' }
+        return { text: 'text-rose-400', label: 'อันตราย' }
+    }
+
     const SORT_OPTIONS: { value: SortField; label: string }[] = [
         { value: 'created_at', label: 'วันที่' },
         { value: 'file_name', label: 'ชื่อไฟล์' },
@@ -193,8 +200,8 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
                                         {item.report?.score !== null && item.report?.score !== undefined && (
                                             <>
                                                 <span>•</span>
-                                                <span className={`font-medium ${getRiskColor(item.report.score)}`}>
-                                                    Score: {item.report.score}/100
+                                                <span className={`font-medium ${scoreInfo(item.report.score).text}`}>
+                                                    Score: {item.report.score}/100 · {scoreInfo(item.report.score).label}
                                                 </span>
                                             </>
                                         )}

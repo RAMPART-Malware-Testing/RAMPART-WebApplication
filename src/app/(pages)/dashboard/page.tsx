@@ -235,7 +235,9 @@ export default function DashboardPage() {
                       </span>
                     )}
                     {f.report?.score != null && (
-                      <span className="text-xs text-blue-300">Score: {f.report.score}/100</span>
+                      <span className={`text-xs font-medium ${scoreInfo(f.report.score).text}`}>
+                        Score: {f.report.score}/100 · {scoreInfo(f.report.score).label}
+                      </span>
                     )}
                     <i className="fas fa-chevron-right text-slate-500 text-xs group-hover:translate-x-1 group-hover:text-cyan-400 transition" />
                   </div>
@@ -421,6 +423,13 @@ export default function DashboardPage() {
 }
 
 // Components
+function scoreInfo(score?: number) {
+  if (score == null) return { text: "text-blue-300", label: "" }
+  if (score < 30) return { text: "text-emerald-400", label: "ปลอดภัย" }
+  if (score < 60) return { text: "text-amber-400", label: "ปานกลาง" }
+  return { text: "text-rose-400", label: "อันตราย" }
+}
+
 function fmtSize(bytes?: number | null) {
   if (!bytes) return ""
   const k = 1024
