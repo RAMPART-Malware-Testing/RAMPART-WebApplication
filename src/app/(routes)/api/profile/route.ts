@@ -39,7 +39,11 @@ export async function GET() {
     return NextResponse.json({ success: false, message: 'No access token found' }, { status: 401 })
   }
   const res = await ProfileService.getProfile(session.accessToken)
-  return NextResponse.json(res, { status: res.success ? 200 : 400 })
+  const response = NextResponse.json(res, { status: res.success ? 200 : 400 })
+  if (res.success && res.data) {
+    refreshSessionCookie(response, session.accessToken, res.data as RampartUser, session.remainingSeconds)
+  }
+  return response
 }
 
 export async function PATCH(request: NextRequest) {

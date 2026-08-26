@@ -63,6 +63,7 @@ function ProfileContent() {
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -195,6 +196,7 @@ function ProfileContent() {
       body.append('file', file)
       const { data } = await axios.post('/api/profile/avatar', body)
       if (data?.success && data?.data) {
+        setAvatarLoadFailed(false)
         setUser((prev) => prev ? { ...prev, avatar: data.data.avatar_url || undefined } : prev)
       } else {
         alert(data?.message || 'อัปโหลดรูปโปรไฟล์ไม่สำเร็จ')
@@ -295,13 +297,14 @@ function ProfileContent() {
               <div className="relative h-24 bg-gradient-to-r from-cyan-500 to-blue-600">
                 <div className="absolute -bottom-12 left-6">
                   <div className="relative w-24 h-24">
-                    {user?.avatar ? (
+                    {user?.avatar && !avatarLoadFailed ? (
                       <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center border-4 border-slate-900 shadow-xl overflow-hidden">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`${SERVER_URL}${user.avatar}`}
                           alt="avatar"
                           className="w-full h-full object-cover"
+                          onError={() => setAvatarLoadFailed(true)}
                         />
                       </div>
                     ) : (

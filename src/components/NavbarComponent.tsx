@@ -11,6 +11,7 @@ import {
   FileText,
   User,
   Settings,
+  ShieldCheck,
   LogOut,
   ChevronDown,
   Menu,
@@ -19,29 +20,34 @@ import {
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
-const menuItems = [
+const baseMenuItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Scan Files", href: "/scan", icon: Scan },
   { name: "My Reports", href: "/reports", icon: FileText },
   { name: "My Profile", href: "/profile?m=report", icon: User },
 ]
 
+const adminMenuItem = { name: "Admin", href: "/admin", icon: ShieldCheck }
+
 export default function NavbarComponent() {
   const router = useRouter()
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const [profile, setProfile] = useState<{ username?: string; email?: string; avatar?: string } | null>(null)
+  const [profile, setProfile] = useState<{ username?: string; email?: string; avatar?: string; role?: string } | null>(null)
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
 
   useEffect(() => {
     let active = true
     axios.get("/api/profile")
       .then(({ data }) => {
         if (!active || !data?.success || !data?.data) return
+        setAvatarLoadFailed(false)
         setProfile({
           username: data.data.username,
           email: data.data.email,
           avatar: data.data.avatar_url,
+          role: data.data.role,
         })
       })
       .catch(() => { /* keep defaults */ })
@@ -51,7 +57,9 @@ export default function NavbarComponent() {
   const displayName = profile?.username || "Security Analyst"
   const displayEmail = profile?.email || "admin@rampart.security"
   const initials = (displayName.trim().charAt(0) || "U").toUpperCase()
-  const avatarSrc = profile?.avatar ? `${SERVER_URL}${profile.avatar}` : null
+  const avatarSrc = profile?.avatar && !avatarLoadFailed ? `${SERVER_URL}${profile.avatar}` : null
+  const isAdmin = profile?.role === "admin" || profile?.role === "master"
+  const menuItems = isAdmin ? [...baseMenuItems, adminMenuItem] : baseMenuItems
 
   const handleLogout = () => {
     router.push("/logout")
@@ -126,7 +134,12 @@ export default function NavbarComponent() {
                 <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-blue-500/20 overflow-hidden">
                   {avatarSrc ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
+                    <img
+                      src={avatarSrc}
+                      alt="avatar"
+                      className="w-full h-full object-cover"
+                      onError={() => setAvatarLoadFailed(true)}
+                    />
                   ) : (
                     initials
                   )}
