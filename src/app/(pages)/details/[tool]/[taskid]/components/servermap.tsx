@@ -1,3 +1,5 @@
+import "leaflet/dist/leaflet.css";
+import * as L from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, ZoomControl } from "react-leaflet";
 
 type DomainInfo = {

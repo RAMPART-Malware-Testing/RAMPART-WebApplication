@@ -71,7 +71,7 @@ const CollisionCards: React.FC = () => {
                     {cardsData.map((card, idx) => (
                         <div
                             key={card.id}
-                            ref={el => cardRefs.current[idx] = el}
+                            ref={el => { cardRefs.current[idx] = el }}
                             className="group opacity-0 translate-y-10 transition-all duration-700 hover:duration-300"
                             style={{ transitionDelay: `${idx * 100}ms` }}
                         >
