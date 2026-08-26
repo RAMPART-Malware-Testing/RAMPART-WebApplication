@@ -434,35 +434,14 @@ function ProfileContent() {
                         <div>
                           <label className="block text-slate-400 text-sm mb-2">อีเมล</label>
                           <div className="flex items-center gap-3">
-                            {editingField === 'email' ? (
-                              <div className="flex-1 flex gap-2">
-                                <input
-                                  type="email"
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  className="flex-1 px-4 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                                  autoFocus
-                                />
-                                <button onClick={handleSaveEdit} className="px-4 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition">
-                                  <i className="fas fa-check"></i>
-                                </button>
-                                <button onClick={() => setEditingField(null)} className="px-4 py-2.5 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition">
-                                  <i className="fas fa-times"></i>
-                                </button>
-                              </div>
-                            ) : (
-                              <>
-                                <input
-                                  type="email"
-                                  value={user?.email || ''}
-                                  readOnly
-                                  className="flex-1 px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white cursor-default"
-                                />
-                                <button onClick={() => handleEdit('email', user?.email || '')} className="p-2.5 text-cyan-400 hover:bg-cyan-500/10 rounded-xl transition">
-                                  <i className="fas fa-pen"></i>
-                                </button>
-                              </>
-                            )}
+                            <input
+                              type="email"
+                              value={user?.email || ''}
+                              readOnly
+                              disabled
+                              title="ไม่สามารถแก้ไขอีเมลได้"
+                              className="flex-1 px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white cursor-not-allowed opacity-70"
+                            />
                           </div>
                         </div>
 
