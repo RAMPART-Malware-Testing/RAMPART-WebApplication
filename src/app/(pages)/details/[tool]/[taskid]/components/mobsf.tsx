@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import axios from "axios";
 import GeometricLoader from "@/components/GeometricLoader";
 import NavbarComponent from "@/components/NavbarComponent";
+import ReportDownload from "./ReportDownload";
+
 
 // react-leaflet touches `window`/`document` at import time and crashes during
 // server-side rendering — only load it in the browser.
@@ -166,6 +168,8 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
 
                     </div>
 
+                    <ReportDownload taskid={taskid} md5={report.md5} tools={[tool]} />
+
                     {/* Stats Cards Row */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         {/* Security Score */}
@@ -246,10 +250,9 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
 
 
                     {/* Domain Malware Check */}
-                    <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div>
-                                <h2 className="text-lg font-semibold">Domain Malware Check</h2>
+                    <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                        <h2 className="text-lg font-semibold mb-3">Domain Malware Check</h2>
+                        <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
@@ -341,9 +344,7 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                                         )}
                                     </tbody>
                                 </table>
-
                             </div>
-                        </div>
 
                     </div>
 

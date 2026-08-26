@@ -27,12 +27,6 @@ interface LoginHistory {
   status: 'success' | 'failed'
 }
 
-interface PasswordHistory {
-  id: string
-  changedAt: string
-  changedBy: string
-}
-
 interface UploadHistory {
   id: string
   fileName: string
@@ -57,7 +51,6 @@ function ProfileContent() {
   const [activeTab, setActiveTab] = useState('profile')
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loginHistory, setLoginHistory] = useState<LoginHistory[]>([])
-  const [passwordHistory, setPasswordHistory] = useState<PasswordHistory[]>([])
   const [uploadHistory, setUploadHistory] = useState<UploadHistory[]>([])
   const [downloadHistory, setDownloadHistory] = useState<DownloadHistory[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -73,59 +66,11 @@ function ProfileContent() {
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (modeParam === 'report') {
-      setActiveTab('upload')
-    }
+    // หน้า profile เปิดด้วยแท็บ "ข้อมูลบัญชีผู้ใช้" เป็นอันแรกเสมอ
+    setActiveTab('profile')
   }, [modeParam])
 
   useEffect(() => {
-    const mockLoginHistory: LoginHistory[] = [
-      {
-        id: '1',
-        timestamp: '2024-01-20 14:25:00',
-        ipAddress: '192.168.1.100',
-        location: 'Bangkok, Thailand',
-        device: 'Chrome on Windows',
-        status: 'success'
-      },
-      {
-        id: '2',
-        timestamp: '2024-01-20 08:15:00',
-        ipAddress: '192.168.1.100',
-        location: 'Bangkok, Thailand',
-        device: 'Chrome on Windows',
-        status: 'success'
-      },
-      {
-        id: '3',
-        timestamp: '2024-01-19 22:30:00',
-        ipAddress: '10.0.0.50',
-        location: 'Bangkok, Thailand',
-        device: 'Safari on iPhone',
-        status: 'success'
-      },
-      {
-        id: '4',
-        timestamp: '2024-01-19 15:45:00',
-        ipAddress: '203.45.67.89',
-        location: 'Unknown',
-        device: 'Firefox on Linux',
-        status: 'failed'
-      }
-    ]
-
-    const mockPasswordHistory: PasswordHistory[] = [
-      { id: '1', changedAt: '2024-01-15 09:30:00', changedBy: 'system' },
-      { id: '2', changedAt: '2024-01-10 14:20:00', changedBy: 'user' },
-      { id: '3', changedAt: '2024-01-01 11:15:00', changedBy: 'user' }
-    ]
-
-    const mockDownloadHistory: DownloadHistory[] = [
-      { id: '1', fileName: 'suspicious_app_analysis.pdf', reportType: 'PDF Report', timestamp: '2024-01-20 14:35:00', fileSize: 2457600 },
-      { id: '2', fileName: 'system_tool_analysis.json', reportType: 'JSON Data', timestamp: '2024-01-20 13:20:00', fileSize: 1567800 },
-      { id: '3', fileName: 'monthly_report.pdf', reportType: 'PDF Report', timestamp: '2024-01-19 10:15:00', fileSize: 3891200 }
-    ]
-
     const loadProfile = async () => {
       try {
         const { data } = await axios.get('/api/profile')
@@ -161,9 +106,39 @@ function ProfileContent() {
         setUploadHistory([])
       }
 
-      setLoginHistory(mockLoginHistory)
-      setPasswordHistory(mockPasswordHistory)
-      setDownloadHistory(mockDownloadHistory)
+      // ประวัติการเข้าสู่ระบบ — จาก API จริง (/api/profile/login-history)
+      try {
+        const { data } = await axios.post('/api/profile/login-history')
+        if (data?.success && Array.isArray(data.data)) {
+          setLoginHistory(data.data.map((it: any) => ({
+            id: it.id,
+            timestamp: it.created_at || '',
+            ipAddress: it.ip || '—',
+            location: it.provider ? it.provider.replace(/^\w/, (c: string) => c.toUpperCase()) : '—',
+            device: it.user_agent || it.provider || '—',
+            status: it.status === 'success' ? 'success' as const : 'failed' as const,
+          })))
+        }
+      } catch {
+        setLoginHistory([])
+      }
+
+      // ประวัติการดาวน์โหลด — จาก API จริง (/api/profile/download-history)
+      try {
+        const { data } = await axios.post('/api/profile/download-history')
+        if (data?.success && Array.isArray(data.data)) {
+          setDownloadHistory(data.data.map((it: any) => ({
+            id: it.id,
+            fileName: it.file_name || it.md5 || '-',
+            reportType: it.tool || 'report',
+            timestamp: it.created_at || '',
+            fileSize: 0,
+          })))
+        }
+      } catch {
+        setDownloadHistory([])
+      }
+
       setIsLoading(false)
     }
 
@@ -291,7 +266,6 @@ function ProfileContent() {
   const tabs = [
     { id: 'profile', label: 'ข้อมูลส่วนตัว', icon: 'fas fa-user', color: 'cyan' },
     { id: 'login', label: 'ประวัติการเข้าสู่ระบบ', icon: 'fas fa-sign-in-alt', color: 'blue' },
-    { id: 'password', label: 'ประวัติรหัสผ่าน', icon: 'fas fa-history', color: 'purple' },
     { id: 'upload', label: 'ประวัติอัพโหลด', icon: 'fas fa-upload', color: 'green' },
     { id: 'download', label: 'ประวัติดาวน์โหลด', icon: 'fas fa-download', color: 'orange' }
   ]
@@ -384,67 +358,8 @@ function ProfileContent() {
               </div>
             </div>
 
-            {/* Stats Card */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <i className="fas fa-chart-simple text-cyan-400" />
-                สถิติการใช้งาน
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-white">{uploadHistory.length}</div>
-                  <div className="text-slate-400 text-xs mt-1">ไฟล์ที่อัพโหลด</div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-white">{downloadHistory.length}</div>
-                  <div className="text-slate-400 text-xs mt-1">รายงานที่ดาวน์โหลด</div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-white">
-                    {loginHistory.filter(log => log.status === 'success').length}
-                  </div>
-                  <div className="text-slate-400 text-xs mt-1">การเข้าสู่ระบบ</div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-white">{passwordHistory.length}</div>
-                  <div className="text-slate-400 text-xs mt-1">เปลี่ยนรหัสผ่าน</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <i className="fas fa-bolt text-amber-400" />
-                การดำเนินการด่วน
-              </h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setChangePasswordDialog(true)}
-                  className="w-full group flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300"
-                >
-                  <i className="fas fa-key text-cyan-400"></i>
-                  <span className="text-white flex-1 text-left">เปลี่ยนรหัสผ่าน</span>
-                  <i className="fas fa-chevron-right text-slate-400 text-sm group-hover:translate-x-1 transition-transform"></i>
-                </button>
-                <Link
-                  href="/dashboard"
-                  className="w-full group flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300"
-                >
-                  <i className="fas fa-tachometer-alt text-blue-400"></i>
-                  <span className="text-white flex-1 text-left">ไปที่ Dashboard</span>
-                  <i className="fas fa-chevron-right text-slate-400 text-sm group-hover:translate-x-1 transition-transform"></i>
-                </Link>
-                <Link
-                  href="/reports"
-                  className="w-full group flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300"
-                >
-                  <i className="fas fa-folder text-emerald-400"></i>
-                  <span className="text-white flex-1 text-left">ไฟล์ทั้งหมด</span>
-                  <i className="fas fa-chevron-right text-slate-400 text-sm group-hover:translate-x-1 transition-transform"></i>
-                </Link>
-              </div>
-            </div>
+          
+           
           </div>
 
           {/* Main Content */}
@@ -563,35 +478,7 @@ function ProfileContent() {
                       </div>
                     </div>
 
-                    <div className="bg-white/5 rounded-xl p-5 border border-white/10">
-                      <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
-                        <i className="fas fa-shield-alt text-emerald-400"></i>
-                        <span>ความปลอดภัย</span>
-                      </h4>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl">
-                          <div className="flex items-center gap-3">
-                            <i className="fas fa-key text-amber-400"></i>
-                            <span className="text-white">รหัสผ่าน</span>
-                          </div>
-                          <button
-                            onClick={() => setChangePasswordDialog(true)}
-                            className="px-4 py-2 text-sm text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition"
-                          >
-                            เปลี่ยนรหัสผ่าน
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl">
-                          <div className="flex items-center gap-3">
-                            <i className="fas fa-clock text-purple-400"></i>
-                            <span className="text-white">2FA</span>
-                          </div>
-                          <button className="px-4 py-2 text-sm text-slate-400 hover:text-white transition">
-                            กำลังจะมาเร็วๆ นี้
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                 
                   </div>
                 </div>
               )}
@@ -603,7 +490,13 @@ function ProfileContent() {
                     <h4 className="text-white font-semibold">ประวัติการเข้าสู่ระบบ</h4>
                     <span className="text-slate-400 text-sm">ทั้งหมด {loginHistory.length} รายการ</span>
                   </div>
-                  {loginHistory.map((log) => (
+                  {loginHistory.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500">
+                      <i className="fas fa-sign-in-alt text-3xl mb-3 opacity-40"></i>
+                      <p>ไม่มีข้อมูลการเข้าสู่ระบบ</p>
+                    </div>
+                  ) : (
+                    loginHistory.map((log) => (
                     <div key={log.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${log.status === 'success' ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
                         <i className={`${log.status === 'success' ? 'fas fa-check-circle text-emerald-400' : 'fas fa-times-circle text-rose-400'}`}></i>
@@ -622,31 +515,8 @@ function ProfileContent() {
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Password History Tab */}
-              {activeTab === 'password' && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-white font-semibold">ประวัติการเปลี่ยนรหัสผ่าน</h4>
-                    <span className="text-slate-400 text-sm">ทั้งหมด {passwordHistory.length} รายการ</span>
-                  </div>
-                  {passwordHistory.map((history) => (
-                    <div key={history.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
-                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                        <i className="fas fa-key text-purple-400"></i>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white font-medium mb-1">เปลี่ยนรหัสผ่านแล้ว</p>
-                        <div className="flex items-center gap-3 text-sm text-slate-400">
-                          <span><i className="fas fa-user mr-1"></i>โดย: {history.changedBy === 'user' ? 'คุณ' : 'ระบบ'}</span>
-                          <span><i className="fas fa-calendar mr-1"></i>{formatDate(history.changedAt)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               )}
 
@@ -697,7 +567,13 @@ function ProfileContent() {
                     <h4 className="text-white font-semibold">ประวัติการดาวน์โหลดรายงาน</h4>
                     <span className="text-slate-400 text-sm">ทั้งหมด {downloadHistory.length} รายการ</span>
                   </div>
-                  {downloadHistory.map((download) => (
+                  {downloadHistory.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500">
+                      <i className="fas fa-download text-3xl mb-3 opacity-40"></i>
+                      <p>ไม่มีข้อมูลการดาวน์โหลด</p>
+                    </div>
+                  ) : (
+                    downloadHistory.map((download) => (
                     <div key={download.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                         <i className="fas fa-file-pdf text-emerald-400"></i>
@@ -714,7 +590,8 @@ function ProfileContent() {
                         <i className="fas fa-download"></i>
                       </button>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               )}
             </div>

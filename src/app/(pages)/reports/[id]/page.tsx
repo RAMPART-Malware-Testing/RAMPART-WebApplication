@@ -45,19 +45,22 @@ export default function ReportDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [downloadingTool, setDownloadingTool] = useState<string | null>(null)
   const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
+
+const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
   const router = useRouter()
   const handleDownload = async (tool: string, md5: string) => {
     if (downloadingTool) return
     try {
       setDownloadingTool(tool)
-      const url = `${SERVER_URL}/api/analy/v1/download/report/${tool}-${md5}`
-      const { data } = await axios.get(url, { timeout: 30000 })
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(blob)
-      link.download = `${tool}-${md5}.json`
-      link.click()
-      URL.revokeObjectURL(link.href)
+      const url = `${SERVER_URL}/api/analy/v1/download/report/${tool}-${md5}.json`
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${tool}-${md5}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      // บันทึกประวัติการดาวน์โหลด (fire-and-forget)
+      axios.post("/api/profile/download", { file_name: report?.file_name, tool, md5 }).catch(() => {})
     } catch {
       alert(`ดาวน์โหลด ${tool} ไม่สำเร็จ`)
     } finally {
@@ -255,15 +258,16 @@ export default function ReportDetailPage() {
               <p className="text-[10px] sm:text-xs text-blue-200/40 break-all mt-4">MD5: {report.md5}</p>
             </div>
             {/* Tools & Download */}
-            {/* <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
+            <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
               <h2 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">ดาวน์โหลดรายงาน</h2>
               <div className="flex flex-row gap-3 sm:gap-4 flex-wrap justify-center sm:justify-start">
-                {tools.map(tool => {
+                {DOWNLOADABLE_TOOLS.filter((t) => tools.includes(t)).map(tool => {
                   const isDownloading = downloadingTool === tool
                   const toolLabels: Record<string, { label: string; imagePath: string }> = {
                     mobsf: { label: 'MobSF', imagePath: '/mobsf_logo.png' },
                     virustotal: { label: 'VirusTotal', imagePath: '/virustotal_logo.png' },
                     cape: { label: 'CAPE Sandbox', imagePath: '/cape_logo.png' },
+                    rampartai: { label: 'RampartAI', imagePath: '/default_logo.png' },
                   }
                   const meta = toolLabels[tool] ?? { label: tool, imagePath: '/default_logo.png' }
 
@@ -286,7 +290,7 @@ export default function ReportDetailPage() {
                             fill
                             className="object-contain p-1"
                           />
-                        </div>                                                                                                                          
+                        </div>
                         <span className="text-white font-medium truncate">{meta.label}</span>
                       </div>
                       {isDownloading ? (
@@ -302,7 +306,7 @@ export default function ReportDetailPage() {
                 })}
               </div>
               <p className="text-[10px] sm:text-xs text-blue-200/40 break-all mt-4">MD5: {report.md5}</p>
-            </div> */}
+            </div>
 
             {/* Gemini & VirusTotal */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50 shadow-xl">

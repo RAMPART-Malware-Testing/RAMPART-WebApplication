@@ -150,7 +150,7 @@ export default function ScanFilesPage() {
   const busy = file?.status === 'uploading' || file?.status === 'analyzing'
 
   return (
-    <div className="min-h-screen bg-[#050510]">
+    <div className="p-6 min-h-screen bg-[#050510]">
       <NavbarComponent />
       <div className="max-w-2xl mx-auto mt-8 px-4 sm:px-6 space-y-5">
         <div>

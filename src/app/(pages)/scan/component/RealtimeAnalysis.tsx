@@ -5,6 +5,7 @@ import Link from "next/link"
 import axios from "axios"
 import { AnalysisTimeline } from "./AnalysisTimeline"
 import GeometricLoader from "@/components/GeometricLoader"
+import ReportDownload from "../../details/[tool]/[taskid]/components/ReportDownload"
 import type { AnalysisResponse, TaskStatus } from "./types"
 
 interface ToolProgress { status?: unknown; score?: number }
@@ -38,23 +39,21 @@ function deriveToolStatuses(progress?: TaskProgress): { virustotal: TaskStatus; 
     return s
   }
 
-  // Stage-based, cumulative: as the pipeline advances, keep earlier stages
-  // shown as "running" too, so VirusTotal (Stage 1) and MobSF/CAPE (Stage 2)
-  // appear working simultaneously — VirusTotal always first.
+  // Stage-based, sequential: only ONE stage runs at a time. As the pipeline
+  // advances, earlier stages flip to "completed" instead of staying "running",
+  // so two stages never appear active simultaneously.
   const stage = progress?.stage
   if (stage === "virustotal") {
     s.virustotal = "running"
   } else if (stage === "sandboxes" || stage === "mobsf") {
-    s.virustotal = "running"
+    s.virustotal = "completed"
     s.mobsf = "running"
   } else if (stage === "cape") {
-    s.virustotal = "running"
-    s.mobsf = "running"
+    s.mobsf = "completed"
     s.cape = "running"
   } else if (stage === "rampartai" || stage === "rampart") {
-    s.virustotal = "running"
-    s.mobsf = "running"
-    s.cape = "running"
+    s.mobsf = "completed"
+    s.cape = "completed"
     s.ml = "running"
   } else if (stage === "gemini") {
     s.gemini = "running"
@@ -167,7 +166,22 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
   const [error, setError] = useState("")
   const [privacy, setPrivacy] = useState(false)
   const [savingPrivacy, setSavingPrivacy] = useState(false)
+  const [md5, setMd5] = useState<string>()
+  const [availableTools, setAvailableTools] = useState<string[]>([])
+  const [ownUid, setOwnUid] = useState<string>()
+  const [reportUid, setReportUid] = useState<string>()
   const finishedRef = useRef(false)
+
+  // ดึง uid ของผู้ใช้ปัจจุบัน เพื่อตัดสินใจว่าเป็นเจ้าของรายงานหรือไม่
+  useEffect(() => {
+    let active = true
+    axios.get("/api/profile")
+      .then(({ data }) => { if (active && data?.success && data?.data?.uid) setOwnUid(data.data.uid) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
+
+  const isOwner = !!reportUid && reportUid === ownUid
 
   async function changePrivacy(next: boolean) {
     if (savingPrivacy) return
@@ -195,6 +209,9 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
 
         const st = deriveToolStatuses(data.progress)
         if (typeof data.report?.privacy === "boolean") setPrivacy(data.report.privacy)
+        if (data.report?.uid) setReportUid(data.report.uid)
+        if (data.report?.md5) setMd5(data.report.md5)
+        if (data.report?.tools) setAvailableTools(String(data.report.tools).split(",").map((t: string) => t.trim()).filter(Boolean))
         setAnalysis((prev) => ({
           ...prev,
           overallStatus: "analyzing",
@@ -241,7 +258,8 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
           <span className={cn_status(status)}>{statusText(status)}</span>
         </div>
 
-        {/* Privacy toggle (adjustable anytime, defaults to private) */}
+        {/* Privacy toggle — เจ้าของรายงานเท่านั้นที่ปรับได้ */}
+        {isOwner && (
         <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
           <div>
             <p className="text-sm font-medium text-white">ความเป็นส่วนตัวของรายงาน</p>
@@ -266,6 +284,7 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
             </button>
           </div>
         </div>
+        )}
 
         {/* Original timeline UI, fed with real data */}
         <AnalysisTimeline data={analysis} />
@@ -292,6 +311,11 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Download reports (on completion) */}
+        {status === "completed" && md5 && availableTools.length > 0 && (
+          <ReportDownload taskid={taskId} md5={md5} variant="dark" tools={availableTools} />
         )}
       </div>
     </div>

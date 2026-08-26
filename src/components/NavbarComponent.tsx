@@ -22,8 +22,8 @@ const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 const menuItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Scan Files", href: "/scan", icon: Scan },
-  { name: "All Reports", href: "/reports", icon: FileText },
-  { name: "My Reports", href: "/profile?m=report", icon: User },
+  { name: "My Reports", href: "/reports", icon: FileText },
+  { name: "My Profile", href: "/profile?m=report", icon: User },
 ]
 
 export default function NavbarComponent() {

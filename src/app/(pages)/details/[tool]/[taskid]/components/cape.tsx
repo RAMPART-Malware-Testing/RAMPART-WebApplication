@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import GeometricLoader from "@/components/GeometricLoader";
 import NavbarComponent from "@/components/NavbarComponent";
+import ReportDownload from "./ReportDownload";
 
 interface Datareport {
   success: boolean;
@@ -11,6 +12,8 @@ interface Datareport {
   status: "processing" | "success" | "failed";
   report: any;
 }
+
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
 export default function Page({ taskid, tool }: { taskid: string; tool: string }) {
   const [reportData, setReportData] = useState<Datareport | null>(null);
@@ -47,21 +50,33 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
   const statistics = report?.statistics || {};
   const cape = report?.CAPE || {};
 
-  // ตรวจสอบว่าเป็น Failure จริงหรือไม่ — อย่าตัดสินจากบรรทัด log ที่มี "ERROR"
-  // (เช่น `No module named 'PIL'` ของ screenshot ซึ่งไม่ใช่ความล้มเหลว)
+  // ตรวจสอบว่าเป็น Failure จริงหรือไม่ — แยกเฉพาะ "jar ผิด" จากกรณีอื่น
   const errorLog = debug?.log || "";
   const realErrors = (debug?.errors || []).filter(Boolean);
-  const hasPackageError = /CuckooPackageError|Invalid package type/i.test(errorLog);
+
+  // จริงเฉพาะ : APK ถูกส่งไปรันแบบ jar (ไม่มี Java) — ไม่ใช่ทุก CuckooPackageError
+  const hasPackageError =
+    /Invalid package type/i.test(errorLog) && /jar/i.test(errorLog);
+
+  // Failure จริงอื่น ๆ (เช่น CuckooPackageError: elevation/Error 740/access ...)
   const hasRealFailure =
     realErrors.length > 0 ||
-    /failed_analysis|analysis failed|analyzer.*(failed|error)/i.test(errorLog);
+    /CuckooPackageError|failed_analysis|analysis failed/i.test(errorLog);
+
   const hasError = hasPackageError || hasRealFailure;
+
+  // ดึงบรรทัด error ที่อ่านเข้าใจง่ายจาก log
+  const readableLine =
+    errorLog.split("\n").find((l: string) =>
+      /Failed to execute process|Access is denied|Unable to execute the initial process|Error: \d+|Invalid package type/i.test(l)
+    )?.trim() || "";
+
   const errorMessage = realErrors[0]
     ? String(realErrors[0])
     : hasPackageError
       ? "Analysis failed: Invalid package type. APK file was run with 'jar' package but Java is not available."
       : hasRealFailure
-        ? "Analysis failed with unknown error"
+        ? ("Analysis failed: " + (readableLine || "unknown error"))
         : "";
 
   return (
@@ -75,7 +90,7 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
           <div className="bg-red-900/50 border-l-4 border-red-500 p-4 rounded-xl">
             <h2 className="text-xl font-bold text-red-400 mb-2">⚠️ Analysis Failed</h2>
             <p className="text-red-300">{errorMessage}</p>
-            {errorLog.includes("CuckooPackageError") && (
+            {errorMessage && hasPackageError && (
               <div className="mt-3 p-3 bg-black/50 rounded-lg text-sm font-mono">
                 <p className="text-yellow-400">Root Cause:</p>
                 <p>The submitted file is an <strong>Android APK</strong> but was analyzed with the <strong>'jar'</strong> package (for Java JAR files).</p>
@@ -108,6 +123,7 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
         
 
         {/* 📄 RAW JSON (สำหรับ Debug) */}
+        <ReportDownload taskid={taskid} md5={report?.target?.file?.md5} tools={[tool]} />
         <div className="bg-black p-4 rounded-xl overflow-x-auto border border-gray-700">
           <h2 className="text-xl font-bold mb-2">Raw JSON Report</h2>
           <pre className="text-xs text-gray-300 overflow-auto max-h-[500px]">

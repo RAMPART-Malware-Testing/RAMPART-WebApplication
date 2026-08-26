@@ -6,6 +6,8 @@ import NavbarComponent from '@/components/NavbarComponent'
 import axios from 'axios'
 import GeometricLoader from '@/components/GeometricLoader'
 
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
+
 interface FileStats {
   total: number
   success: number
@@ -88,16 +90,20 @@ function getRiskScoreColor(score: number) {
 export default function DashboardPage() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('daily')
+  const [publicFiles, setPublicFiles] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setIsLoading(true)
-        const [statsResponse, activitiesResponse] = await Promise.all([
+        const [statsResponse, activitiesResponse, publicResponse] = await Promise.all([
           axios.post<Omit<DashboardStats, 'recentActivities'>>('/api/dashboard'),
           axios.post<RecentActivity[]>('/api/dashboard/recent-activities'),
+          axios.post<any>('/api/dashboard/reports', { page: 1, limit: 8 }),
         ])
+
+        setPublicFiles(publicResponse?.data?.data ?? [])
 
         setDashboardStats({
           totalFiles: statsResponse?.data?.totalFiles ?? { total: 0, success: 0, pending: 0, failed: 0 },
@@ -181,7 +187,68 @@ export default function DashboardPage() {
             subtitle="สมาชิกที่ลงทะเบียน"
           />
         </div>
-
+         {/* Public Files */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-white/10">
+            <h3 className="text-white font-semibold flex items-center gap-2">
+              <i className="fas fa-globe text-blue-400" />
+              ไฟล์สาธารณะ (Public)
+            </h3>
+            <p className="text-slate-400 text-sm mt-1">รายงานที่เปิดให้ทุกคนดูได้</p>
+          </div>
+          <div className="divide-y divide-white/5">
+            {publicFiles.length > 0 ? (
+              publicFiles.map((f: any) => (
+                <Link
+                  key={f.aid || f.task_id}
+                  href={`/scan/analysis?taskId=${f.task_id}`}
+                  className="flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-9 h-9 shrink-0 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-cyan-400 text-xs font-bold uppercase">
+                      {f.file_type ?? '?'}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{f.file_name}</p>
+                      <p className="text-xs text-slate-500">
+                        {f.file_size ? fmtSize(f.file_size) : ''} • {f.created_at ? new Date(f.created_at).toLocaleString('th-TH') : ''}
+                      </p>
+                      {f.uploaded_by && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="h-4 w-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-[8px] font-bold text-white overflow-hidden">
+                            {f.uploaded_by.avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={`${SERVER_URL}${f.uploaded_by.avatar_url}`} alt="avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              (f.uploaded_by.username || '?').charAt(0).toUpperCase()
+                            )}
+                          </span>
+                          <span className="text-[11px] text-slate-400">{f.uploaded_by.username}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {f.status && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${f.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : f.status === 'failed' ? 'bg-rose-500/10 text-rose-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                        {f.status}
+                      </span>
+                    )}
+                    {f.report?.score != null && (
+                      <span className="text-xs text-blue-300">Score: {f.report.score}/100</span>
+                    )}
+                    <i className="fas fa-chevron-right text-slate-500 text-xs group-hover:translate-x-1 group-hover:text-cyan-400 transition" />
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="text-center py-12 text-slate-400">
+                <i className="fas fa-globe text-4xl mb-3 opacity-40" />
+                <p>ไม่มีไฟล์</p>
+              </div>
+            )}
+          </div>
+        </div>
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Malware Types */}
@@ -287,33 +354,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <QuickActionCard
-            href="/scan"
-            icon="fas fa-cloud-upload-alt"
-            title="อัปโหลดไฟล์"
-            description="อัปโหลดไฟล์เพื่อสแกนหามัลแวร์"
-            gradient="from-cyan-500 to-blue-500"
-          />
-          <QuickActionCard
-            href="/reports"
-            icon="fas fa-chart-pie"
-            title="รายงานทั้งหมด"
-            description="ดูรายงานการวิเคราะห์ทั้งหมด"
-            gradient="from-purple-500 to-pink-500"
-          />
-          <QuickActionCard
-            href="/profile?m=report"
-            icon="fas fa-history"
-            title="ประวัติการวิเคราะห์"
-            description="ตรวจสอบประวัติไฟล์ของคุณ"
-            gradient="from-emerald-500 to-teal-500"
-          />
-        </div>
+        
+        
 
         {/* Recent Activities */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+        {/* <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
           <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
             <div>
               <h3 className="text-white font-semibold flex items-center gap-2">
@@ -367,13 +412,23 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-        </div>
+        </div> */}
+
+       
       </div>
     </div>
   )
 }
 
 // Components
+function fmtSize(bytes?: number | null) {
+  if (!bytes) return ""
+  const k = 1024
+  const sizes = ["B", "KB", "MB", "GB"]
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+}
+
 function StatCard({ title, value, icon, gradient, subtitle }: { 
   title: string
   value: string | number
@@ -397,25 +452,5 @@ function StatCard({ title, value, icon, gradient, subtitle }: {
         <p className="text-slate-500 text-sm">{subtitle}</p>
       </div>
     </div>
-  )
-}
-
-function QuickActionCard({ href, icon, title, description, gradient }: {
-  href: string
-  icon: string
-  title: string
-  description: string
-  gradient: string
-}) {
-  return (
-    <Link href={href} className="group">
-      <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:bg-white/10 transition-all duration-300 hover:scale-105">
-        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-all`}>
-          <i className={`${icon} text-white text-2xl`} />
-        </div>
-        <h3 className="text-white font-semibold text-lg mb-1">{title}</h3>
-        <p className="text-slate-400 text-sm">{description}</p>
-      </div>
-    </Link>
   )
 }
