@@ -4,7 +4,7 @@ import { jwtService } from "@/services/jwt.service";
 
 // Pages that only make sense for a logged-out visitor. A signed-in user
 // hitting these gets bounced to /dashboard instead.
-const GUEST_ONLY_ROUTES = ["/login"];
+const GUEST_ONLY_ROUTES = ["/login", "/register", "/reset-passwd", "/verify-otp"];
 
 // Pages that require a valid session. Anonymous visitors get bounced to
 // /login (their original destination is not preserved - matches previous
@@ -78,6 +78,9 @@ export const config = {
         "/",
         "/logout",
         "/login",
+        "/register",
+        "/reset-passwd",
+        "/verify-otp",
         "/dashboard/:path*",
         "/home/:path*",
         "/details/:path*",
