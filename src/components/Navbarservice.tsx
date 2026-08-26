@@ -1,10 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import path from "path";
 
 export default function Navbarservice() {
   const router = useRouter();
@@ -12,9 +9,12 @@ export default function Navbarservice() {
   return (
     <nav className="fixed top-0 left-0 w-full z-49 backdrop-blur-xl bg-black/20 border-b border-white/10 shadow-2xl">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex justify-between items-center">
-        <div className="text-2xl font-black tracking-tighter bg-gradient-to-r from-purple-300 via-fuchsia-300 to-indigo-300 bg-clip-text text-transparent">
+        <Link
+          href="/"
+          className="text-2xl font-black tracking-tighter bg-gradient-to-r from-purple-300 via-fuchsia-300 to-indigo-300 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+        >
           RAM<span className="text-white">PART</span>
-        </div>
+        </Link>
         <div className="hidden md:flex space-x-8 text-sm font-medium">
           <a href="#" className="hover:text-purple-300 transition-colors duration-300">
             แนวคิด
