@@ -1,11 +1,17 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useToast } from '@/components/ui/ToastProvider'
 import { ROLE_LABELS } from '@/lib/roles'
+import { useProfile } from '@/hooks/queries/useProfile'
+import {
+  useAdminUsersList,
+  useAdminBanUser,
+  useAdminUnbanUser,
+  useAdminChangeRole,
+} from '@/hooks/queries/useAdminUsers'
 
 const ROLE_BADGE: Record<string, string> = {
   admin: 'text-cyan-300 bg-cyan-500/10 border border-cyan-500/20',
@@ -13,49 +19,31 @@ const ROLE_BADGE: Record<string, string> = {
 }
 
 export default function AdminAdminsPage() {
-  const [items, setItems] = useState<AdminUserListItem[]>([])
-  const [pagination, setPagination] = useState<AdminPagination | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [busyUid, setBusyUid] = useState<string | null>(null)
-  const [isMaster, setIsMaster] = useState(false)
   const notify = useToast()
 
-  useEffect(() => {
-    // Ban and demote actions on this page are master-only (an admin
-    // viewer cannot act on another admin/master at all, per
-    // ensure_can_manage_target on the backend) - hide the buttons for a
-    // non-master viewer rather than showing them and letting every click
-    // fail server-side.
-    axios.get('/api/profile').then(({ data }) => {
-      if (data?.success && data?.data?.role === 'master') setIsMaster(true)
-    }).catch(() => {})
-  }, [])
+  // Ban and demote actions on this page are master-only (an admin
+  // viewer cannot act on another admin/master at all, per
+  // ensure_can_manage_target on the backend) - hide the buttons for a
+  // non-master viewer rather than showing them and letting every click
+  // fail server-side.
+  const { data: profile } = useProfile()
+  const isMaster = profile?.role === 'master'
 
-  const fetchAdmins = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const body: Record<string, unknown> = { page, limit: 20, role: ['admin', 'master'] }
-      if (search) body.q = search
+  const { data: listResult, isLoading } = useAdminUsersList({
+    page,
+    limit: 20,
+    role: ['admin', 'master'],
+    q: search || undefined,
+  })
+  const items = listResult?.data ?? []
+  const pagination = listResult?.pagination ?? null
 
-      const { data } = await axios.post<AdminUserListResponse>('/api/admin/users', body)
-      if (data.success) {
-        setItems(data.data)
-        setPagination(data.pagination)
-      } else {
-        setItems([])
-      }
-    } catch {
-      setItems([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [page, search])
-
-  useEffect(() => {
-    fetchAdmins()
-  }, [fetchAdmins])
+  const banMutation = useAdminBanUser()
+  const unbanMutation = useAdminUnbanUser()
+  const roleMutation = useAdminChangeRole()
 
   useEffect(() => {
     setPage(1)
@@ -79,18 +67,10 @@ export default function AdminAdminsPage() {
 
     setBusyUid(user.uid)
     try {
-      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/ban', {
-        target_uid: user.uid,
-        reason: reason.trim(),
-      })
-      if (data.success) {
-        notify.success('แบนผู้ดูแลสำเร็จ')
-        fetchAdmins()
-      } else {
-        notify.error(data.message || 'ไม่สามารถแบนผู้ดูแลได้')
-      }
-    } catch {
-      notify.error('ไม่สามารถแบนผู้ดูแลได้')
+      await banMutation.mutateAsync({ uid: user.uid, reason: reason.trim() })
+      notify.success('แบนผู้ดูแลสำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ไม่สามารถแบนผู้ดูแลได้')
     } finally {
       setBusyUid(null)
     }
@@ -110,15 +90,10 @@ export default function AdminAdminsPage() {
 
     setBusyUid(user.uid)
     try {
-      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/unban', { target_uid: user.uid })
-      if (data.success) {
-        notify.success('ปลดแบนผู้ดูแลสำเร็จ')
-        fetchAdmins()
-      } else {
-        notify.error(data.message || 'ไม่สามารถปลดแบนผู้ดูแลได้')
-      }
-    } catch {
-      notify.error('ไม่สามารถปลดแบนผู้ดูแลได้')
+      await unbanMutation.mutateAsync(user.uid)
+      notify.success('ปลดแบนผู้ดูแลสำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ไม่สามารถปลดแบนผู้ดูแลได้')
     } finally {
       setBusyUid(null)
     }
@@ -139,18 +114,10 @@ export default function AdminAdminsPage() {
 
     setBusyUid(user.uid)
     try {
-      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/role', {
-        target_uid: user.uid,
-        new_role: 'user',
-      })
-      if (data.success) {
-        notify.success('ถอดสิทธิ์ผู้ดูแลสำเร็จ')
-        fetchAdmins()
-      } else {
-        notify.error(data.message || 'ไม่สามารถถอดสิทธิ์ได้')
-      }
-    } catch {
-      notify.error('ไม่สามารถถอดสิทธิ์ได้')
+      await roleMutation.mutateAsync({ uid: user.uid, newRole: 'user' })
+      notify.success('ถอดสิทธิ์ผู้ดูแลสำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ไม่สามารถถอดสิทธิ์ได้')
     } finally {
       setBusyUid(null)
     }

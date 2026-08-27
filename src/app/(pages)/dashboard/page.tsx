@@ -1,64 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import NavbarComponent from '@/components/NavbarComponent'
-import axios from 'axios'
 import GeometricLoader from '@/components/GeometricLoader'
+import {
+  useDashboardSummary,
+  useDashboardRecentActivities,
+  useDashboardPublicReports,
+  type RecentActivity,
+} from '@/hooks/queries/useDashboard'
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
-
-interface FileStats {
-  total: number
-  success: number
-  pending: number
-  failed: number
-}
-
-interface MalwareTypeEntry {
-  type: string
-  count: number
-}
-
-interface RiskScoreEntry {
-  fileType: string
-  riskScore: number
-}
-
-interface RecentActivity {
-  id: string
-  fileName: string
-  status: 'success' | 'pending' | 'failed'
-  timestamp: string
-  fileType: string
-}
-
-interface DashboardStats {
-  totalFiles: FileStats
-  userFiles: FileStats
-  totalUsers: number
-  topMalwareTypes: {
-    daily: MalwareTypeEntry[]
-    monthly: MalwareTypeEntry[]
-  }
-  riskScores: RiskScoreEntry[]
-  recentActivities: RecentActivity[]
-}
-
-function safeNumber(value?: number) {
-  if (typeof value !== 'number' || isNaN(value)) return 0
-  return value
-}
 
 function truncate(text?: string, max = 30) {
   if (!text) return '-'
   if (text.length <= max) return text
   return text.slice(0, max) + '...'
-}
-
-function safeArray<T>(arr?: T[]): T[] {
-  if (!Array.isArray(arr)) return []
-  return arr
 }
 
 type TimeRange = 'daily' | 'monthly'
@@ -88,52 +46,17 @@ function getRiskScoreColor(score: number) {
 }
 
 export default function DashboardPage() {
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('daily')
-  const [publicFiles, setPublicFiles] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setIsLoading(true)
-        const [statsResponse, activitiesResponse, publicResponse] = await Promise.all([
-          axios.post<Omit<DashboardStats, 'recentActivities'>>('/api/dashboard'),
-          axios.post<RecentActivity[]>('/api/dashboard/recent-activities'),
-          axios.post<any>('/api/dashboard/reports', { page: 1, limit: 8 }),
-        ])
+  const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
+  const { data: recentActivities = [], isLoading: activitiesLoading } = useDashboardRecentActivities()
+  const { data: publicFiles = [], isLoading: publicLoading } = useDashboardPublicReports(1, 8)
 
-        setPublicFiles(publicResponse?.data?.data ?? [])
+  const isLoading = summaryLoading || activitiesLoading || publicLoading
 
-        setDashboardStats({
-          totalFiles: statsResponse?.data?.totalFiles ?? { total: 0, success: 0, pending: 0, failed: 0 },
-          userFiles: statsResponse?.data?.userFiles ?? { total: 0, success: 0, pending: 0, failed: 0 },
-          totalUsers: safeNumber(statsResponse?.data?.totalUsers),
-          topMalwareTypes: {
-            daily: safeArray(statsResponse?.data?.topMalwareTypes?.daily),
-            monthly: safeArray(statsResponse?.data?.topMalwareTypes?.monthly),
-          },
-          riskScores: safeArray(statsResponse?.data?.riskScores),
-          recentActivities: safeArray(activitiesResponse?.data),
-        })
-      } catch (error) {
-        console.error('Dashboard Load Error:', error)
-        setDashboardStats({
-          totalFiles: { total: 0, success: 0, pending: 0, failed: 0 },
-          userFiles: { total: 0, success: 0, pending: 0, failed: 0 },
-          totalUsers: 0,
-          topMalwareTypes: { daily: [], monthly: [] },
-          riskScores: [],
-          recentActivities: [],
-        })
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadDashboardData()
-  }, [])
+  if (isLoading || !summary) return <GeometricLoader loadingText="กำลังโหลดข้อมูล..." />
 
-  if (isLoading || !dashboardStats) return <GeometricLoader loadingText="กำลังโหลดข้อมูล..." />
+  const dashboardStats = { ...summary, recentActivities }
 
   const activeMalwareList = selectedTimeRange === 'daily'
     ? dashboardStats.topMalwareTypes.daily

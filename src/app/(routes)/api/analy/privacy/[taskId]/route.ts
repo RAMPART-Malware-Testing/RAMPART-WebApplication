@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import axios from "axios";
-import { jwtService } from "@/services/jwt.service";
+import { requireSession, unauthorizedResponse } from "@/lib/session";
 
 export async function PATCH(
     request: NextRequest,
@@ -9,12 +8,10 @@ export async function PATCH(
 ) {
     try {
         const { taskId } = await params;
-        const cookie = await cookies();
-        const token = cookie.get("access_token");
-        if (!token) return NextResponse.json({ success: false, message: "No access token found" }, { status: 401 });
-
-        const verify = jwtService.verify(token.value);
-        if (!verify?.token) return NextResponse.json({ success: false, message: "No access token found" }, { status: 401 });
+        const session = await requireSession();
+        if (!session) {
+            return unauthorizedResponse();
+        }
 
         const body = await request.json().catch(() => ({}));
         const privacy = typeof body.privacy === "boolean" ? body.privacy : undefined;
@@ -24,7 +21,7 @@ export async function PATCH(
 
         const SERVER_URL = process.env.SERVER_URL || "http://localhost:8006";
         const res = await axios.patch(`${SERVER_URL}/api/analy/v1/${taskId}/privacy`, {
-            token: verify.token,
+            token: session.accessToken,
             privacy,
         });
 

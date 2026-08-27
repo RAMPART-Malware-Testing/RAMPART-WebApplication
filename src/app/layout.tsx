@@ -4,6 +4,7 @@ import "./globals.css";
 import { kanit } from "@/lib/fonts";
 import ToastProvider from "@/components/ui/ToastProvider";
 import BannedGuard from "@/components/BannedGuard";
+import Providers from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,10 +47,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${kanit.className}${inter.className}  text-white selection:bg-purple-500 selection:text-white`}
       >
-        <ToastProvider>
-        <BannedGuard />
-        {children}
-        </ToastProvider>
+        <Providers>
+          <ToastProvider>
+            <BannedGuard />
+            {children}
+          </ToastProvider>
+        </Providers>
       </body>
     </html>
   );

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import NavbarComponent from '@/components/NavbarComponent'
-import axios from 'axios'
+import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
 
 const FILE_TYPES = ['apk', 'exe', 'msi', 'bat', 'dmg', 'ipa', 'zip']
 const STATUS_OPTIONS = [
@@ -17,10 +17,6 @@ const STATUS_OPTIONS = [
 type SortField = 'created_at' | 'file_name' | 'file_size' | 'score'
 
 export default function ReportsPage() {
-  const [items, setItems] = useState<AnalysisHistoryItem[]>([])
-  const [pagination, setPagination] = useState<AnalysisHistoryPagination | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
   // Filters
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
@@ -33,37 +29,16 @@ export default function ReportsPage() {
   // Pagination
   const [page, setPage] = useState(1)
 
-  // ==============================
-  // Fetch
-  // ==============================
-  const fetchHistory = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const body = {
-        page,
-        limit: 5,
-        ...(search && { s: search }),
-        ...(status !== 'all' && { status }),
-        ...(fileType !== 'all' && { file_type: fileType }),
-        [sortField]: sortDir,
-      }
-      const { data } = await axios.post<AnalysisHistoryResponse>('/api/analy/history', body)
-      console.log(data)
-
-      if (data.success) {
-        setItems(data.data)
-        setPagination(data.pagination)
-      }
-    } catch {
-      setItems([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [page, search, status, fileType, sortField, sortDir])
-
-  useEffect(() => {
-    fetchHistory()
-  }, [fetchHistory])
+  const { data: result, isLoading } = useAnalysisHistory({
+    page,
+    limit: 5,
+    s: search || undefined,
+    status: status !== 'all' ? status : undefined,
+    file_type: fileType !== 'all' ? fileType : undefined,
+    [sortField]: sortDir,
+  })
+  const items = result?.data ?? []
+  const pagination = result?.pagination ?? null
 
   // reset page เมื่อ filter เปลี่ยน
   useEffect(() => {

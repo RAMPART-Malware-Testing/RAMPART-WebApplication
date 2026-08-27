@@ -30,11 +30,27 @@ function redirect(path: string, request: NextRequest, clearCookie = false) {
 function matchesAny(pathname: string, routes: string[]) {
     return routes.some((r) => pathname === r || pathname.startsWith(`${r}/`));
 }
+async function fetchFreshRole(accessToken: string): Promise<string | null> {
+    try {
+        const serverUrl = process.env.SERVER_URL || "http://localhost:8006";
+        const res = await fetch(`${serverUrl}/api/profile`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: accessToken }),
+        });
+        if (!res.ok) return null;
+        const body = await res.json();
+        if (!body?.success || !body?.data) return null;
+        return body.data.role ?? null;
+    } catch {
+        return null;
+    }
+}
 
 // Next.js 16 renamed the `middleware.ts` file convention to `proxy.ts`
 // (export function proxy(), same signature/behavior as before).
 // See: https://nextjs.org/docs/messages/middleware-to-proxy
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const token = request.cookies.get("access_token")?.value;
     const payload = token ? jwtService.verify(token) : null;
@@ -56,10 +72,33 @@ export function proxy(request: NextRequest) {
 
         const roleGate = ROLE_PROTECTED_ROUTES.find((r) => matchesAny(pathname, [r.prefix]));
         if (roleGate) {
-            const role = payload?.data?.role;
-            if (!role || !roleGate.roles.includes(role as "admin" | "master")) {
-                return redirect("/dashboard", request);
+            const cookieRole = payload?.data?.role;
+            if (cookieRole && roleGate.roles.includes(cookieRole as "admin" | "master")) {
+                return NextResponse.next();
             }
+
+            const freshRole = await fetchFreshRole(payload!.token as string);
+            if (freshRole && roleGate.roles.includes(freshRole as "admin" | "master")) {
+                const response = NextResponse.next();
+                const refreshed = jwtService.sign(
+                    {
+                        token: payload!.token,
+                        type: "session",
+                        data: { ...payload!.data, role: freshRole } as RampartUser,
+                    },
+                    "7d",
+                );
+                response.cookies.set("access_token", refreshed, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === "production",
+                    sameSite: "lax",
+                    path: "/",
+                    maxAge: 60 * 60 * 24 * 7,
+                });
+                return response;
+            }
+
+            return redirect("/dashboard", request);
         }
 
         return NextResponse.next();

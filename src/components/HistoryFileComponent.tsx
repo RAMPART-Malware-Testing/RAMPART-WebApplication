@@ -1,8 +1,8 @@
-'use clinet'
+'use client'
 
 import Link from 'next/link'
-import axios from 'axios'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
+import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
 
 
 const FILE_TYPES = ['apk', 'exe', 'msi', 'bat', 'dmg', 'ipa', 'zip']
@@ -19,13 +19,7 @@ interface Props {
 }
 
 type SortField = 'created_at' | 'file_name' | 'file_size' | 'score'
-
 export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
-    const [items, setItems] = useState<AnalysisHistoryItem[]>([])
-    const [pagination, setPagination] = useState<AnalysisHistoryPagination | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
-
-
     // Filters
     const [search, setSearch] = useState('')
     const [status, setStatus] = useState('all')
@@ -37,38 +31,17 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
 
     // Pagination
     const [page, setPage] = useState(1)
-    const fetchHistory = useCallback(async () => {
-        setIsLoading(true)
-        try {
-            const body = {
-                page,
-                limit: 5,
 
-            }
-            const { data } = await axios.post<AnalysisHistoryResponse>('/api/analy/history', body)
-
-            if (data.success) {
-                setItems(data.data)
-                setPagination(data.pagination)
-            }
-        } catch {
-            setItems([])
-        } finally {
-            setIsLoading(false)
-        }
-
-
-
-
-
-
-    }, [page, search, status, fileType, sortField, sortDir])
-
-
-
-    useEffect(() => {
-        fetchHistory()
-    }, [fetchHistory])
+    const { data: result, isLoading, refetch } = useAnalysisHistory({
+        page,
+        limit: 5,
+        s: search || undefined,
+        status: status !== 'all' ? status : undefined,
+        file_type: fileType !== 'all' ? fileType : undefined,
+        [sortField]: sortDir,
+    })
+    const items = result?.data ?? []
+    const pagination = result?.pagination ?? null
 
     // reset page เมื่อ filter เปลี่ยน
     useEffect(() => {
@@ -76,8 +49,8 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
     }, [search, status, fileType, sortField, sortDir])
 
     useEffect(() => {
-        onRegisterRefresh?.(fetchHistory)
-    }, [onRegisterRefresh, fetchHistory])
+        onRegisterRefresh?.(() => { refetch() })
+    }, [onRegisterRefresh, refetch])
 
     // ==============================
     // Helpers

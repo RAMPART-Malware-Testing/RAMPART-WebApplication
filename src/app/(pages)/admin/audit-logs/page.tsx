@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import axios from 'axios'
+import { useAdminAuditLogs, exportAdminAuditLogsCsv } from '@/hooks/queries/useAdminAuditLogs'
 
 const ACTION_LABELS: Record<string, string> = {
   ban_user: 'แบนผู้ใช้',
@@ -27,38 +27,38 @@ function formatDate(dateStr: string | null) {
 }
 
 export default function AdminAuditLogsPage() {
-  const [items, setItems] = useState<AuditLogItem[]>([])
-  const [pagination, setPagination] = useState<AdminPagination | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [actionFilter, setActionFilter] = useState('')
+  const [actorSearch, setActorSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [isExporting, setIsExporting] = useState(false)
 
-  const fetchLogs = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const body: Record<string, unknown> = { page, limit: 20 }
-      if (actionFilter) body.action = actionFilter
-      const { data } = await axios.post<AuditLogResponse>('/api/admin/audit-logs', body)
-      if (data.success) {
-        setItems(data.data)
-        setPagination(data.pagination)
-      } else {
-        setItems([])
-      }
-    } catch {
-      setItems([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [page, actionFilter])
+  const { data: listResult, isLoading } = useAdminAuditLogs({
+    page,
+    limit: 20,
+    action: actionFilter || undefined,
+  })
+  const rawItems = listResult?.data ?? []
+  const pagination = listResult?.pagination ?? null
 
-  useEffect(() => {
-    fetchLogs()
-  }, [fetchLogs])
+  const items = actorSearch
+    ? rawItems.filter((log) =>
+        (log.actor_username ?? '').toLowerCase().includes(actorSearch.toLowerCase()) ||
+        (log.target_username ?? '').toLowerCase().includes(actorSearch.toLowerCase())
+      )
+    : rawItems
 
   useEffect(() => {
     setPage(1)
   }, [actionFilter])
+
+  const handleExport = async () => {
+    setIsExporting(true)
+    try {
+      await exportAdminAuditLogsCsv()
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
@@ -67,13 +67,33 @@ export default function AdminAuditLogsPage() {
             <h1 className="text-2xl font-bold text-white">ประวัติการดำเนินการของผู้ดูแล</h1>
             <p className="text-blue-200/50 text-sm mt-1">บันทึกทุกการแบน / ปลดแบน / เปลี่ยนสิทธิ์ / เข้าถึงข้อมูลส่วนตัวของผู้ใช้อื่น</p>
           </div>
-          <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 transition text-sm">
-            ← กลับไปแดชบอร์ด
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              disabled={isExporting}
+              onClick={handleExport}
+              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition disabled:opacity-40"
+            >
+              <i className="fas fa-file-csv mr-2" />
+              Export CSV
+            </button>
+            <Link href="/admin" className="text-cyan-400 hover:text-cyan-300 transition text-sm">
+              ← กลับไปแดชบอร์ด
+            </Link>
+          </div>
         </div>
 
         {/* Filter */}
-        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+        <div className="bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
+          <div>
+            <label className="block text-sm text-blue-200/60 mb-2">ค้นหาผู้ดำเนินการ / เป้าหมาย</label>
+            <input
+              type="text"
+              value={actorSearch}
+              onChange={(e) => setActorSearch(e.target.value)}
+              placeholder="ค้นหาด้วยชื่อผู้ใช้..."
+              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-blue-200/30 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition"
+            />
+          </div>
           <label className="block text-sm text-blue-200/60 mb-2">กรองตามประเภทการดำเนินการ</label>
           <div className="flex flex-wrap gap-2">
             <button

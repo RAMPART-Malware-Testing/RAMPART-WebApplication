@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import axios from "axios"
+import { useQueryClient } from "@tanstack/react-query"
 import { AnalysisTimeline } from "./AnalysisTimeline"
 import GeometricLoader from "@/components/GeometricLoader"
 import ReportDownload from "../../details/[tool]/[taskid]/components/ReportDownload"
 import type { AnalysisResponse, TaskStatus } from "./types"
-
-interface ToolProgress { status?: unknown; score?: number }
-interface TaskProgress { stage?: string; message?: string; tools?: Record<string, ToolProgress> }
-interface TaskPoll { success: boolean; task_id: string; status?: string; message?: string; progress?: TaskProgress; report?: any }
+import { useProfile } from "@/hooks/queries/useProfile"
+import { useTaskStatus, type TaskProgress } from "@/hooks/queries/useTaskStatus"
+import { queryKeys } from "@/hooks/queries/queryKeys"
 
 function normalizeToolStatus(v?: unknown): TaskStatus {
   if (v === true || v === "success" || v === "completed") return "completed"
@@ -161,6 +161,7 @@ async function fetchToolReports(taskId: string, tools: string[]): Promise<Record
 }
 
 export function RealtimeAnalysis({ taskId }: { taskId: string }) {
+  const queryClient = useQueryClient()
   const [analysis, setAnalysis] = useState<AnalysisResponse>(emptyAnalysis())
   const [status, setStatus] = useState<"loading" | "running" | "completed" | "failed" | "notfound">("loading")
   const [error, setError] = useState("")
@@ -168,18 +169,13 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
   const [savingPrivacy, setSavingPrivacy] = useState(false)
   const [md5, setMd5] = useState<string>()
   const [availableTools, setAvailableTools] = useState<string[]>([])
-  const [ownUid, setOwnUid] = useState<string>()
   const [reportUid, setReportUid] = useState<string>()
   const finishedRef = useRef(false)
 
-  // ดึง uid ของผู้ใช้ปัจจุบัน เพื่อตัดสินใจว่าเป็นเจ้าของรายงานหรือไม่
-  useEffect(() => {
-    let active = true
-    axios.get("/api/profile")
-      .then(({ data }) => { if (active && data?.success && data?.data?.uid) setOwnUid(data.data.uid) })
-      .catch(() => {})
-    return () => { active = false }
-  }, [])
+  // ดึง uid ของผู้ใช้ปัจจุบัน เพื่อตัดสินใจว่าเป็นเจ้าของรายงานหรือไม่ (shared
+  // cache with the rest of the app via useProfile)
+  const { data: profile } = useProfile()
+  const ownUid = profile?.uid
 
   const isOwner = !!reportUid && reportUid === ownUid
 
@@ -189,6 +185,7 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
     setPrivacy(next)
     try {
       await axios.patch(`/api/analy/privacy/${taskId}`, { privacy: next })
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskStatus(taskId) })
     } catch {
       setPrivacy((prev) => !prev)
     } finally {
@@ -196,47 +193,53 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
     }
   }
 
+  const { data: poll, isError: pollError } = useTaskStatus(taskId)
+
   useEffect(() => {
-    if (!taskId) return
-    let cancelled = false
-    async function poll() {
-      if (cancelled || finishedRef.current) return
-      try {
-        const { data } = await axios.get<TaskPoll>(`/api/task_id/${taskId}`, { timeout: 8000 })
-        if (cancelled) return
-        if (data?.success === false && !data?.status) { finishedRef.current = true; setStatus("notfound"); setError(data?.message || "ไม่พบ task นี้"); return }
-        if (data?.status === "failed") { finishedRef.current = true; setStatus("failed"); setError(data?.message || "การวิเคราะห์ล้มเหลว"); return }
-
-        const st = deriveToolStatuses(data.progress)
-        if (typeof data.report?.privacy === "boolean") setPrivacy(data.report.privacy)
-        if (data.report?.uid) setReportUid(data.report.uid)
-        if (data.report?.md5) setMd5(data.report.md5)
-        if (data.report?.tools) setAvailableTools(String(data.report.tools).split(",").map((t: string) => t.trim()).filter(Boolean))
-        setAnalysis((prev) => ({
-          ...prev,
-          overallStatus: "analyzing",
-          fileName: data?.report?.file_name || data?.progress?.message || prev.fileName,
-          virusTotal: { ...prev.virusTotal, status: st.virustotal },
-          mobsf: { ...prev.mobsf, status: st.mobsf },
-          cape: { ...prev.cape, status: st.cape },
-          ml: { ...prev.ml, status: st.ml },
-          gemini: { ...prev.gemini, status: st.gemini },
-        }))
-        setStatus("running")
-
-        if (data?.status === "success") {
-          finishedRef.current = true
-          const rawReports = await fetchToolReports(taskId, (data.report?.tools ?? "").split(","))
-          if (cancelled) return
-          setAnalysis(buildReport(data.report, rawReports))
-          setStatus("completed")
-        }
-      } catch { if (!cancelled) setStatus("running") }
+    if (!poll) {
+      if (pollError && !finishedRef.current) setStatus("running")
+      return
     }
-    poll()
-    const id = setInterval(poll, 2500)
-    return () => { cancelled = true; clearInterval(id) }
-  }, [taskId])
+    if (finishedRef.current) return
+
+    if (poll.success === false && !poll.status) {
+      finishedRef.current = true
+      setStatus("notfound")
+      setError(poll.message || "ไม่พบ task นี้")
+      return
+    }
+    if (poll.status === "failed") {
+      finishedRef.current = true
+      setStatus("failed")
+      setError(poll.message || "การวิเคราะห์ล้มเหลว")
+      return
+    }
+
+    const st = deriveToolStatuses(poll.progress)
+    if (typeof poll.report?.privacy === "boolean") setPrivacy(poll.report.privacy)
+    if (poll.report?.uid) setReportUid(poll.report.uid)
+    if (poll.report?.md5) setMd5(poll.report.md5)
+    if (poll.report?.tools) setAvailableTools(String(poll.report.tools).split(",").map((t: string) => t.trim()).filter(Boolean))
+    setAnalysis((prev) => ({
+      ...prev,
+      overallStatus: "analyzing",
+      fileName: poll?.report?.file_name || poll?.progress?.message || prev.fileName,
+      virusTotal: { ...prev.virusTotal, status: st.virustotal },
+      mobsf: { ...prev.mobsf, status: st.mobsf },
+      cape: { ...prev.cape, status: st.cape },
+      ml: { ...prev.ml, status: st.ml },
+      gemini: { ...prev.gemini, status: st.gemini },
+    }))
+    setStatus("running")
+
+    if (poll.status === "success") {
+      finishedRef.current = true
+      fetchToolReports(taskId, (poll.report?.tools ?? "").split(",")).then((rawReports) => {
+        setAnalysis(buildReport(poll.report, rawReports))
+        setStatus("completed")
+      })
+    }
+  }, [poll, pollError, taskId])
 
   if (status === "notfound" || status === "failed") {
     return (

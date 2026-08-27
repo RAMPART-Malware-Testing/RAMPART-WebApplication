@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import axios from 'axios';
 import { AnalyService } from '@/services/analy.server';
-import { jwtService } from '@/services/jwt.service';
+import { requireSession, unauthorizedResponse } from '@/lib/session';
 
 export async function GET(
     request: NextRequest,
@@ -19,21 +18,12 @@ export async function GET(
 
         }
 
-        const cookie = await cookies();
-        const token = cookie.get("access_token");
-        if (!token) return NextResponse.json(
-            { message: 'No access token found', success: false },
-            { status: 401 }
-        );
+        const session = await requireSession();
+        if (!session) {
+            return unauthorizedResponse();
+        }
 
-        const verify = await jwtService.verify(token.value)
-        if (!verify?.token) return NextResponse.json(
-            { message: 'No access token found', success: false },
-            { status: 401 }
-        );
-
-        const res = await AnalyService.gettask_id(taskId, verify.token);
-        console.log(res)
+        const res = await AnalyService.gettask_id(taskId, session.accessToken);
         return NextResponse.json(res, { status: 200 });
 
     } catch (error) {

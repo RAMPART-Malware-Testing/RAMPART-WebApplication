@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import axios from 'axios'
 import NavbarComponent from '@/components/NavbarComponent'
 import GeometricLoader from "@/components/GeometricLoader";
+import { useProfile, useUpdateUsername, useUpdateAvatar } from '@/hooks/queries/useProfile'
+import { useLoginHistory, useDownloadHistory } from '@/hooks/queries/useProfileHistories'
+import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
@@ -49,11 +51,52 @@ function ProfileContent() {
   const modeParam = searchParams.get('m')
 
   const [activeTab, setActiveTab] = useState('profile')
-  const [user, setUser] = useState<UserProfile | null>(null)
-  const [loginHistory, setLoginHistory] = useState<LoginHistory[]>([])
-  const [uploadHistory, setUploadHistory] = useState<UploadHistory[]>([])
-  const [downloadHistory, setDownloadHistory] = useState<DownloadHistory[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { data: profileData, isLoading: profileLoading } = useProfile()
+  const { data: rawLoginHistory = [], isLoading: loginLoading } = useLoginHistory()
+  const { data: uploadHistoryResult, isLoading: uploadLoading } = useAnalysisHistory({ page: 1, limit: 50 })
+  const rawUploadHistory = uploadHistoryResult?.data ?? []
+  const { data: rawDownloadHistory = [], isLoading: downloadLoading } = useDownloadHistory()
+  const updateUsername = useUpdateUsername()
+  const updateAvatar = useUpdateAvatar()
+
+  const user: UserProfile | null = profileData
+    ? {
+        username: profileData.username || 'ผู้ใช้',
+        email: profileData.email || '',
+        role: profileData.role || 'user',
+        joinDate: profileData.created_at || '',
+        lastLogin: profileData.created_at || '',
+        avatar: profileData.avatar_url || undefined,
+      }
+    : null
+
+  const loginHistory: LoginHistory[] = rawLoginHistory.map((it) => ({
+    id: it.id,
+    timestamp: it.created_at || '',
+    ipAddress: it.ip || '—',
+    location: it.provider ? it.provider.replace(/^\w/, (c: string) => c.toUpperCase()) : '—',
+    device: it.user_agent || it.provider || '—',
+    status: it.status === 'success' ? 'success' as const : 'failed' as const,
+  }))
+
+  const uploadHistory: UploadHistory[] = rawUploadHistory.map((it) => ({
+    id: it.task_id || String(it.aid),
+    fileName: it.file_name || '-',
+    fileType: it.file_type || 'file',
+    timestamp: it.created_at || '',
+    status: it.status === 'success' ? 'completed' as const : it.status === 'failed' ? 'failed' as const : 'analyzing' as const,
+    riskScore: it.report?.score != null ? Math.round((it.report.score / 10) * 10) / 10 : undefined,
+  }))
+
+  const downloadHistory: DownloadHistory[] = rawDownloadHistory.map((it) => ({
+    id: it.id,
+    fileName: it.file_name || it.md5 || '-',
+    reportType: it.tool || 'report',
+    timestamp: it.created_at || '',
+    fileSize: 0,
+  }))
+
+  const isLoading = profileLoading || loginLoading || uploadLoading || downloadLoading
   const [changePasswordDialog, setChangePasswordDialog] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -62,90 +105,14 @@ function ProfileContent() {
   })
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  const uploadingAvatar = updateAvatar.isPending
 
   useEffect(() => {
     // หน้า profile เปิดด้วยแท็บ "ข้อมูลบัญชีผู้ใช้" เป็นอันแรกเสมอ
     setActiveTab('profile')
   }, [modeParam])
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const { data } = await axios.get('/api/profile')
-        if (data?.success && data?.data) {
-          const p = data.data
-          setUser({
-            username: p.username || 'ผู้ใช้',
-            email: p.email || '',
-            role: p.role || 'user',
-            joinDate: p.created_at || '',
-            lastLogin: p.created_at || '',
-            avatar: p.avatar_url || undefined,
-          })
-        }
-      } catch {
-        setUser(null)
-      }
-
-      // ประวัติอัพโหลด — จาก API จริง (/api/analy/v1/history)
-      try {
-        const { data } = await axios.post('/api/analy/history', { page: 1, limit: 50 })
-        if (data?.success && Array.isArray(data.data)) {
-          setUploadHistory(data.data.map((it: any) => ({
-            id: it.task_id || it.aid,
-            fileName: it.file_name || '-',
-            fileType: it.file_type || 'file',
-            timestamp: it.created_at || '',
-            status: it.status === 'success' ? 'completed' as const : it.status === 'failed' ? 'failed' as const : 'analyzing' as const,
-            riskScore: it.report?.score != null ? Math.round((it.report.score / 10) * 10) / 10 : undefined,
-          })))
-        }
-      } catch {
-        setUploadHistory([])
-      }
-
-      // ประวัติการเข้าสู่ระบบ — จาก API จริง (/api/profile/login-history)
-      try {
-        const { data } = await axios.post('/api/profile/login-history')
-        if (data?.success && Array.isArray(data.data)) {
-          setLoginHistory(data.data.map((it: any) => ({
-            id: it.id,
-            timestamp: it.created_at || '',
-            ipAddress: it.ip || '—',
-            location: it.provider ? it.provider.replace(/^\w/, (c: string) => c.toUpperCase()) : '—',
-            device: it.user_agent || it.provider || '—',
-            status: it.status === 'success' ? 'success' as const : 'failed' as const,
-          })))
-        }
-      } catch {
-        setLoginHistory([])
-      }
-
-      // ประวัติการดาวน์โหลด — จาก API จริง (/api/profile/download-history)
-      try {
-        const { data } = await axios.post('/api/profile/download-history')
-        if (data?.success && Array.isArray(data.data)) {
-          setDownloadHistory(data.data.map((it: any) => ({
-            id: it.id,
-            fileName: it.file_name || it.md5 || '-',
-            reportType: it.tool || 'report',
-            timestamp: it.created_at || '',
-            fileSize: 0,
-          })))
-        }
-      } catch {
-        setDownloadHistory([])
-      }
-
-      setIsLoading(false)
-    }
-
-    const timer = setTimeout(loadProfile, 500)
-    return () => clearTimeout(timer)
-  }, [])
 
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault()
@@ -166,10 +133,7 @@ function ProfileContent() {
   const handleSaveEdit = async () => {
     if (user && editingField === 'username' && editValue) {
       try {
-        const { data } = await axios.patch('/api/profile', { username: editValue })
-        if (data?.success) {
-          setUser((prev) => prev ? { ...prev, username: data.data?.username || editValue } : prev)
-        }
+        await updateUsername.mutateAsync(editValue)
       } catch {
         // keep the previous value on failure
       }
@@ -190,21 +154,12 @@ function ProfileContent() {
       return
     }
 
-    setUploadingAvatar(true)
     try {
-      const body = new FormData()
-      body.append('file', file)
-      const { data } = await axios.post('/api/profile/avatar', body)
-      if (data?.success && data?.data) {
-        setAvatarLoadFailed(false)
-        setUser((prev) => prev ? { ...prev, avatar: data.data.avatar_url || undefined } : prev)
-      } else {
-        alert(data?.message || 'อัปโหลดรูปโปรไฟล์ไม่สำเร็จ')
-      }
-    } catch {
-      alert('อัปโหลดรูปโปรไฟล์ไม่สำเร็จ')
+      setAvatarLoadFailed(false)
+      await updateAvatar.mutateAsync(file)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'อัปโหลดรูปโปรไฟล์ไม่สำเร็จ')
     } finally {
-      setUploadingAvatar(false)
       if (avatarInputRef.current) avatarInputRef.current.value = ''
     }
   }

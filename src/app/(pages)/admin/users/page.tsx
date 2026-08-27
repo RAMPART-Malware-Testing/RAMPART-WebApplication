@@ -1,11 +1,19 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useToast } from '@/components/ui/ToastProvider'
 import { ROLE_LABELS } from '@/lib/roles'
+import { useProfile } from '@/hooks/queries/useProfile'
+import {
+  useAdminUsersList,
+  useAdminBanUser,
+  useAdminUnbanUser,
+  useAdminChangeRole,
+  useAdminBulkBanUsers,
+  exportAdminUsersCsv,
+} from '@/hooks/queries/useAdminUsers'
 
 const ROLE_BADGE: Record<string, string> = {
   user: 'text-blue-300 bg-blue-500/10 border border-blue-500/20',
@@ -14,61 +22,93 @@ const ROLE_BADGE: Record<string, string> = {
 }
 
 export default function AdminUsersPage() {
-  const [items, setItems] = useState<AdminUserListItem[]>([])
-  const [pagination, setPagination] = useState<AdminPagination | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [bannedFilter, setBannedFilter] = useState('all')
   const [page, setPage] = useState(1)
   const [busyUid, setBusyUid] = useState<string | null>(null)
-  const [viewerRole, setViewerRole] = useState<'admin' | 'master' | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [isExporting, setIsExporting] = useState(false)
   const notify = useToast()
 
-  useEffect(() => {
-    // Role-change is master-only, and an admin viewer can never act on
-    // another admin - hide those buttons entirely rather than showing them
-    // and letting every click fail server-side. UX nicety only; the
-    // backend (services/admin/authz.py::ensure_can_manage_target) enforces
-    // the real rule regardless of what this component decides to render.
-    axios.get('/api/profile').then(({ data }) => {
-      if (data?.success && (data?.data?.role === 'admin' || data?.data?.role === 'master')) {
-        setViewerRole(data.data.role)
-      }
-    }).catch(() => {})
-  }, [])
+  // Role-change is master-only, and an admin viewer can never act on
+  // another admin - hide those buttons entirely rather than showing them
+  // and letting every click fail server-side. UX nicety only; the
+  // backend (services/admin/authz.py::ensure_can_manage_target) enforces
+  // the real rule regardless of what this component decides to render.
+  const { data: profile } = useProfile()
+  const isMaster = profile?.role === 'master'
 
-  const isMaster = viewerRole === 'master'
+  // This page is fixed to plain "user" rows only - /admin/admins is
+  // the dedicated view for admin/master accounts.
+  const { data: listResult, isLoading } = useAdminUsersList({
+    page,
+    limit: 20,
+    role: 'user',
+    q: search || undefined,
+    banned: bannedFilter !== 'all' ? bannedFilter === 'banned' : undefined,
+  })
+  const items = listResult?.data ?? []
+  const pagination = listResult?.pagination ?? null
 
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      // This page is fixed to plain "user" rows only - /admin/admins is
-      // the dedicated view for admin/master accounts.
-      const body: Record<string, unknown> = { page, limit: 20, role: 'user' }
-      if (search) body.q = search
-      if (bannedFilter !== 'all') body.banned = bannedFilter === 'banned'
-
-      const { data } = await axios.post<AdminUserListResponse>('/api/admin/users', body)
-      if (data.success) {
-        setItems(data.data)
-        setPagination(data.pagination)
-      } else {
-        setItems([])
-      }
-    } catch {
-      setItems([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [page, search, bannedFilter])
-
-  useEffect(() => {
-    fetchUsers()
-  }, [fetchUsers])
+  const banMutation = useAdminBanUser()
+  const unbanMutation = useAdminUnbanUser()
+  const roleMutation = useAdminChangeRole()
+  const bulkBanMutation = useAdminBulkBanUsers()
+  const isBulkBusy = bulkBanMutation.isPending
 
   useEffect(() => {
     setPage(1)
+    setSelected(new Set())
   }, [search, bannedFilter])
+
+  const toggleSelect = (uid: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(uid)) next.delete(uid)
+      else next.add(uid)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    setSelected((prev) => (prev.size === items.length ? new Set() : new Set(items.map((u) => u.uid))))
+  }
+
+  const handleBulkBan = async () => {
+    if (selected.size === 0) return
+    const { value: reason, isConfirmed } = await Swal.fire({
+      title: `แบนผู้ใช้ ${selected.size} คน?`,
+      input: 'textarea',
+      inputLabel: 'เหตุผลในการแบน (จำเป็น)',
+      showCancelButton: true,
+      confirmButtonText: 'แบนทั้งหมด',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc2626',
+      background: '#0f172a',
+      color: '#fff',
+      inputValidator: (value) => (!value?.trim() ? 'กรุณาระบุเหตุผล' : undefined),
+    })
+    if (!isConfirmed || !reason) return
+
+    try {
+      const result = await bulkBanMutation.mutateAsync({ uids: Array.from(selected), reason: reason.trim() })
+      notify.success(`แบนสำเร็จ ${result.succeeded.length} คน${result.failed.length ? `, ล้มเหลว ${result.failed.length} คน` : ''}`)
+      setSelected(new Set())
+    } catch {
+      notify.error('ไม่สามารถแบนได้')
+    }
+  }
+
+  const handleExport = async () => {
+    setIsExporting(true)
+    try {
+      await exportAdminUsersCsv()
+    } catch {
+      notify.error('ไม่สามารถ export ได้')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const handleBan = async (user: AdminUserListItem) => {
     const { value: reason, isConfirmed } = await Swal.fire({
@@ -88,18 +128,10 @@ export default function AdminUsersPage() {
 
     setBusyUid(user.uid)
     try {
-      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/ban', {
-        target_uid: user.uid,
-        reason: reason.trim(),
-      })
-      if (data.success) {
-        notify.success('แบนผู้ใช้สำเร็จ')
-        fetchUsers()
-      } else {
-        notify.error(data.message || 'ไม่สามารถแบนผู้ใช้ได้')
-      }
-    } catch {
-      notify.error('ไม่สามารถแบนผู้ใช้ได้')
+      await banMutation.mutateAsync({ uid: user.uid, reason: reason.trim() })
+      notify.success('แบนผู้ใช้สำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ไม่สามารถแบนผู้ใช้ได้')
     } finally {
       setBusyUid(null)
     }
@@ -119,15 +151,10 @@ export default function AdminUsersPage() {
 
     setBusyUid(user.uid)
     try {
-      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/unban', { target_uid: user.uid })
-      if (data.success) {
-        notify.success('ปลดแบนผู้ใช้สำเร็จ')
-        fetchUsers()
-      } else {
-        notify.error(data.message || 'ไม่สามารถปลดแบนผู้ใช้ได้')
-      }
-    } catch {
-      notify.error('ไม่สามารถปลดแบนผู้ใช้ได้')
+      await unbanMutation.mutateAsync(user.uid)
+      notify.success('ปลดแบนผู้ใช้สำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ไม่สามารถปลดแบนผู้ใช้ได้')
     } finally {
       setBusyUid(null)
     }
@@ -147,18 +174,10 @@ export default function AdminUsersPage() {
 
     setBusyUid(user.uid)
     try {
-      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/role', {
-        target_uid: user.uid,
-        new_role: newRole,
-      })
-      if (data.success) {
-        notify.success('เปลี่ยนสิทธิ์สำเร็จ')
-        fetchUsers()
-      } else {
-        notify.error(data.message || 'ไม่สามารถเปลี่ยนสิทธิ์ได้')
-      }
-    } catch {
-      notify.error('ไม่สามารถเปลี่ยนสิทธิ์ได้')
+      await roleMutation.mutateAsync({ uid: user.uid, newRole })
+      notify.success('เปลี่ยนสิทธิ์สำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ไม่สามารถเปลี่ยนสิทธิ์ได้')
     } finally {
       setBusyUid(null)
     }
@@ -166,12 +185,43 @@ export default function AdminUsersPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-        <div>
-          <h1 className="text-2xl font-bold text-white">จัดการผู้ใช้งาน</h1>
-          <p className="text-blue-200/50 text-sm mt-1">
-            รายชื่อสมาชิกทั่วไป — แบน / ปลดแบน / เลื่อนขึ้นเป็นผู้ดูแลระบบ (เฉพาะ master)
-          </p>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white">จัดการผู้ใช้งาน</h1>
+            <p className="text-blue-200/50 text-sm mt-1">
+              รายชื่อสมาชิกทั่วไป — แบน / ปลดแบน / เลื่อนขึ้นเป็นผู้ดูแลระบบ (เฉพาะ master)
+            </p>
+          </div>
+          <button
+            disabled={isExporting}
+            onClick={handleExport}
+            className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition disabled:opacity-40"
+          >
+            <i className="fas fa-file-csv mr-2" />
+            Export CSV
+          </button>
         </div>
+
+        {selected.size > 0 && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
+            <span className="text-red-300 text-sm font-medium">เลือกแล้ว {selected.size} คน</span>
+            <div className="flex gap-2">
+              <button
+                disabled={isBulkBusy}
+                onClick={handleBulkBan}
+                className="px-4 py-2 rounded-lg bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition text-sm disabled:opacity-40"
+              >
+                แบนที่เลือกทั้งหมด
+              </button>
+              <button
+                onClick={() => setSelected(new Set())}
+                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition"
+              >
+                ยกเลิกการเลือก
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
@@ -204,7 +254,17 @@ export default function AdminUsersPage() {
         {/* List */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-white font-semibold text-lg">รายชื่อผู้ใช้</h2>
+            <div className="flex items-center gap-3">
+              {items.length > 0 && (
+                <input
+                  type="checkbox"
+                  checked={selected.size === items.length}
+                  onChange={toggleSelectAll}
+                  className="accent-cyan-500 w-4 h-4"
+                />
+              )}
+              <h2 className="text-white font-semibold text-lg">รายชื่อผู้ใช้</h2>
+            </div>
             {pagination && <span className="text-blue-200/50 text-sm">ทั้งหมด {pagination.total} คน</span>}
           </div>
 
@@ -225,6 +285,13 @@ export default function AdminUsersPage() {
                   key={user.uid}
                   className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 bg-white/5 rounded-xl border border-white/10"
                 >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(user.uid)}
+                      onChange={() => toggleSelect(user.uid)}
+                      className="accent-cyan-500 w-4 h-4 shrink-0"
+                    />
                   <Link href={`/admin/users/${user.uid}`} className="flex items-center gap-4 flex-1 min-w-0 group">
                     <div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
                       {user.username.slice(0, 2).toUpperCase()}
@@ -244,10 +311,8 @@ export default function AdminUsersPage() {
                       <p className="text-blue-200/50 text-sm truncate">{user.email}</p>
                     </div>
                   </Link>
+                  </div>
 
-                  {/* Every row here is role=user, so admin AND master can
-                      always act - the admin-vs-admin restriction only
-                      applies on the /admin/admins page. */}
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     {user.is_banned ? (
                       <button

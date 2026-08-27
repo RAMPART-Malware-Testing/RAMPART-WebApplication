@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import Image from 'next/image'
 import ReCAPTCHA from "react-google-recaptcha"
 import Link from 'next/link'
+import axios from 'axios'
 import Hero from '@/components/HeroComponent'
 import { useToast } from '@/components/ui/ToastProvider'
 import Navbarservice from '@/components/Navbarservice'
@@ -112,22 +113,16 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-          recaptchaToken,
-        }),
-      })
-
-      const data = await response.json()
+      const { data } = await axios.post('/api/auth/register', {
+        username,
+        email,
+        password,
+        recaptchaToken,
+      }, { validateStatus: () => true })
 
       // Handle success
       // Expected: { "success": true, "status": 200, ... }
-      if (response.ok && data.success) {
+      if (data.success) {
         setIsSuccessful(true)
         const token = data.token ? `?content=register_confirm&token=${encodeURIComponent(data.token)}` : ''
         setTimeout(() => {

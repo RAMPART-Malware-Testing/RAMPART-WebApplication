@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { authService } from '@/services/auth.service'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -9,12 +10,11 @@ export async function POST(request: NextRequest) {
     if (!recaptchaToken) {
       return NextResponse.json({ success: false, message: 'กรุณายืนยัน reCAPTCHA' }, { status: 400 })
     }
-    const recaptchaResponse = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
-    })
-    const recaptchaData = await recaptchaResponse.json()
+    const { data: recaptchaData } = await axios.post(
+      'https://www.google.com/recaptcha/api/siteverify',
+      `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+    )
     if (!recaptchaData.success) {
       return NextResponse.json({ success: false, message: 'reCAPTCHA ไม่ถูกต้อง กรุณาลองใหม่' }, { status: 400 })
     }

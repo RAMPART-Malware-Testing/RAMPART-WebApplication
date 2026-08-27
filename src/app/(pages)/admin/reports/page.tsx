@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import axios from 'axios'
+import { useAdminReportsList } from '@/hooks/queries/useAdminReports'
 
 const RISK_LEVELS = ['Low', 'Caution', 'High', 'Critical']
 
@@ -26,37 +26,18 @@ function formatDate(dateStr: string | null) {
 }
 
 export default function AdminReportsPage() {
-  const [items, setItems] = useState<AdminFileListItem[]>([])
-  const [pagination, setPagination] = useState<AdminPagination | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [riskFilter, setRiskFilter] = useState('all')
   const [page, setPage] = useState(1)
 
-  const fetchReports = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const body: Record<string, unknown> = { page, limit: 20 }
-      if (search) body.q = search
-      if (riskFilter !== 'all') body.risk_level = riskFilter
-
-      const { data } = await axios.post<AdminFileListResponse>('/api/admin/reports', body)
-      if (data.success) {
-        setItems(data.data)
-        setPagination(data.pagination)
-      } else {
-        setItems([])
-      }
-    } catch {
-      setItems([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [page, search, riskFilter])
-
-  useEffect(() => {
-    fetchReports()
-  }, [fetchReports])
+  const { data: listResult, isLoading } = useAdminReportsList({
+    page,
+    limit: 20,
+    q: search || undefined,
+    risk_level: riskFilter !== 'all' ? riskFilter : undefined,
+  })
+  const items = listResult?.data ?? []
+  const pagination = listResult?.pagination ?? null
 
   useEffect(() => {
     setPage(1)

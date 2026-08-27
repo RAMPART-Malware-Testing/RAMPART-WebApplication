@@ -168,3 +168,111 @@ interface AdminDeleteFileResponse {
     message: string
     data: { aid: string; deleted_at: string | null } | null
 }
+
+interface AdminLoginHistoryItem {
+    id: string
+    provider: string | null
+    ip: string | null
+    user_agent: string | null
+    status: string | null
+    created_at: string | null
+}
+
+interface AdminLoginHistoryResponse {
+    success: boolean
+    data: AdminLoginHistoryItem[]
+    pagination: AdminPagination
+}
+
+interface AdminDownloadHistoryItem {
+    id: string
+    file_name: string | null
+    tool: string | null
+    md5: string | null
+    created_at: string | null
+}
+
+interface AdminDownloadHistoryResponse {
+    success: boolean
+    data: AdminDownloadHistoryItem[]
+    pagination: AdminPagination
+}
+
+interface AdminBulkActionResponse {
+    success: boolean
+    data: { succeeded: string[]; failed: { uid?: string; aid?: string; reason: string }[] } | null
+}
+
+interface HealthCheckItem {
+    name: string
+    status: "up" | "down" | "degraded" | "unconfigured"
+    latency_ms: number | null
+    detail: string | null
+    workers?: { name: string; active_tasks: number; reserved_tasks: number }[]
+    total_gb?: number
+    used_gb?: number
+    free_gb?: number
+    available_gb?: number
+    percent_used?: number
+}
+
+interface SystemHealthResponse {
+    success: boolean
+    data: {
+        overall_status: "up" | "down" | "degraded"
+        checked_at: string
+        checks: HealthCheckItem[]
+    }
+}
+
+interface TaskQueueItem {
+    aid: string
+    task_id: string | null
+    file_name: string | null
+    status: string | null
+    tool_notes: string | null
+    owner_username: string | null
+    owner_uid: string
+    created_at: string | null
+    age_seconds: number | null
+}
+
+interface TaskQueueResponse {
+    success: boolean
+    data: TaskQueueItem[]
+    pagination: AdminPagination
+}
+
+interface TaskQueueDepthResponse {
+    success: boolean
+    data: { active: number; reserved: number; scheduled: number; workers_online: number; error?: string }
+}
+
+interface TaskActionResponse {
+    success: boolean
+    message: string
+    task_id?: string
+}
+
+interface RateLimitEntry {
+    key: string
+    identifier: string
+    ttl_seconds: number | null
+}
+
+interface RateLimitGroup {
+    pattern: string
+    label: string
+    count: number
+    entries: RateLimitEntry[]
+}
+
+interface RateLimitSnapshotResponse {
+    success: boolean
+    data: { total_locked: number; groups: RateLimitGroup[] }
+}
+
+interface BroadcastEmailResponse {
+    success: boolean
+    data: { sent: number; total_recipients: number } | null
+}

@@ -1,10 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useToast } from '@/components/ui/ToastProvider'
+import {
+  useAdminFilesList,
+  useAdminDeleteFile,
+  useAdminBulkDeleteFiles,
+  exportAdminFilesCsv,
+} from '@/hooks/queries/useAdminFiles'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'ทั้งหมด' },
@@ -41,45 +46,82 @@ function formatDate(dateStr: string | null) {
 }
 
 export default function AdminFilesPage() {
-  const [items, setItems] = useState<AdminFileListItem[]>([])
-  const [pagination, setPagination] = useState<AdminPagination | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [privacyFilter, setPrivacyFilter] = useState('all')
   const [page, setPage] = useState(1)
   const [busyAid, setBusyAid] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [isExporting, setIsExporting] = useState(false)
   const notify = useToast()
 
-  const fetchFiles = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const body: Record<string, unknown> = { page, limit: 20 }
-      if (search) body.q = search
-      if (statusFilter !== 'all') body.status = statusFilter
-      if (privacyFilter !== 'all') body.privacy = privacyFilter === 'public' ? false : true
+  const { data: listResult, isLoading } = useAdminFilesList({
+    page,
+    limit: 20,
+    q: search || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    privacy: privacyFilter !== 'all' ? privacyFilter === 'private' : undefined,
+  })
+  const items = listResult?.data ?? []
+  const pagination = listResult?.pagination ?? null
 
-      const { data } = await axios.post<AdminFileListResponse>('/api/admin/files', body)
-      if (data.success) {
-        setItems(data.data)
-        setPagination(data.pagination)
-      } else {
-        setItems([])
-      }
-    } catch {
-      setItems([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [page, search, statusFilter, privacyFilter])
-
-  useEffect(() => {
-    fetchFiles()
-  }, [fetchFiles])
+  const deleteMutation = useAdminDeleteFile()
+  const bulkDeleteMutation = useAdminBulkDeleteFiles()
+  const isBulkBusy = bulkDeleteMutation.isPending
 
   useEffect(() => {
     setPage(1)
+    setSelected(new Set())
   }, [search, statusFilter, privacyFilter])
+
+  const toggleSelect = (aid: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(aid)) next.delete(aid)
+      else next.add(aid)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    setSelected((prev) => (prev.size === items.length ? new Set() : new Set(items.map((f) => f.aid))))
+  }
+
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return
+    const { value: reason, isConfirmed } = await Swal.fire({
+      title: `ลบไฟล์ ${selected.size} รายการ?`,
+      input: 'textarea',
+      inputLabel: 'เหตุผลในการลบ (จำเป็น)',
+      showCancelButton: true,
+      confirmButtonText: 'ลบทั้งหมด',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc2626',
+      background: '#0f172a',
+      color: '#fff',
+      inputValidator: (value) => (!value?.trim() ? 'กรุณาระบุเหตุผล' : undefined),
+    })
+    if (!isConfirmed || !reason) return
+
+    try {
+      const result = await bulkDeleteMutation.mutateAsync({ aids: Array.from(selected), reason: reason.trim() })
+      notify.success(`ลบสำเร็จ ${result.succeeded.length} ไฟล์${result.failed.length ? `, ล้มเหลว ${result.failed.length} ไฟล์` : ''}`)
+      setSelected(new Set())
+    } catch {
+      notify.error('ไม่สามารถลบได้')
+    }
+  }
+
+  const handleExport = async () => {
+    setIsExporting(true)
+    try {
+      await exportAdminFilesCsv()
+    } catch {
+      notify.error('ไม่สามารถ export ได้')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const handleDelete = async (file: AdminFileListItem) => {
     const { value: reason, isConfirmed } = await Swal.fire({
@@ -100,18 +142,10 @@ export default function AdminFilesPage() {
 
     setBusyAid(file.aid)
     try {
-      const { data } = await axios.post<AdminDeleteFileResponse>('/api/admin/files/delete', {
-        aid: file.aid,
-        reason: reason.trim(),
-      })
-      if (data.success) {
-        notify.success('ลบไฟล์สำเร็จ')
-        fetchFiles()
-      } else {
-        notify.error(data.message || 'ไม่สามารถลบไฟล์ได้')
-      }
-    } catch {
-      notify.error('ไม่สามารถลบไฟล์ได้')
+      await deleteMutation.mutateAsync({ aid: file.aid, reason: reason.trim() })
+      notify.success('ลบไฟล์สำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ไม่สามารถลบไฟล์ได้')
     } finally {
       setBusyAid(null)
     }
@@ -119,12 +153,43 @@ export default function AdminFilesPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-white">จัดการไฟล์</h1>
-        <p className="text-blue-200/50 text-sm mt-1">
-          ไฟล์ทั้งหมดในระบบจากทุกผู้ใช้ — ลบไฟล์ที่ไม่เหมาะสมได้ (ตามกฎเดียวกับการแบนผู้ใช้)
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">จัดการไฟล์</h1>
+          <p className="text-blue-200/50 text-sm mt-1">
+            ไฟล์ทั้งหมดในระบบจากทุกผู้ใช้ — ลบไฟล์ที่ไม่เหมาะสมได้ (ตามกฎเดียวกับการแบนผู้ใช้)
+          </p>
+        </div>
+        <button
+          disabled={isExporting}
+          onClick={handleExport}
+          className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition disabled:opacity-40"
+        >
+          <i className="fas fa-file-csv mr-2" />
+          Export CSV
+        </button>
       </div>
+
+      {selected.size > 0 && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
+          <span className="text-red-300 text-sm font-medium">เลือกแล้ว {selected.size} ไฟล์</span>
+          <div className="flex gap-2">
+            <button
+              disabled={isBulkBusy}
+              onClick={handleBulkDelete}
+              className="px-4 py-2 rounded-lg bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition text-sm disabled:opacity-40"
+            >
+              ลบที่เลือกทั้งหมด
+            </button>
+            <button
+              onClick={() => setSelected(new Set())}
+              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition"
+            >
+              ยกเลิกการเลือก
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
@@ -169,7 +234,17 @@ export default function AdminFilesPage() {
       {/* List */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-white font-semibold text-lg">รายการไฟล์</h2>
+          <div className="flex items-center gap-3">
+            {items.length > 0 && (
+              <input
+                type="checkbox"
+                checked={selected.size === items.length}
+                onChange={toggleSelectAll}
+                className="accent-cyan-500 w-4 h-4"
+              />
+            )}
+            <h2 className="text-white font-semibold text-lg">รายการไฟล์</h2>
+          </div>
           {pagination && <span className="text-blue-200/50 text-sm">ทั้งหมด {pagination.total} รายการ</span>}
         </div>
 
@@ -191,6 +266,12 @@ export default function AdminFilesPage() {
                 className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 bg-white/5 rounded-xl border border-white/10"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(file.aid)}
+                    onChange={() => toggleSelect(file.aid)}
+                    className="accent-cyan-500 w-4 h-4 shrink-0"
+                  />
                   <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                     <span className="text-cyan-400 text-xs font-bold uppercase">{file.file_type ?? '?'}</span>
                   </div>

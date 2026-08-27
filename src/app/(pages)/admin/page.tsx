@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import axios from 'axios'
 import GeometricLoader from '@/components/GeometricLoader'
 import UploadTrendChart from '@/components/admin/charts/UploadTrendChart'
 import DoughnutBreakdownChart from '@/components/admin/charts/DoughnutBreakdownChart'
 import BarBreakdownChart from '@/components/admin/charts/BarBreakdownChart'
 import { RISK_LEVEL_COLORS, STATUS_COLORS, CHART_PALETTE } from '@/components/admin/charts/chartSetup'
+import { useAdminDashboard } from '@/hooks/queries/useAdminDashboard'
 
 const ACTION_LABELS: Record<string, string> = {
   ban_user: 'แบนผู้ใช้',
@@ -100,27 +100,9 @@ function ChartPanel({
 }
 
 export default function AdminDashboardPage() {
-  const [summary, setSummary] = useState<AdminDashboardSummary | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const { data } = await axios.post<AdminDashboardSummaryResponse>('/api/admin/dashboard')
-        if (data.success) {
-          setSummary(data.data)
-        } else {
-          setError('ไม่สามารถโหลดข้อมูลแดชบอร์ดได้')
-        }
-      } catch {
-        setError('ไม่สามารถโหลดข้อมูลแดชบอร์ดได้')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    load()
-  }, [])
+  const [trendDays, setTrendDays] = useState(14)
+  const { data: summary, isLoading, isError } = useAdminDashboard(trendDays)
+  const error = isError || (!isLoading && !summary) ? 'ไม่สามารถโหลดข้อมูลแดชบอร์ดได้' : null
 
   if (isLoading) return <GeometricLoader loadingText="กำลังโหลดข้อมูล..." />
 
@@ -142,13 +124,20 @@ export default function AdminDashboardPage() {
             </h1>
             <p className="text-slate-400">ภาพรวมผู้ใช้งาน สถิติการวิเคราะห์ไฟล์ และการดำเนินการของผู้ดูแล</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <Link
               href="/admin/users"
               className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-medium transition flex items-center gap-2"
             >
               <i className="fas fa-users-gear" />
               จัดการผู้ใช้
+            </Link>
+            <Link
+              href="/admin/system-health"
+              className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-medium transition flex items-center gap-2"
+            >
+              <i className="fas fa-heart-pulse" />
+              สถานะระบบ
             </Link>
             <Link
               href="/admin/audit-logs"
@@ -204,9 +193,21 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <ChartPanel
                 title="แนวโน้มการอัปโหลดไฟล์"
-                subtitle="14 วันย้อนหลัง"
+                subtitle={`${trendDays} วันย้อนหลัง`}
                 icon="fas fa-chart-line text-cyan-400"
                 className="lg:col-span-2"
+                action={
+                  <select
+                    value={trendDays}
+                    onChange={(e) => setTrendDays(Number(e.target.value))}
+                    className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                  >
+                    <option value={7} className="bg-slate-800">7 วัน</option>
+                    <option value={14} className="bg-slate-800">14 วัน</option>
+                    <option value={30} className="bg-slate-800">30 วัน</option>
+                    <option value={90} className="bg-slate-800">90 วัน</option>
+                  </select>
+                }
               >
                 <div className="h-64">
                   <UploadTrendChart data={summary.upload_trend} />

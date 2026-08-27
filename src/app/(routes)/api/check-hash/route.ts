@@ -1,25 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { AnalyService } from '@/services/analy.server';
-import { jwtService } from '@/services/jwt.service';
+import { requireSession, unauthorizedResponse } from '@/lib/session';
 
-/**
- * Lets the client hash a file locally (SHA-256, Web Crypto API) and ask
- * "has this content already been analyzed?" before uploading any bytes.
- * On a hit, the caller can skip straight to showing the existing/finished
- * analysis instead of re-uploading and re-running every tool.
- */
 export async function POST(request: NextRequest) {
   try {
-    const cookie = await cookies();
-    const token = cookie.get('access_token');
-    if (!token) {
-      return NextResponse.json({ message: 'No access token found', success: false }, { status: 401 });
-    }
-
-    const verify = await jwtService.verify(token.value);
-    if (!verify?.token) {
-      return NextResponse.json({ message: 'No access token found', success: false }, { status: 401 });
+    const session = await requireSession();
+    if (!session) {
+      return unauthorizedResponse();
     }
 
     const { sha256, file_name, file_size, privacy } = await request.json();
@@ -31,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const res = await AnalyService.checkHash(
-      verify.token,
+      session.accessToken,
       sha256.toLowerCase(),
       file_name,
       typeof file_size === 'number' ? file_size : 0,

@@ -2,9 +2,10 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import axios from "axios"
+import { useProfile } from "@/hooks/queries/useProfile"
 import {
   LayoutDashboard,
   Scan,
@@ -34,30 +35,13 @@ export default function NavbarComponent() {
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const [profile, setProfile] = useState<{ username?: string; email?: string; avatar?: string; role?: string } | null>(null)
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
-
-  useEffect(() => {
-    let active = true
-    axios.get("/api/profile")
-      .then(({ data }) => {
-        if (!active || !data?.success || !data?.data) return
-        setAvatarLoadFailed(false)
-        setProfile({
-          username: data.data.username,
-          email: data.data.email,
-          avatar: data.data.avatar_url,
-          role: data.data.role,
-        })
-      })
-      .catch(() => { /* keep defaults */ })
-    return () => { active = false }
-  }, [])
+  const { data: profile } = useProfile()
 
   const displayName = profile?.username || "Security Analyst"
   const displayEmail = profile?.email || "admin@rampart.security"
   const initials = (displayName.trim().charAt(0) || "U").toUpperCase()
-  const avatarSrc = profile?.avatar && !avatarLoadFailed ? `${SERVER_URL}${profile.avatar}` : null
+  const avatarSrc = profile?.avatar_url && !avatarLoadFailed ? `${SERVER_URL}${profile.avatar_url}` : null
   const isAdmin = profile?.role === "admin" || profile?.role === "master"
   const menuItems = isAdmin ? [...baseMenuItems, adminMenuItem] : baseMenuItems
 

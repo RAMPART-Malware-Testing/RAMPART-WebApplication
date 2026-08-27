@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { AnalyService } from '@/services/analy.server';
-import { jwtService } from '@/services/jwt.service';
+import { requireSession, unauthorizedResponse } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookie = await cookies();
-    const token = cookie.get("access_token");
-    if (!token) return NextResponse.json(
-      { message: 'No access token found', success: false },
-      { status: 401 }
-    );
-    
-    const verify = await jwtService.verify(token.value)
-    if (!verify?.token) return NextResponse.json(
-      { message: 'No access token found', success: false },
-      { status: 401 }
-    );
+    const session = await requireSession();
+    if (!session) {
+      return unauthorizedResponse();
+    }
 
-    const res = await AnalyService.generateToken(verify.token);
+    const res = await AnalyService.generateToken(session.accessToken);
 
     if (!res?.success || !res?.data?.upload_token) {
       return NextResponse.json(

@@ -19,6 +19,10 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/files', label: 'จัดการไฟล์', icon: 'fas fa-folder-tree' },
   { href: '/admin/reports', label: 'จัดการ Report', icon: 'fas fa-file-contract' },
   { href: '/admin/audit-logs', label: 'ประวัติการจัดการ', icon: 'fas fa-clipboard-list' },
+  { href: '/admin/system-health', label: 'สถานะระบบ', icon: 'fas fa-heart-pulse' },
+  { href: '/admin/task-queue', label: 'คิวงานวิเคราะห์', icon: 'fas fa-list-check' },
+  { href: '/admin/rate-limits', label: 'ตรวจจับการใช้งานผิดปกติ', icon: 'fas fa-shield-halved' },
+  { href: '/admin/broadcast', label: 'ส่งอีเมลประกาศ', icon: 'fas fa-bullhorn' },
 ]
 
 interface Props {

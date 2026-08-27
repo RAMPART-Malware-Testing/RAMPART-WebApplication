@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import axios from 'axios'
 import NavbarComponent from '@/components/NavbarComponent'
 import Image from "next/image";
 import GeometricLoader from '@/components/GeometricLoader'
-import { redirect } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { useTaskStatus } from '@/hooks/queries/useTaskStatus'
 
 interface ReportData {
   task_id: string
@@ -30,21 +30,17 @@ interface ReportData {
 
 }
 
-interface TaskResponse {
-  success: boolean
-  task_id: string
-  status: 'processing' | 'success' | 'failed'
-  report: Omit<ReportData, 'task_id'>
-}
-
-
-
 export default function ReportDetailPage() {
   const params = useParams()
-  const [report, setReport] = useState<ReportData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const taskId = (params.id as string) || ''
   const [downloadingTool, setDownloadingTool] = useState<string | null>(null)
   const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
+
+  const { data: poll, isLoading } = useTaskStatus(taskId)
+  const report: ReportData | null =
+    poll?.success && poll.status === 'success' && poll.report
+      ? { task_id: poll.task_id, ...poll.report }
+      : null
 
 const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
   const router = useRouter()
@@ -82,26 +78,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
       default: return 'text-gray-400 bg-gray-500/10 border border-gray-500/20'
     }
   }
-
-  useEffect(() => {
-    async function fetchReport() {
-      try {
-        const { data } = await axios.get<TaskResponse>(`/api/task_id/${params.id}`, { timeout: 10000 })
-        if (!data.success) {
-          window.location.href = '/dashboard'
-        }
-        if (data.success && data.status === 'success') {
-          setReport({ task_id: data.task_id, ...data.report })
-        }
-      } catch {
-        setReport(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-  
-    if (params.id) fetchReport()
-  }, [params.id])
 
   if (isLoading) {
     return (

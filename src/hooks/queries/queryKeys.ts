@@ -1,0 +1,28 @@
+/** Central query-key registry so every hook/component invalidating a
+ * shared resource (e.g. after updating the profile) targets the exact
+ * same cache entry TanStack Query uses elsewhere. Keep keys here instead
+ * of inlining arrays in each hook file. */
+export const queryKeys = {
+  profile: ["profile"] as const,
+  analysisHistory: <T extends object>(params: T) => ["analysis-history", params] as const,
+  taskStatus: (taskId: string) => ["task-status", taskId] as const,
+  reportTarget: (taskId: string, tool: string) => ["report-target", taskId, tool] as const,
+  loginHistory: ["profile", "login-history"] as const,
+  downloadHistory: ["profile", "download-history"] as const,
+  dashboardSummary: ["dashboard", "summary"] as const,
+  dashboardRecentActivities: ["dashboard", "recent-activities"] as const,
+  dashboardReports: (page: number, limit: number) => ["dashboard", "reports", { page, limit }] as const,
+  adminUserDetail: (uid: string) => ["admin", "user-detail", uid] as const,
+  adminUserHistory: (uid: string, page: number) => ["admin", "user-history", uid, page] as const,
+  adminUserLogins: (uid: string, page: number) => ["admin", "user-logins", uid, page] as const,
+  adminUserDownloads: (uid: string, page: number) => ["admin", "user-downloads", uid, page] as const,
+  adminDashboard: (trendDays: number) => ["admin", "dashboard", trendDays] as const,
+  adminUsersList: <T extends object>(params: T) => ["admin", "users-list", params] as const,
+  adminFilesList: <T extends object>(params: T) => ["admin", "files-list", params] as const,
+  adminReportsList: <T extends object>(params: T) => ["admin", "reports-list", params] as const,
+  adminTaskQueueList: <T extends object>(params: T) => ["admin", "task-queue-list", params] as const,
+  adminTaskQueueDepth: ["admin", "task-queue-depth"] as const,
+  adminRateLimits: ["admin", "rate-limits"] as const,
+  adminSystemHealth: ["admin", "system-health"] as const,
+  adminAuditLogs: <T extends object>(params: T) => ["admin", "audit-logs", params] as const,
+} as const
