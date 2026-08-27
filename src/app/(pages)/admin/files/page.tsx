@@ -105,7 +105,25 @@ export default function AdminFilesPage() {
 
     try {
       const result = await bulkDeleteMutation.mutateAsync({ aids: Array.from(selected), reason: reason.trim() })
-      notify.success(`ลบสำเร็จ ${result.succeeded.length} ไฟล์${result.failed.length ? `, ล้มเหลว ${result.failed.length} ไฟล์` : ''}`)
+      if (result.succeeded.length > 0) {
+        notify.success(`ลบสำเร็จ ${result.succeeded.length} ไฟล์${result.failed.length ? `, ล้มเหลว ${result.failed.length} ไฟล์` : ''}`)
+      }
+      if (result.failed.length > 0) {
+        // Surface WHY each item failed instead of just a count - the
+        // backend already computes a per-item reason (e.g. "ผู้ดูแลไม่
+        // สามารถดำเนินการกับผู้ดูแลด้วยกันได้") but it used to be
+        // discarded here, leaving the operator with an unexplainable
+        // "0 succeeded, N failed".
+        const reasons = [...new Set(result.failed.map((f) => f.reason))]
+        Swal.fire({
+          icon: 'warning',
+          title: `ลบไม่สำเร็จ ${result.failed.length} ไฟล์`,
+          html: reasons.map((r) => `<p style="margin:4px 0">${r}</p>`).join(''),
+          background: '#0f172a',
+          color: '#fff',
+          confirmButtonColor: '#0891b2',
+        })
+      }
       setSelected(new Set())
     } catch {
       notify.error('ไม่สามารถลบได้')

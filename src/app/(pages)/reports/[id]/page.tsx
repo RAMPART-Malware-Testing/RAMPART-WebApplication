@@ -9,6 +9,18 @@ import GeometricLoader from '@/components/GeometricLoader'
 import { useRouter } from "next/navigation";
 import { useTaskStatus } from '@/hooks/queries/useTaskStatus'
 
+/** RampartAI's raw /predict response, stored verbatim as JSONB
+ * (cores/Schema/schema_class.py::Reports.rampart_ai_score) - unlike the
+ * other 3 tools this is NOT a plain number, so malware_probability must
+ * be pulled out and scaled to the same 0(safe)-100(dangerous) axis
+ * (mirrors bgProcessing/task_handlers.py::calculate_rampart_ai_score). */
+interface RampartAiScoreData {
+  malware_probability?: number | null
+  benign_probability?: number | null
+  prediction?: string | null
+  confidence?: number | null
+}
+
 interface ReportData {
   task_id: string
   package: string
@@ -27,7 +39,35 @@ interface ReportData {
   file_size: number
   file_type: string
   file_hash: string
+  // Already on a 0(safe)-100(dangerous) scale server-side - see
+  // bgProcessing/task_handlers.py's calculate_*_score functions.
+  virustotal_score: number | null
+  mobsf_score: number | null
+  cape_score: number | null
+  rampart_ai_score: RampartAiScoreData | number | null
+}
 
+/** Shared 0(safe)-100(dangerous) tier used to color/label every
+ * per-tool score card, so the user can judge each tool's opinion
+ * independently instead of only trusting Gemini's single verdict. */
+function getScoreTier(score: number) {
+  if (score < 35) {
+    return { label: 'ปลอดภัย', text: 'text-emerald-400', bar: 'bg-emerald-500', badge: 'bg-emerald-500/10 border-emerald-500/20' }
+  }
+  if (score < 70) {
+    return { label: 'ความเสี่ยงปานกลาง', text: 'text-amber-400', bar: 'bg-amber-500', badge: 'bg-amber-500/10 border-amber-500/20' }
+  }
+  return { label: 'อันตราย', text: 'text-rose-400', bar: 'bg-rose-500', badge: 'bg-rose-500/10 border-rose-500/20' }
+}
+
+/** RampartAI stores its full /predict JSON, not a plain score - extract
+ * malware_probability (0-1) and scale it the same way the backend does
+ * (bgProcessing/task_handlers.py::calculate_rampart_ai_score: *100). */
+function extractRampartAiScore(raw: RampartAiScoreData | number | null): number | null {
+  if (raw == null) return null
+  if (typeof raw === 'number') return raw
+  if (raw.malware_probability == null) return null
+  return Math.max(0, Math.min(100, raw.malware_probability * 100))
 }
 
 export default function ReportDetailPage() {
@@ -171,17 +211,19 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                       mobsf: { logo: '/mobsf_logo.png', alt: 'MobSF' },
                       virustotal: { logo: '/virustotal_logo.png', alt: 'VirusTotal' },
                       cape: { logo: '/cape_logo.png', alt: 'CAPE Sandbox' },
+                      rampart_ai: { logo: '/logo_bg_white.png', alt: 'RampartAI' },
+                      gemini: { logo: '/logo_gemini.png', alt: 'Gemini' },
                     }
-                    const meta = toolLogos[tool] ?? { logo: '/default_logo.png', alt: tool }
+                    const meta = toolLogos[tool] ?? { logo: '/logo_bg_white.png', alt: tool }
 
                     return (
                       <div key={tool} className="flex flex-col items-center gap-1 sm:gap-2 group">
-                        <div className="relative w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14">
+                        <div className={`relative w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 ${tool === 'gemini' ? 'bg-white rounded-lg p-1.5' : ''}`}>
                           <Image
                             src={meta.logo}
                             alt={meta.alt}
                             fill
-                            className="object-contain hover:scale-110 transition-transform duration-200"
+                            className={`object-contain hover:scale-110 transition-transform duration-200 ${tool === 'gemini' ? 'p-1' : ''}`}
                           />
                         </div>
                         <span className="text-[10px] sm:text-xs text-blue-200/60">
@@ -203,28 +245,39 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                     mobsf: { label: 'MobSF', imagePath: '/mobsf_logo.png' },
                     virustotal: { label: 'VirusTotal', imagePath: '/virustotal_logo.png' },
                     cape: { label: 'CAPE Sandbox', imagePath: '/cape_logo.png' },
+                    rampart_ai: { label: 'RampartAI', imagePath: '/logo_bg_white.png' },
+                    gemini: { label: 'Gemini', imagePath: '/logo_gemini.png' },
                   }
+                  // RampartAI/Gemini don't have a dedicated /details/[tool]
+                  // page (only mobsf/cape/virustotal do - see
+                  // src/app/(pages)/details/[tool]/[taskid]/page.tsx's
+                  // allowedTools) - their cards show the logo but aren't
+                  // clickable, instead of navigating to an "Invalid tool" page.
+                  const hasDetailPage = tool === 'mobsf' || tool === 'cape' || tool === 'virustotal'
 
-                  const meta = toolLabels[tool] ?? { label: tool, imagePath: '/default_logo.png' }
+                  const meta = toolLabels[tool] ?? { label: tool, imagePath: '/logo_bg_white.png' }
                   return (
                     <button
                       key={tool}
-                      onClick={ () => router.push(`/details/${tool}/${report.task_id}`) }
+                      disabled={!hasDetailPage}
+                      onClick={hasDetailPage ? () => router.push(`/details/${tool}/${report.task_id}`) : undefined}
                       className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 rounded-xl border transition text-sm sm:text-base
-                  ${isDownloading
-                          ? 'bg-cyan-500/20 border-cyan-500/40 cursor-not-allowed'
-                          : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-pointer'
+                  ${!hasDetailPage
+                          ? 'bg-white/5 border-white/10 cursor-default opacity-70'
+                          : isDownloading
+                            ? 'bg-cyan-500/20 border-cyan-500/40 cursor-not-allowed'
+                            : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-pointer'
                         }`}
                     >
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0 ">
-                        <div className="relative w-5 h-5 sm:w-20 sm:h-20 shrink-0 bg-white/10 rounded-lg">
+                        <div className={`relative w-5 h-5 sm:w-20 sm:h-20 shrink-0 rounded-lg ${tool === 'gemini' ? 'bg-white' : 'bg-white/10'}`}>
                           <Image
                             src={meta.imagePath}
                             alt={meta.label}
                             fill
                             className="object-contain p-1"
                           />
-                        </div>                                                                                                                          
+                        </div>
                         <span className="text-white font-medium truncate">{meta.label}</span>
                       </div>
                     </button>
@@ -243,7 +296,7 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                     mobsf: { label: 'MobSF', imagePath: '/mobsf_logo.png' },
                     virustotal: { label: 'VirusTotal', imagePath: '/virustotal_logo.png' },
                     cape: { label: 'CAPE Sandbox', imagePath: '/cape_logo.png' },
-                    rampartai: { label: 'RampartAI', imagePath: '/default_logo.png' },
+                    rampartai: { label: 'RampartAI', imagePath: '/logo_bg_white.png' },
                   }
                   const meta = toolLabels[tool] ?? { label: tool, imagePath: '/default_logo.png' }
 
@@ -282,6 +335,57 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                 })}
               </div>
               <p className="text-[10px] sm:text-xs text-blue-200/40 break-all mt-4">MD5: {report.md5}</p>
+            </div>
+
+            {/* Per-tool scores - each engine's own opinion on a shared
+                0(safe)-100(dangerous) scale, shown independently so the
+                user isn't only relying on Gemini's single synthesized
+                verdict below. */}
+            <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
+              <h2 className="text-white font-semibold mb-1 text-sm sm:text-base">คะแนนความเสี่ยงรายเครื่องมือ</h2>
+              <p className="text-blue-200/40 text-[10px] sm:text-xs mb-4">
+                0 = ปลอดภัย, 100 = อันตราย — แต่ละเครื่องมือให้คะแนนอิสระต่อกัน เพื่อให้คุณตัดสินใจเองได้
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {([
+                  { key: 'virustotal', label: 'VirusTotal', logo: '/virustotal_logo.png', score: report.virustotal_score },
+                  { key: 'mobsf', label: 'MobSF', logo: '/mobsf_logo.png', score: report.mobsf_score },
+                  { key: 'cape', label: 'CAPE Sandbox', logo: '/cape_logo.png', score: report.cape_score },
+                  { key: 'rampart_ai', label: 'RampartAI', logo: '/logo_bg_white.png', score: extractRampartAiScore(report.rampart_ai_score) },
+                ] as const)
+                  .filter((entry) => tools.includes(entry.key))
+                  .map((entry) => {
+                    const hasScore = entry.score !== null && entry.score !== undefined
+                    const score = hasScore ? Math.round(entry.score as number) : null
+                    const tier = hasScore ? getScoreTier(score as number) : null
+                    return (
+                      <div key={entry.key} className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="relative w-6 h-6 shrink-0 bg-white/10 rounded">
+                            <Image src={entry.logo} alt={entry.label} fill className="object-contain p-0.5" />
+                          </div>
+                          <span className="text-white text-xs sm:text-sm font-medium truncate">{entry.label}</span>
+                        </div>
+                        {hasScore ? (
+                          <>
+                            <div className="flex items-baseline gap-1 mb-2">
+                              <span className={`text-2xl sm:text-3xl font-black ${tier!.text}`}>{score}</span>
+                              <span className="text-gray-400 text-xs">/100</span>
+                            </div>
+                            <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden mb-2">
+                              <div className={`h-2 rounded-full transition-all ${tier!.bar}`} style={{ width: `${score}%` }} />
+                            </div>
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${tier!.text} ${tier!.badge}`}>
+                              {tier!.label}
+                            </span>
+                          </>
+                        ) : (
+                          <p className="text-gray-500 text-xs">ไม่มีข้อมูลคะแนน</p>
+                        )}
+                      </div>
+                    )
+                  })}
+              </div>
             </div>
 
             {/* Gemini & VirusTotal */}

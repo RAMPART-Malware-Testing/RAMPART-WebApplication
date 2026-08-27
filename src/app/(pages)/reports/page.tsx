@@ -122,6 +122,15 @@ export default function ReportsPage() {
     { value: 'score', label: 'ความเสี่ยง' },
   ]
 
+  // วิเคราะห์เสร็จแล้ว (success) -> ไปหน้ารายงานฉบับเต็มโดยตรง
+  // ยังไม่เสร็จ (pending/processing/failed) -> ไปหน้า live-progress เพื่อ
+  // ติดตามสถานะ/ดูข้อความ error ต่อ (หน้า /reports/{id} ไม่ได้ poll ซ้ำ
+  // และจะขึ้น "ไม่พบรายงาน" เฉยๆ ถ้า task ยังไม่ success)
+  const reportHref = (item: AnalysisHistoryItem) =>
+    item.status === 'success'
+      ? `/reports/${item.task_id}`
+      : `/scan/analysis?taskId=${item.task_id}`
+
   return (
     <div className="min-h-screen bg-[#050510] p-6">
       <NavbarComponent />
@@ -221,7 +230,7 @@ export default function ReportsPage() {
               {items.map(item => (
                 <Link
                   key={item.aid}
-                  href={`/scan/analysis?taskId=${item.task_id}`}
+                  href={reportHref(item)}
                   className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 transition group"
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">

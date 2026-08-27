@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -44,8 +45,13 @@ export default function AdminSidebar({ collapsed, onToggle }: Props) {
     >
       {/* Brand */}
       <div className="h-16 flex items-center gap-3 px-4 border-b border-white/10 shrink-0">
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shrink-0">
-          <i className="fas fa-shield-halved text-white text-sm" />
+        <div className="relative w-9 h-9 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10">
+          <Image
+            src="/logo_bg_white.png"
+            alt="RAMPART"
+            fill
+            className="object-contain p-1"
+          />
         </div>
         {!collapsed && (
           <div className="min-w-0">

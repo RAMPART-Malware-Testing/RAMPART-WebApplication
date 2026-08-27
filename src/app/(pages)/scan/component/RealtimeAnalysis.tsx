@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import axios from "axios"
 import { useQueryClient } from "@tanstack/react-query"
 import { AnalysisTimeline } from "./AnalysisTimeline"
@@ -162,8 +163,9 @@ async function fetchToolReports(taskId: string, tools: string[]): Promise<Record
 
 export function RealtimeAnalysis({ taskId }: { taskId: string }) {
   const queryClient = useQueryClient()
+  const router = useRouter()
   const [analysis, setAnalysis] = useState<AnalysisResponse>(emptyAnalysis())
-  const [status, setStatus] = useState<"loading" | "running" | "completed" | "failed" | "notfound">("loading")
+  const [status, setStatus] = useState<"loading" | "running" | "finalizing" | "completed" | "failed" | "notfound">("loading")
   const [error, setError] = useState("")
   const [privacy, setPrivacy] = useState(false)
   const [savingPrivacy, setSavingPrivacy] = useState(false)
@@ -215,6 +217,31 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
       return
     }
 
+    if (poll.status === "success") {
+      // The backend never includes "progress" once a task reaches
+      // "success" (see controller/analysis_controller.py::
+      // _compute_analysis_report - "progress" is only attached while
+      // status != "success"), so deriveToolStatuses(poll.progress) would
+      // always fall back to every tool showing "waiting" here - a false
+      // "nothing has run yet" flash right when landing on an
+      // already-completed task's URL (e.g. from a bookmark or shared
+      // link), before fetchToolReports() below finishes fetching the
+      // real per-tool reports a few seconds later. Skip straight to a
+      // dedicated "finalizing" loading state instead of feeding the
+      // timeline momentarily-wrong statuses.
+      finishedRef.current = true
+      if (typeof poll.report?.privacy === "boolean") setPrivacy(poll.report.privacy)
+      if (poll.report?.uid) setReportUid(poll.report.uid)
+      if (poll.report?.md5) setMd5(poll.report.md5)
+      if (poll.report?.tools) setAvailableTools(String(poll.report.tools).split(",").map((t: string) => t.trim()).filter(Boolean))
+      setStatus("finalizing")
+      fetchToolReports(taskId, (poll.report?.tools ?? "").split(",")).then((rawReports) => {
+        setAnalysis(buildReport(poll.report, rawReports))
+        setStatus("completed")
+      })
+      return
+    }
+
     const st = deriveToolStatuses(poll.progress)
     if (typeof poll.report?.privacy === "boolean") setPrivacy(poll.report.privacy)
     if (poll.report?.uid) setReportUid(poll.report.uid)
@@ -231,15 +258,19 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
       gemini: { ...prev.gemini, status: st.gemini },
     }))
     setStatus("running")
-
-    if (poll.status === "success") {
-      finishedRef.current = true
-      fetchToolReports(taskId, (poll.report?.tools ?? "").split(",")).then((rawReports) => {
-        setAnalysis(buildReport(poll.report, rawReports))
-        setStatus("completed")
-      })
-    }
   }, [poll, pollError, taskId])
+
+  // เมื่อวิเคราะห์ครบทั้ง 3 stage สำเร็จ (status === "completed") ให้พาไป
+  // หน้ารายงานฉบับเต็ม /reports/{taskId} โดยอัตโนมัติ แทนที่จะค้างอยู่ที่
+  // หน้า live-progress นี้ต่อ - หน่วงไว้สั้น ๆ ให้ผู้ใช้เห็นสถานะ
+  // "เสร็จสมบูรณ์" ก่อนสักครู่ ไม่ใช่กระโดดออกทันทีจนรู้สึกกระตุก
+  useEffect(() => {
+    if (status !== "completed") return
+    const timer = setTimeout(() => {
+      router.push(`/reports/${taskId}`)
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [status, taskId, router])
 
   if (status === "notfound" || status === "failed") {
     return (
@@ -251,6 +282,7 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
     )
   }
   if (status === "loading") return <GeometricLoader loadingText="กำลังโหลดสถานะการวิเคราะห์..." />
+  if (status === "finalizing") return <GeometricLoader loadingText="วิเคราะห์เสร็จแล้ว กำลังโหลดรายงานฉบับเต็ม..." />
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
