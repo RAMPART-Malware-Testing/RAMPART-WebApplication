@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ProfileService } from '@/services/profile.service'
 import { requireSession, refreshSessionCookie, unauthorizedResponse } from '@/lib/session'
 
-const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,50}$/
+const USERNAME_RE = /^[a-zA-Z0-9_.\-\u0E00-\u0E7F]{3,50}$/
 
 export async function GET() {
   const session = await requireSession()
@@ -24,14 +24,15 @@ export async function PATCH(request: NextRequest) {
   }
   const { username } = await request.json()
   if (!username || typeof username !== 'string') {
-    return NextResponse.json({ success: false, message: 'username is required' }, { status: 400 })
+    return NextResponse.json({ success: false, message: 'กรุณาระบุชื่อผู้ใช้ใหม่' }, { status: 400 })
   }
   const trimmed = username.trim()
   if (!USERNAME_RE.test(trimmed)) {
     return NextResponse.json(
       {
         success: false,
-        message: "Username must be 3-50 characters and may only contain letters, numbers, '.', '_' and '-'",
+        message:
+          "ชื่อผู้ใช้ต้องมีความยาว 3-50 ตัวอักษร และใช้ได้เฉพาะตัวอักษรไทย ตัวอักษรอังกฤษ ตัวเลข '.', '_' และ '-' เท่านั้น",
       },
       { status: 400 },
     )

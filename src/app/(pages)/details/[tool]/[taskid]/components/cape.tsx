@@ -259,12 +259,21 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
         <div className="bg-black p-4 rounded-xl overflow-x-auto border border-gray-700">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-bold">Raw JSON Report</h2>
-            <button
-              onClick={() => setShowRawJson((prev) => !prev)}
-              className="text-sm px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition text-cyan-300"
-            >
-              {showRawJson ? "ซ่อน Raw JSON" : "ดู Raw JSON"}
-            </button>
+    <button
+      onClick={() => {
+        if (showRawJson) {
+          setShowRawJson(false);
+          return;
+        }
+        const confirmed = window.confirm(
+          "รายงานฉบับเต็มอาจมีขนาดใหญ่มาก (หลายสิบ MB) การแสดงผลอาจทำให้เบราว์เซอร์ค้างชั่วคราว ต้องการดำเนินการต่อหรือไม่?"
+        );
+        if (confirmed) setShowRawJson(true);
+      }}
+      className="text-sm px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition text-cyan-300"
+    >
+      {showRawJson ? "ซ่อน Raw JSON" : "ดู Raw JSON"}
+    </button>
           </div>
           {showRawJson ? (
             <pre className="text-xs text-gray-300 overflow-auto max-h-[500px]">

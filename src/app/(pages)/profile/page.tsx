@@ -11,6 +11,10 @@ import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
+const USERNAME_RE = /^[a-zA-Z0-9_.\-\u0E00-\u0E7F]{3,50}$/
+const USERNAME_ERROR_MESSAGE =
+  "ชื่อผู้ใช้ต้องมีความยาว 3-50 ตัวอักษร และใช้ได้เฉพาะตัวอักษรไทย ตัวอักษรอังกฤษ ตัวเลข '.', '_' และ '-' เท่านั้น"
+
 interface UserProfile {
   username: string
   email: string
@@ -85,7 +89,7 @@ function ProfileContent() {
     fileType: it.file_type || 'file',
     timestamp: it.created_at || '',
     status: it.status === 'success' ? 'completed' as const : it.status === 'failed' ? 'failed' as const : 'analyzing' as const,
-    riskScore: it.report?.score != null ? Math.round((it.report.score / 10) * 10) / 10 : undefined,
+    riskScore: it.report?.score != null ? Math.round(it.report.score) : undefined,
   }))
 
   const downloadHistory: DownloadHistory[] = rawDownloadHistory.map((it) => ({
@@ -105,6 +109,7 @@ function ProfileContent() {
   })
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const uploadingAvatar = updateAvatar.isPending
@@ -128,18 +133,36 @@ function ProfileContent() {
   const handleEdit = (field: string, currentValue: string) => {
     setEditingField(field)
     setEditValue(currentValue)
+    setEditError(null)
   }
 
   const handleSaveEdit = async () => {
-    if (user && editingField === 'username' && editValue) {
+    if (user && editingField === 'username') {
+      const trimmed = editValue.trim()
+      if (!trimmed) {
+        setEditError('กรุณาระบุชื่อผู้ใช้ใหม่')
+        return
+      }
+      if (!USERNAME_RE.test(trimmed)) {
+        setEditError(USERNAME_ERROR_MESSAGE)
+        return
+      }
       try {
-        await updateUsername.mutateAsync(editValue)
-      } catch {
-        // keep the previous value on failure
+        await updateUsername.mutateAsync(trimmed)
+      } catch (err) {
+        setEditError(err instanceof Error ? err.message : 'อัปเดตชื่อผู้ใช้ไม่สำเร็จ')
+        return
       }
     }
     setEditingField(null)
     setEditValue('')
+    setEditError(null)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingField(null)
+    setEditValue('')
+    setEditError(null)
   }
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -331,7 +354,7 @@ function ProfileContent() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                       activeTab === tab.id
-                        ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white shadow-lg`
+                        ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white`
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
@@ -358,20 +381,33 @@ function ProfileContent() {
                           <label className="block text-slate-400 text-sm mb-2">ชื่อผู้ใช้</label>
                           <div className="flex items-center gap-3">
                             {editingField === 'username' ? (
-                              <div className="flex-1 flex gap-2">
-                                <input
-                                  type="text"
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  className="flex-1 px-4 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                                  autoFocus
-                                />
-                                <button onClick={handleSaveEdit} className="px-4 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition">
-                                  <i className="fas fa-check"></i>
-                                </button>
-                                <button onClick={() => setEditingField(null)} className="px-4 py-2.5 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition">
-                                  <i className="fas fa-times"></i>
-                                </button>
+                              <div className="flex-1 flex flex-col gap-2">
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={editValue}
+                                    onChange={(e) => {
+                                      setEditValue(e.target.value)
+                                      if (editError) setEditError(null)
+                                    }}
+                                    maxLength={50}
+                                    className="flex-1 px-4 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                                    autoFocus
+                                  />
+                                  <button
+                                    onClick={handleSaveEdit}
+                                    disabled={updateUsername.isPending}
+                                    className="px-4 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition disabled:opacity-50"
+                                  >
+                                    <i className="fas fa-check"></i>
+                                  </button>
+                                  <button onClick={handleCancelEdit} className="px-4 py-2.5 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition">
+                                    <i className="fas fa-times"></i>
+                                  </button>
+                                </div>
+                                {editError && (
+                                  <p className="text-rose-400 text-sm">{editError}</p>
+                                )}
                               </div>
                             ) : (
                               <>
@@ -484,9 +520,9 @@ function ProfileContent() {
                         </div>
                         <div className="flex items-center gap-3 text-sm text-slate-400 flex-wrap">
                           <span><i className="fas fa-calendar mr-1"></i>{formatDate(upload.timestamp)}</span>
-                          {upload.riskScore && (
-                            <span className={`font-medium ${upload.riskScore >= 8 ? 'text-rose-400' : upload.riskScore >= 6 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                              <i className="fas fa-chart-line mr-1"></i>คะแนนความเสี่ยง: {upload.riskScore}/10
+                          {upload.riskScore != null && (
+                            <span className={`font-medium ${upload.riskScore >= 60 ? 'text-rose-400' : upload.riskScore >= 30 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                              <i className="fas fa-chart-line mr-1"></i>คะแนนความเสี่ยง: {upload.riskScore}/100
                             </span>
                           )}
                         </div>
