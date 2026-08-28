@@ -8,7 +8,7 @@ async function fetchProfile(accessToken: string) {
         const SERVER_URL = process.env.SERVER_URL || 'http://localhost:8006';
         const { data } = await axios_.post(`${SERVER_URL}/api/profile`, { token: accessToken });
         if (data?.success && data?.data) return data.data;
-    } catch { /* ignore */ }
+    } catch {}
     return null;
 }
 
@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
 
-    // reCAPTCHA only when there's no trusted device token (old behaviour).
     const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
     const token = cookieStore.get("deviceToken");
@@ -37,12 +36,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: res.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' }, { status: 401 })
     }
 
-    // OTP step — hand the login token back so the verify-otp page posts it.
     if (!res.data.bypass_otp) {
       return NextResponse.json({ success: true, requireOtp: true, token: res.data.token }, { status: 200 })
     }
 
-    // Trusted device -> direct session (type "session" so middleware allows /dashboard).
     const profile = await fetchProfile(res.data.access_token)
     const wrapped = jwtService.sign(
       { token: res.data.access_token, type: 'session', data: profile || { role: 'user' } },

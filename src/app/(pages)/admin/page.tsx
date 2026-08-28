@@ -115,7 +115,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
@@ -153,7 +152,6 @@ export default function AdminDashboardPage() {
 
         {summary && (
           <>
-            {/* Stat cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 title="ผู้ใช้ทั้งหมด"
@@ -189,7 +187,6 @@ export default function AdminDashboardPage() {
               />
             </div>
 
-            {/* Upload trend + role breakdown */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <ChartPanel
                 title="แนวโน้มการอัปโหลดไฟล์"
@@ -225,7 +222,6 @@ export default function AdminDashboardPage() {
               </ChartPanel>
             </div>
 
-            {/* Risk level + status + file type + tool usage */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ChartPanel title="ระดับความเสี่ยงของไฟล์" subtitle="จากผลการวิเคราะห์ทั้งหมด" icon="fas fa-triangle-exclamation text-amber-400">
                 {summary.risk_level_breakdown.length === 0 ? (
@@ -283,7 +279,6 @@ export default function AdminDashboardPage() {
               </ChartPanel>
             </div>
 
-            {/* Recent admin actions */}
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
               <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
                 <div>

@@ -8,7 +8,6 @@ import { useToast } from '@/components/ui/ToastProvider'
 import Navbarservice from '@/components/Navbarservice'
 import GeometricLoader from '@/components/GeometricLoader'
 
-
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -48,7 +47,6 @@ export default function ResetPasswordPage() {
       {isSuccessful && <GeometricLoader loadingText='กำลังส่งลิงก์รีเซ็ตรหัสผ่าน'/>}
     <Navbarservice />
     <div className="min-h-screen bg-[#050510] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated gradient blobs background - เหมือนกับหน้า Landing Page */}
       <div className="fixed inset-0 overflow-hidden -z-10">
         <div className="blob-bg top-[-200px] left-[-150px] animate-pulse" style={{ animationDuration: "12s" }} />
         <div
@@ -67,7 +65,6 @@ export default function ResetPasswordPage() {
         <div className="absolute w-[600px] h-[600px] bottom-10 right-0 bg-indigo-600/10 blur-[120px] spin-slow" />
       </div>
 
-      {/* Background Elements เดิม */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -75,10 +72,8 @@ export default function ResetPasswordPage() {
 
       <div className="relative z-10 w-full max-w-6xl">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
-          {/* Hero Section */}
           <Hero />
 
-          {/* Reset Password Form */}
           <div className="w-full lg:w-auto lg:min-w-[450px] flex-1 max-w-md">
             <div className="backdrop-blur-xl bg-white/5 rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10 hover-glow transition-all duration-500">
               <div className="text-center mb-8">

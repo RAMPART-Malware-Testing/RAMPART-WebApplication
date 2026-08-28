@@ -9,11 +9,6 @@ import GeometricLoader from '@/components/GeometricLoader'
 import { useRouter } from "next/navigation";
 import { useTaskStatus } from '@/hooks/queries/useTaskStatus'
 
-/** RampartAI's raw /predict response, stored verbatim as JSONB
- * (cores/Schema/schema_class.py::Reports.rampart_ai_score) - unlike the
- * other 3 tools this is NOT a plain number, so malware_probability must
- * be pulled out and scaled to the same 0(safe)-100(dangerous) axis
- * (mirrors bgProcessing/task_handlers.py::calculate_rampart_ai_score). */
 interface RampartAiScoreData {
   malware_probability?: number | null
   benign_probability?: number | null
@@ -39,17 +34,12 @@ interface ReportData {
   file_size: number
   file_type: string
   file_hash: string
-  // Already on a 0(safe)-100(dangerous) scale server-side - see
-  // bgProcessing/task_handlers.py's calculate_*_score functions.
   virustotal_score: number | null
   mobsf_score: number | null
   cape_score: number | null
   rampart_ai_score: RampartAiScoreData | number | null
 }
 
-/** Shared 0(safe)-100(dangerous) tier used to color/label every
- * per-tool score card, so the user can judge each tool's opinion
- * independently instead of only trusting Gemini's single verdict. */
 function getScoreTier(score: number) {
   if (score < 35) {
     return { label: 'ปลอดภัย', text: 'text-emerald-400', bar: 'bg-emerald-500', badge: 'bg-emerald-500/10 border-emerald-500/20' }
@@ -60,9 +50,6 @@ function getScoreTier(score: number) {
   return { label: 'อันตราย', text: 'text-rose-400', bar: 'bg-rose-500', badge: 'bg-rose-500/10 border-rose-500/20' }
 }
 
-/** RampartAI stores its full /predict JSON, not a plain score - extract
- * malware_probability (0-1) and scale it the same way the backend does
- * (bgProcessing/task_handlers.py::calculate_rampart_ai_score: *100). */
 function extractRampartAiScore(raw: RampartAiScoreData | number | null): number | null {
   if (raw == null) return null
   if (typeof raw === 'number') return raw
@@ -95,7 +82,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      // บันทึกประวัติการดาวน์โหลด (fire-and-forget)
       axios.post("/api/profile/download", { file_name: report?.file_name, tool, md5 }).catch(() => {})
     } catch {
       alert(`ดาวน์โหลด ${tool} ไม่สำเร็จ`)
@@ -156,17 +142,12 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
     <>
       <div className="min-h-screen bg-[#050510] p-4 sm:p-6">
         <NavbarComponent />
-        {/* Main Content - Responsive Stack */}
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mt-4 sm:mt-6 justify-center">
-          {/* Right Column - Analysis Report */}
           <div className="w-full lg:w-2/3 xl:w-3/4 space-y-4 sm:space-y-6">
-            {/* File Information */}
             <div className="flex flex-row gap-4 sm:gap-6">
-              {/* File Details */}
               <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10 w-full">
                 <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                   <div className="space-y-2 w-full">
-                    {/* ชื่อไฟล์ */}
                     <div>
                       <h1 className="text-xl sm:text-lg font-bold text-white mb-1 break-all line-clamp-2">
                         {report.file_name}
@@ -178,31 +159,26 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                       </div>
                     </div>
 
-                    {/* Package name (ถ้ามี) */}
                     {report.package && (
                       <p className="text-xs sm:text-sm text-blue-200/40 break-all">
                         Package: {report.package}
                       </p>
                     )}
 
-                    {/* Timestamp */}
                     <p className="text-xs sm:text-sm text-blue-200/50">
                       {new Date(report.created_at).toLocaleString('th-TH')}
                     </p>
 
-                    {/* File hash แบบย่อ */}
                     <p className="text-[10px] sm:text-xs text-blue-200/30 font-mono break-all">
                       SHA256: {report.file_hash}
                     </p>
                   </div>
 
-                  {/* RID Badge */}
                   <span className="shrink-0 text-[10px] sm:text-xs bg-white/10 text-blue-200/60 px-2 sm:px-3 py-1 rounded-full">
                     #{report.rid}
                   </span>
                 </div>
               </div>
-              {/* Tools Analysis*/}
               <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10 w-full">
                 <h2 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">เครื่องมือที่ใช้วิเคราะห์</h2>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-6 mb-4">
@@ -235,7 +211,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                 </div>
               </div>
             </div>
-            {/* Details Report */}
             <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
               <h2 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">ดูรายละเอียดรายงาน</h2>
               <div className="flex flex-row gap-3 sm:gap-4 flex-wrap justify-center sm:justify-start">
@@ -248,11 +223,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                     rampart_ai: { label: 'RampartAI', imagePath: '/logo_bg_white.png' },
                     gemini: { label: 'Gemini', imagePath: '/logo_gemini.png' },
                   }
-                  // RampartAI/Gemini don't have a dedicated /details/[tool]
-                  // page (only mobsf/cape/virustotal do - see
-                  // src/app/(pages)/details/[tool]/[taskid]/page.tsx's
-                  // allowedTools) - their cards show the logo but aren't
-                  // clickable, instead of navigating to an "Invalid tool" page.
                   const hasDetailPage = tool === 'mobsf' || tool === 'cape' || tool === 'virustotal'
 
                   const meta = toolLabels[tool] ?? { label: tool, imagePath: '/logo_bg_white.png' }
@@ -286,7 +256,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
               </div>
               <p className="text-[10px] sm:text-xs text-blue-200/40 break-all mt-4">MD5: {report.md5}</p>
             </div>
-            {/* Tools & Download */}
             <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
               <h2 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">ดาวน์โหลดรายงาน</h2>
               <div className="flex flex-row gap-3 sm:gap-4 flex-wrap justify-center sm:justify-start">
@@ -337,10 +306,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
               <p className="text-[10px] sm:text-xs text-blue-200/40 break-all mt-4">MD5: {report.md5}</p>
             </div>
 
-            {/* Per-tool scores - each engine's own opinion on a shared
-                0(safe)-100(dangerous) scale, shown independently so the
-                user isn't only relying on Gemini's single synthesized
-                verdict below. */}
             <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10">
               <h2 className="text-white font-semibold mb-1 text-sm sm:text-base">คะแนนความเสี่ยงรายเครื่องมือ</h2>
               <p className="text-blue-200/40 text-[10px] sm:text-xs mb-4">
@@ -388,12 +353,9 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
               </div>
             </div>
 
-            {/* Gemini & VirusTotal */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50 shadow-xl">
 
-              {/* Header with Logo and Risk Level */}
               <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-6 sm:mb-8">
-                {/* Logo Section */}
                 <div className="flex flex-col gap-3 sm:gap-4 w-full sm:w-auto">
                   <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto sm:mx-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl opacity-30 blur-md"></div>
@@ -413,19 +375,15 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                   </p>
                 </div>
 
-                {/* Risk Level Badge */}
                 <div className={`rounded-xl px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 shadow-sm ${c.bg} mx-auto sm:mx-0`}>
                   <p className="text-gray-400 text-[10px] sm:text-xs mb-1">ระดับความเสี่ยง</p>
                   <span className={`text-base sm:text-lg font-bold ${c.text}`}>{report.risk_level}</span>
                 </div>
               </div>
 
-              {/* Main Content Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                {/* Left Column - Score and Summary */}
                 <div className="lg:col-span-2 space-y-4 sm:space-y-6">
 
-                  {/* Security Score Card */}
                   <div className="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-gray-700/50">
                     <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 mb-4">
                       <p className="text-gray-400 text-xs sm:text-sm">คะแนนความปลอดภัย</p>
@@ -442,7 +400,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                     </div>
                   </div>
 
-                  {/* Summary Section */}
                   <div className="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-gray-700/50">
                     <h2 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm sm:text-base">
                       <svg className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -454,7 +411,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                   </div>
                 </div>
 
-                {/* Right Column - Risk Indicators */}
                 <div className="space-y-4 sm:space-y-6">
                   <div className="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-gray-700/50 h-full">
                     <h2 className="text-white font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
@@ -475,7 +431,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                 </div>
               </div>
 
-              {/* Recommendation Footer */}
               <div className="mt-4 sm:mt-6 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 sm:p-6 border border-purple-500/20">
                 <div className="flex flex-col xs:flex-row items-start gap-3">
                   <div className="p-1.5 sm:p-2 bg-gray-800 rounded-lg border border-gray-700">
@@ -490,7 +445,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                 </div>
               </div>
 
-              {/* Footer Info */}
               <div className="mt-3 sm:mt-4 flex flex-col xs:flex-row justify-between items-center gap-2 text-[10px] sm:text-xs text-gray-500">
                 <span className="flex items-center gap-2">
                   <span className="w-1 h-1 bg-purple-400 rounded-full"></span>

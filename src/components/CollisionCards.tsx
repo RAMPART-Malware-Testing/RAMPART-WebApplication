@@ -1,4 +1,3 @@
-// components/CollisionCards.tsx
 import React, { useEffect, useRef } from 'react';
 
 interface Card {
@@ -60,13 +59,10 @@ const CollisionCards: React.FC = () => {
         return () => observer.disconnect();
     }, []);
 
-    // แบบง่ายกว่า - เรียงทุกใบใน grid เดียวกัน
     return (
         <section className="py-24 px-6">
             <div className="max-w-7xl mx-auto">
-                {/* หัวข้อ (เหมือนเดิม) */}
 
-                {/* Grid การ์ด - เรียงอัตโนมัติ 3 คอลัมน์ */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {cardsData.map((card, idx) => (
                         <div
@@ -75,11 +71,11 @@ const CollisionCards: React.FC = () => {
                             className="group opacity-0 translate-y-10 transition-all duration-700 hover:duration-300"
                             style={{ transitionDelay: `${idx * 100}ms` }}
                         >
-                            <div className="bg-white rounded-2xl p-6 border border-gray-200 
+                            <div className="bg-white rounded-2xl p-6 border border-gray-200
                           hover:border-purple-300 hover:shadow-xl hover:shadow-purple-100
                           transition-all duration-300 hover:-translate-y-2 cursor-pointer h-full">
 
-                                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${card.color} 
+                                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${card.color}
                             flex items-center justify-center mb-5 shadow-sm
                             group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300`}>
                                     <img

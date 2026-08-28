@@ -14,7 +14,7 @@ export default function Toast({ type, message, onClose }: ToastProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onClose, 300); // รอ animation เสร็จก่อนค่อย remove
+      setTimeout(onClose, 300);
     }, 3000);
 
     return () => clearTimeout(timer);

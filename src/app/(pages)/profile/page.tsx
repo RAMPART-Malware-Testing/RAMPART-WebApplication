@@ -115,7 +115,6 @@ function ProfileContent() {
   const uploadingAvatar = updateAvatar.isPending
 
   useEffect(() => {
-    // หน้า profile เปิดด้วยแท็บ "ข้อมูลบัญชีผู้ใช้" เป็นอันแรกเสมอ
     setActiveTab('profile')
   }, [modeParam])
 
@@ -261,16 +260,13 @@ function ProfileContent() {
       <NavbarComponent />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">โปรไฟล์ของฉัน</h1>
           <p className="text-slate-400">จัดการข้อมูลส่วนตัวและดูประวัติกิจกรรมของคุณ</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Sidebar */}
           <div className="lg:col-span-4 space-y-6">
-            {/* Profile Card */}
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
               <div className="relative h-24 bg-gradient-to-r from-cyan-500 to-blue-600">
                 <div className="absolute -bottom-12 left-6">
@@ -312,7 +308,7 @@ function ProfileContent() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="pt-14 pb-6 px-6">
                 <h2 className="text-white font-bold text-xl">{user?.username}</h2>
                 <p className="text-slate-400 text-sm mt-1">{user?.email}</p>
@@ -339,13 +335,9 @@ function ProfileContent() {
               </div>
             </div>
 
-          
-           
           </div>
 
-          {/* Main Content */}
           <div className="lg:col-span-8">
-            {/* Tabs */}
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 mb-6 overflow-x-auto">
               <div className="flex p-1 gap-1">
                 {tabs.map((tab) => (
@@ -365,9 +357,7 @@ function ProfileContent() {
               </div>
             </div>
 
-            {/* Tab Content */}
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              {/* Profile Tab */}
               {activeTab === 'profile' && (
                 <div className="space-y-6">
                   <div className="grid gap-6">
@@ -451,12 +441,10 @@ function ProfileContent() {
                       </div>
                     </div>
 
-                 
                   </div>
                 </div>
               )}
 
-              {/* Login History Tab */}
               {activeTab === 'login' && (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center mb-4">
@@ -493,7 +481,6 @@ function ProfileContent() {
                 </div>
               )}
 
-              {/* Upload History Tab */}
               {activeTab === 'upload' && (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center mb-4">
@@ -533,7 +520,6 @@ function ProfileContent() {
                 </div>
               )}
 
-              {/* Download History Tab */}
               {activeTab === 'download' && (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center mb-4">
@@ -572,7 +558,6 @@ function ProfileContent() {
         </div>
       </div>
 
-      {/* Change Password Modal */}
       {changePasswordDialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setChangePasswordDialog(false)}>
           <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>

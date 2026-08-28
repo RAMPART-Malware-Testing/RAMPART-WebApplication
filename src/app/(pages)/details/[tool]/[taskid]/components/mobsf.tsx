@@ -7,13 +7,8 @@ import GeometricLoader from "@/components/GeometricLoader";
 import NavbarComponent from "@/components/NavbarComponent";
 import ReportDownload from "./ReportDownload";
 
-
-// react-leaflet touches `window`/`document` at import time and crashes during
-// server-side rendering — only load it in the browser.
 const ServerMap = dynamic(() => import("./servermap"), { ssr: false });
 
-// If the map library fails for any reason it must never take down the whole
-// report page — show a placeholder instead.
 class MapBoundary extends Component<{ children?: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
@@ -144,9 +139,7 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
             <NavbarComponent />
             <div className="min-h-screen bg-[#f8f9fa] text-black gap-10">
 
-
                 <div className="max-w-7xl mx-auto px-4 py-6">
-                    {/* Header Info */}
                     <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap justify-between items-center">
                         <div className="flex items-center gap-3">
                             <div>
@@ -170,9 +163,7 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
 
                     <ReportDownload taskid={taskid} md5={report.md5} tools={[tool]} />
 
-                    {/* Stats Cards Row */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        {/* Security Score */}
                         <div className="bg-white rounded-xl shadow-sm p-6 text-center">
                             <div className="relative w-32 h-32 mx-auto">
                                 <svg className="w-32 h-32 transform -rotate-90">
@@ -186,8 +177,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                             <p className="mt-3 text-gray-600">Security Score /100</p>
                         </div>
 
-
-                        {/* Severity Distribution */}
                         <div className="bg-white rounded-xl shadow-sm p-6">
                             <h3 className="font-medium mb-3 text-center">Severity Distribution (%)</h3>
                             <div className="space-y-2">
@@ -208,7 +197,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                             </div>
                         </div>
 
-                        {/* Privacy Risk */}
                         <div className="bg-white rounded-xl shadow-sm p-6 text-center">
                             <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto text-3xl font-bold text-white ${trackers === 0 ? "bg-green-500" : trackers > 4 ? "bg-red-500" : "bg-gray-600"}`}>
                                 {trackers}
@@ -217,7 +205,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                         </div>
                     </div>
 
-                    {/* Signature Certificate */}
                     <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap justify-between items-center">
                         <div className="flex items-center gap-3">
                             <div>
@@ -235,7 +222,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
 
                     </div>
 
-                    {/* World Map */}
                     <div className="w-full h-[500px] mb-50">
                         {report.domains && Object.keys(report.domains).length > 0 ? (
                             <MapBoundary>
@@ -248,8 +234,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                         )}
                     </div>
 
-
-                    {/* Domain Malware Check */}
                     <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
                         <h2 className="text-lg font-semibold mb-3">Domain Malware Check</h2>
                         <div className="overflow-x-auto">
@@ -348,13 +332,11 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
 
                     </div>
 
-                    {/* Findings Section */}
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-200">
                             <h3 className="text-lg font-semibold flex items-center gap-2">Findings</h3>
                         </div>
                         <div className="p-6">
-                            {/* Summary Stats */}
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
                                 <div className="text-center p-3 bg-red-50 rounded-lg">
                                     <div className="text-2xl font-bold text-red-600">{highFindings.length}</div>
@@ -378,7 +360,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                                 </div>
                             </div>
 
-                            {/* Findings List */}
                             {highFindings.map((item: any, idx: number) => (
                                 <FindingCard key={`high-${idx}`} item={item} type="high" index={idx} />
                             ))}
@@ -401,7 +382,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
                         </div>
                     </div>
 
-                    {/* Footer */}
                     <div className="mt-8 text-center text-sm text-gray-400">
                         MobSF Application Security Scorecard generated for {report.app_name || report.file_name} {report.version_name}
                     </div>

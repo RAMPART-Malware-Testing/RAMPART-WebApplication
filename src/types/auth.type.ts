@@ -1,7 +1,5 @@
-/** Provider identifiers RAMPART supports for "Sign in with ..." */
 type OAuthProvider = "google" | "github"
 
-/** Shape of `data.data` returned by the backend on OAuth login/profile calls. */
 interface RampartUser {
     uid: string
     username: string
@@ -12,7 +10,6 @@ interface RampartUser {
     created_at: string | null
 }
 
-/** Query params the backend appends when redirecting to /auth/callback. */
 interface OAuthCallbackParams {
     access_token?: string
     token_type?: string
@@ -21,7 +18,6 @@ interface OAuthCallbackParams {
     message?: string
 }
 
-// Password auth (kept alongside OAuth)
 interface LoginParams {
     email: string
     password: string

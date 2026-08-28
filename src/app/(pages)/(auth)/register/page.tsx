@@ -10,8 +10,6 @@ import { useToast } from '@/components/ui/ToastProvider'
 import Navbarservice from '@/components/Navbarservice'
 import GeometricLoader from '@/components/GeometricLoader'
 
-
-
 export default function RegisterPage() {
   const recaptchaRef = useRef<ReCAPTCHA>(null)
   const [username, setUsername] = useState('')
@@ -120,8 +118,6 @@ export default function RegisterPage() {
         recaptchaToken,
       }, { validateStatus: () => true })
 
-      // Handle success
-      // Expected: { "success": true, "status": 200, ... }
       if (data.success) {
         setIsSuccessful(true)
         const token = data.token ? `?content=register_confirm&token=${encodeURIComponent(data.token)}` : ''
@@ -132,9 +128,6 @@ export default function RegisterPage() {
         return
       }
 
-      // Handle known error cases
-      // { "success": false, "status": 400, "message": "User already exists." }
-      // { "success": false, "status": 404, "message": "Connect Server Error!!!" }
       if (!data.success) {
         switch (data.status) {
           case 400:
@@ -167,7 +160,6 @@ export default function RegisterPage() {
   const handleCaptchaChange = (token: string | null) => {
     setRecaptchaToken(token || '')
     setIsVerified(!!token)
-    // Clear captcha-related error when user completes it
     if (token) {
       setError('')
     }
@@ -186,7 +178,6 @@ export default function RegisterPage() {
       {isSuccessful && <GeometricLoader loadingText='กำลังสมัครสมาชิก'/>}
       <Navbarservice />
       <div className="min-h-screen bg-[#050510] flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Animated gradient blobs background - เหมือนกับหน้า Landing Page */}
         <div className="fixed inset-0 overflow-hidden -z-10">
           <div className="blob-bg top-[-200px] left-[-150px] animate-pulse" style={{ animationDuration: "12s" }} />
           <div
@@ -205,23 +196,18 @@ export default function RegisterPage() {
           <div className="absolute w-[600px] h-[600px] bottom-10 right-0 bg-indigo-600/10 blur-[120px] spin-slow" />
         </div>
 
-        {/* Animated Background Elements - คงไว้ */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
         </div>
 
-        {/* Grid Pattern - คงไว้ */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]"></div>
 
-        {/* Main Container */}
         <div className="relative z-10 w-full max-w-6xl mt-15">
           <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
-            {/* Logo Section */}
             <Hero />
 
-            {/* Register Form */}
             <div className="w-full lg:w-auto lg:min-w-[450px] flex-1 max-w-md">
               <div className="backdrop-blur-xl bg-white/5 rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10 hover-glow transition-all duration-500">
                 <div className="text-center mb-8">
@@ -232,7 +218,6 @@ export default function RegisterPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                  {/* Error Message */}
                   {error && (
                     <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 backdrop-blur-sm animate-shake">
                       <div className="flex items-center gap-3">
@@ -242,7 +227,6 @@ export default function RegisterPage() {
                     </div>
                   )}
 
-                  {/* Username Field */}
                   <div className="space-y-3">
                     <label htmlFor="username" className="block text-sm font-semibold text-purple-100">
                       ชื่อผู้ใช้งาน
@@ -264,7 +248,6 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
-                  {/* Email Field */}
                   <div className="space-y-3">
                     <label htmlFor="email" className="block text-sm font-semibold text-purple-100">
                       อีเมล
@@ -285,7 +268,6 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
-                  {/* Password Field */}
                   <div className="space-y-3">
                     <label htmlFor="password" className="block text-sm font-semibold text-purple-100">
                       รหัสผ่าน
@@ -324,7 +306,6 @@ export default function RegisterPage() {
                     </p>
                   </div>
 
-                  {/* Confirm Password Field */}
                   <div className="space-y-3">
                     <label htmlFor="confirmPassword" className="block text-sm font-semibold text-purple-100">
                       ยืนยันรหัสผ่านอีกครั้ง
@@ -353,7 +334,6 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
-                  {/* reCAPTCHA */}
                   {isshowCaptcha && (
                     <div className="flex justify-center py-2">
                       <ReCAPTCHA
@@ -365,7 +345,6 @@ export default function RegisterPage() {
                     </div>
                   )}
 
-                  {/* Register Button */}
                   <button
                     type="submit"
                     disabled={isLoading || (needCaptcha && !isVerified)}
@@ -388,7 +367,6 @@ export default function RegisterPage() {
                   </button>
                 </form>
 
-                {/* Login Link */}
                 <div className="text-center mt-8 pt-6 border-t border-white/10">
                   <p className="text-sm text-purple-200/60">
                     มีบัญชีแล้ว?{' '}
@@ -402,7 +380,6 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Floating Security Icons - คงไว้ */}
         <div className="absolute top-1/4 left-1/6 opacity-10 animate-float">
           <i className="fas fa-virus text-purple-400 text-2xl"></i>
         </div>

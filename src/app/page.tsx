@@ -57,7 +57,6 @@ function ParticleField() {
         ctx.fillStyle = `rgba(168,139,250,${p.a})`;
         ctx.fill();
 
-        // draw connections
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
           const dx = p.x - p2.x;
@@ -140,7 +139,6 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Scroll reveal observer
   useEffect(() => {
     const reveals = revealRefs.current.filter((el) => el !== null);
     const observer = new IntersectionObserver(
@@ -157,7 +155,6 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-  // Number counter observer
   useEffect(() => {
     const counters = counterRefs.current.filter((el) => el !== null);
     const startCounting = (counter: HTMLDivElement) => {
@@ -211,7 +208,6 @@ export default function Home() {
     <>
       {!pageLoaded && <GeometricLoader loadingText="กำลังโหลด..." />}
 
-      {/* Animated gradient blobs background */}
       <div className="fixed inset-0 overflow-hidden -z-10">
         <div
           className="blob-bg top-[-200px] left-[-150px] animate-pulse"
@@ -230,7 +226,6 @@ export default function Home() {
           style={{ animationDuration: "18s" }}
         />
         <div className="absolute w-[600px] h-[600px] bottom-10 right-0 bg-indigo-600/10 blur-[120px] spin-slow" />
-        {/* Grid overlay */}
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
@@ -240,21 +235,15 @@ export default function Home() {
         />
       </div>
 
-      {/* Navbar */}
       <Navbarservice />
 
-      {/* === HERO SECTION === */}
       <section className="relative min-h-screen flex flex-col justify-center overflow-hidden">
-        {/* Full-screen Spline 3D background */}
         <SplineScene onLoad={() => setPageLoaded(true)} />
 
-        {/* Gradient overlay for readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-[#050510] z-[1] pointer-events-none" />
 
-        {/* Content overlay */}
         <div className="relative z-10 flex flex-col justify-center min-h-screen px-6">
           <div className="max-w-3xl mx-auto text-center">
-            {/* Tag line */}
             <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md rounded-full px-5 py-2 mb-8 border border-white/10">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
@@ -279,7 +268,6 @@ export default function Home() {
               ด้วยการทดสอบการทำงานแบบอัตโนมัติ
             </p>
 
-            {/* CTAs */}
             <div className="flex flex-wrap gap-4 justify-center">
               <button
                 onClick={() => router.push("/login")}
@@ -298,7 +286,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Trust badges */}
             <div className="mt-12 flex flex-wrap justify-center gap-6 text-white/20 text-xs">
               <span className="flex items-center gap-1.5"><i className="fas fa-lock text-green-400/40"></i> SSL Encrypted</span>
               <span className="flex items-center gap-1.5"><i className="fas fa-shield-haltered text-purple-400/40"></i> GDPR Compliant</span>
@@ -308,7 +295,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* === FEATURES HIGHLIGHT === */}
       <section className="py-24 px-6 relative bg-[#050510]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 reveal-on-scroll" ref={addToRevealRefs}>
@@ -325,7 +311,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* === PARALLAX SHOWREEL === */}
       <section className="py-20 relative overflow-hidden">
         <div className="absolute -right-40 top-10 w-80 h-80 bg-purple-600/10 rounded-full blur-[100px] spin-slow" />
         <div className="absolute -left-40 bottom-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: "10s" }} />
@@ -370,9 +355,6 @@ export default function Home() {
         </div>
       </section>
 
-  
-
-      {/* === TESTIMONIALS === */}
       <section className="py-24 px-6 relative">
         <div className="absolute top-0 right-0 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-[120px]" />
         <div className="max-w-6xl mx-auto text-center reveal-on-scroll" ref={addToRevealRefs}>
@@ -416,18 +398,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* === CTA === */}
       <section className="relative py-32 px-6 overflow-hidden">
-        {/* Animated background */}
         <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 via-indigo-900/30 to-fuchsia-900/30 blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.15),transparent_70%)]" />
 
-        {/* Glow orbs */}
         <div className="absolute -bottom-16 left-0 w-72 h-72 bg-purple-500 rounded-full opacity-20 blur-[80px] animate-pulse" />
         <div className="absolute -top-20 right-10 w-80 h-80 bg-indigo-500 rounded-full opacity-20 blur-[100px] animate-pulse" style={{ animationDelay: "0.7s" }} />
         <div className="absolute top-1/2 left-1/3 w-60 h-60 bg-fuchsia-500 rounded-full opacity-10 blur-[90px] animate-pulse" style={{ animationDelay: "1.4s" }} />
 
-        {/* Pulse ring around the CTA card */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
           <div className="w-[500px] h-[500px] rounded-full border border-purple-500/10 animate-ping" style={{ animationDuration: "5s" }} />
           <div className="absolute inset-0 w-[500px] h-[500px] rounded-full border border-indigo-500/8 animate-ping" style={{ animationDuration: "7s", animationDelay: "1.5s" }} />
@@ -468,7 +446,6 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Trust badges */}
           <div className="mt-12 flex flex-wrap justify-center gap-6 text-white/30 text-sm">
             <span className="flex items-center gap-1.5"><i className="fas fa-lock text-green-400/60"></i> SSL Encrypted</span>
             <span className="flex items-center gap-1.5"><i className="fas fa-shield-haltered text-purple-400/60"></i> GDPR Compliant</span>
@@ -476,11 +453,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bottom particle accent */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
       </section>
 
-      {/* === FOOTER === */}
       <footer className="border-t border-white/10 py-12 px-6 text-center text-gray-400 text-sm relative">
         <div className="absolute inset-0 bg-gradient-to-t from-purple-900/10 to-transparent pointer-events-none" />
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 relative z-10">
@@ -496,7 +471,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
 
     </>
   );

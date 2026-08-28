@@ -20,7 +20,6 @@ type ServerMapProps = {
     domains: Record<string, DomainInfo>;
 };
 
-// แก้ไขปัญหา default icon ของ Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -28,12 +27,11 @@ L.Icon.Default.mergeOptions({
     shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// สร้าง custom marker แบบ modern
 const createCustomIcon = (idx: number, isBad: boolean, ofac: boolean) => {
-    let markerColor = "#3b82f6"; // default blue
-    if (isBad) markerColor = "#ef4444"; // red
-    else if (ofac) markerColor = "#f59e0b"; // orange
-    
+    let markerColor = "#3b82f6";
+    if (isBad) markerColor = "#ef4444";
+    else if (ofac) markerColor = "#f59e0b";
+
     return L.divIcon({
         html: `
             <div class="custom-marker" style="position: relative; cursor: pointer;">
@@ -66,7 +64,6 @@ const createCustomIcon = (idx: number, isBad: boolean, ofac: boolean) => {
     });
 };
 
-// เพิ่ม CSS animation
 const markerStyles = `
     @keyframes pulse-red {
         0% {
@@ -82,37 +79,36 @@ const markerStyles = `
             box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
         }
     }
-    
+
     .custom-marker:hover > div:first-child {
         transform: scale(1.2);
         filter: brightness(1.1);
     }
-    
+
     .leaflet-popup-content-wrapper {
         border-radius: 12px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
-    
+
     .leaflet-popup-content {
         margin: 12px 16px;
         font-family: system-ui, -apple-system, sans-serif;
     }
-    
+
     .leaflet-container {
         z-index: 0 !important;
     }
 `;
 
 export default function ServerMap({ domains }: ServerMapProps) {
-    // คำนวณ center แบบ dynamic
     const positions = Object.values(domains)
         .filter(d => d.geolocation.latitude && d.geolocation.longitude)
         .map(d => ({
             lat: parseFloat(d.geolocation.latitude),
             lng: parseFloat(d.geolocation.longitude)
         }));
-    
-    const center = positions.length > 0 
+
+    const center = positions.length > 0
         ? {
             lat: positions.reduce((sum, p) => sum + p.lat, 0) / positions.length,
             lng: positions.reduce((sum, p) => sum + p.lng, 0) / positions.length
@@ -152,7 +148,7 @@ export default function ServerMap({ domains }: ServerMapProps) {
                     className="shadow-inner"
                 >
                     <ZoomControl position="bottomright" />
-                    
+
                     <TileLayer
                         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -164,9 +160,9 @@ export default function ServerMap({ domains }: ServerMapProps) {
                         const lat = parseFloat(info.geolocation.latitude);
                         const lng = parseFloat(info.geolocation.longitude);
                         const isBad = info.bad === "yes";
-                        
+
                         if (isNaN(lat) || isNaN(lng)) return null;
-                        
+
                         return (
                             <Marker
                                 key={idx}
@@ -195,7 +191,7 @@ export default function ServerMap({ domains }: ServerMapProps) {
                                                 <span className="text-gray-500">Country:</span>
                                                 <span className="flex items-center gap-1">
                                                     {info.geolocation.country_long}
-                                                    <img 
+                                                    <img
                                                         src={`https://flagcdn.com/16x12/${info.geolocation.country_short.toLowerCase()}.png`}
                                                         alt={info.geolocation.country_short}
                                                         className="inline"
@@ -224,8 +220,7 @@ export default function ServerMap({ domains }: ServerMapProps) {
                         );
                     })}
                 </MapContainer>
-                
-                {/* สถิติ summary */}
+
                 <div className="mt-4 grid grid-cols-3 gap-3 text-center">
                     <div className="bg-blue-50 rounded-lg p-2">
                         <div className="text-2xl font-bold text-blue-600">

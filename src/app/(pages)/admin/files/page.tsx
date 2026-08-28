@@ -109,11 +109,6 @@ export default function AdminFilesPage() {
         notify.success(`ลบสำเร็จ ${result.succeeded.length} ไฟล์${result.failed.length ? `, ล้มเหลว ${result.failed.length} ไฟล์` : ''}`)
       }
       if (result.failed.length > 0) {
-        // Surface WHY each item failed instead of just a count - the
-        // backend already computes a per-item reason (e.g. "ผู้ดูแลไม่
-        // สามารถดำเนินการกับผู้ดูแลด้วยกันได้") but it used to be
-        // discarded here, leaving the operator with an unexplainable
-        // "0 succeeded, N failed".
         const reasons = [...new Set(result.failed.map((f) => f.reason))]
         Swal.fire({
           icon: 'warning',
@@ -209,7 +204,6 @@ export default function AdminFilesPage() {
         </div>
       )}
 
-      {/* Filters */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
@@ -249,7 +243,6 @@ export default function AdminFilesPage() {
         </div>
       </div>
 
-      {/* List */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
@@ -357,7 +350,6 @@ export default function AdminFilesPage() {
           </div>
         )}
 
-        {/* Pagination */}
         {pagination && pagination.total_pages > 1 && (
           <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
             <button

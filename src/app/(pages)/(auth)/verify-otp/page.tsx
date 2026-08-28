@@ -12,8 +12,6 @@ import { useToast } from '@/components/ui/ToastProvider'
 import Navbarservice from '@/components/Navbarservice'
 import GeometricLoader from '@/components/GeometricLoader'
 
-
-
 type OtpContent = 'login_confirm' | 'register_confirm' | 'reset_password_confirm'
 
 const OTP_CONFIG: Record<OtpContent, { title: string; description: string; redirectOnSuccess: string; requirePassword: boolean }> = {
@@ -203,7 +201,6 @@ function VerifyOtpPageContent() {
       <Navbarservice />
 
       <div className="min-h-screen bg-[#050510] flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Animated gradient blobs background - เหมือนกับหน้า Landing Page */}
         <div className="fixed inset-0 overflow-hidden -z-10">
           <div className="blob-bg top-[-200px] left-[-150px] animate-pulse" style={{ animationDuration: "12s" }} />
           <div
@@ -222,24 +219,20 @@ function VerifyOtpPageContent() {
           <div className="absolute w-[600px] h-[600px] bottom-10 right-0 bg-indigo-600/10 blur-[120px] spin-slow" />
         </div>
 
-        {/* Background Decor - คงไว้ */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
         </div>
 
-        {/* Grid Pattern - คงไว้ */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]"></div>
 
         <div className="relative z-10 w-full max-w-5xl">
           <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
-            {/* Left Side: Brand Identity (Visible on Desktop) */}
             <Hero>
               <p className="text-xl font-semibold text-white/90">Multi-Factor Authentication</p>
               <p className="text-purple-200/50 max-w-sm">เราได้ส่งรหัสยืนยันไปยังอีเมลที่คุณลงทะเบียนไว้ เพื่อยืนยันตัวตนและรักษาความปลอดภัยของบัญชีของคุณ</p>
             </Hero>
 
-            {/* Right Side: Form Card */}
             <div className="w-full max-w-md flex-1">
               <div className="backdrop-blur-xl bg-white/5 rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10 hover-glow transition-all duration-500 relative">
                 <div className="text-center mb-8">
@@ -278,7 +271,6 @@ function VerifyOtpPageContent() {
                     </div>
                   )}
 
-                  {/* OTP Inputs */}
                   <div className="space-y-3">
                     <div className="flex justify-between gap-2 sm:gap-3" onPaste={handlePaste}>
                       {otp.map((digit, index) => (
@@ -301,7 +293,6 @@ function VerifyOtpPageContent() {
                     </div>
                   </div>
 
-                  {/* Reset Password Fields */}
                   {config.requirePassword && (
                     <div className="space-y-4 pt-4 border-t border-white/5">
                       <div className="relative group">
@@ -339,7 +330,6 @@ function VerifyOtpPageContent() {
                     </div>
                   )}
 
-                  {/* Buttons Container */}
                   <div className="space-y-3 pt-2">
                     <button
                       type="submit"

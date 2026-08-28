@@ -1,9 +1,3 @@
-/**
- * The backend returns `avatar_url` as a path relative to itself
- * (e.g. "/api/profile/avatar/{uid}.png"), or `null` if the user never
- * uploaded a picture. This resolves it to a URL the browser can load
- * directly from the backend.
- */
 export function resolveAvatarUrl(avatarUrl: string | null | undefined): string | null {
   if (!avatarUrl) return null
   if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) return avatarUrl

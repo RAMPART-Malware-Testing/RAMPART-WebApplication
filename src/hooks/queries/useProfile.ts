@@ -18,9 +18,6 @@ async function fetchProfile(): Promise<ProfileData | null> {
   return data.data as ProfileData
 }
 
-/** Single shared cache entry for the current user's profile - replaces
- * the 5+ independent `axios.get('/api/profile')` calls that used to fire
- * from NavbarComponent, profile page, admin pages, and RealtimeAnalysis. */
 export function useProfile() {
   return useQuery({
     queryKey: queryKeys.profile,

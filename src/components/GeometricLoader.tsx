@@ -3,19 +3,12 @@
 import React, { useEffect, useState } from "react";
 
 interface GeometricLoaderProps {
-  /** ฟังก์ชันที่เรียกเมื่อโหลดเสร็จ */
   onLoadingComplete?: () => void;
-  /** ระยะเวลาโหลด (มิลลิวินาที) */
   duration?: number;
-  /** ควบคุมการแสดงผลจากภายนอก */
   isVisible?: boolean;
-  /** ข้อความที่แสดงด้านล่าง (ค่าเริ่มต้น: "กำลังโหลด") */
   loadingText?: string;
-  /** แสดงจุดกระพริบต่อท้ายข้อความหรือไม่ (ค่าเริ่มต้น: true) */
   showDots?: boolean;
-  /** ขนาดของ loader (px) (ค่าเริ่มต้น: 200) */
   size?: number;
-  /** สีของ loader (ค่าเริ่มต้น: "#ffffff") */
   color?: string;
 }
 

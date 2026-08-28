@@ -8,8 +8,6 @@ interface NavItem {
   href: string
   label: string
   icon: string
-  /** Exact match required (only Dashboard uses this, since every other
-   * admin route is a prefix of /admin). */
   exact?: boolean
 }
 
@@ -43,7 +41,6 @@ export default function AdminSidebar({ collapsed, onToggle }: Props) {
         collapsed ? 'w-[76px]' : 'w-64'
       }`}
     >
-      {/* Brand */}
       <div className="h-16 flex items-center gap-3 px-4 border-b border-white/10 shrink-0">
         <div className="relative w-9 h-9 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10">
           <Image
@@ -61,7 +58,6 @@ export default function AdminSidebar({ collapsed, onToggle }: Props) {
         )}
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         {NAV_ITEMS.map((item) => {
           const active = isActive(item)
@@ -83,7 +79,6 @@ export default function AdminSidebar({ collapsed, onToggle }: Props) {
         })}
       </nav>
 
-      {/* Footer */}
       <div className="p-3 border-t border-white/10 space-y-1 shrink-0">
         <Link
           href="/dashboard"

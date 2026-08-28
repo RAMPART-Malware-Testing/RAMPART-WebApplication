@@ -51,12 +51,10 @@ export default function NavbarComponent() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#050510]/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#050510]/60">
-      {/* Subtle top glow */}
       <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-16 items-center justify-between gap-4">
-          {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-3 shrink-0 group">
             <div className="relative h-9 w-9 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10 group-hover:ring-blue-500/40 transition-all duration-300">
               <Image
@@ -73,7 +71,6 @@ export default function NavbarComponent() {
             </div>
           </Link>
 
-          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-1">
             {menuItems.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
@@ -98,9 +95,7 @@ export default function NavbarComponent() {
             })}
           </div>
 
-          {/* Right section */}
           <div className="flex items-center gap-2">
-            {/* Status indicator */}
             <div className="hidden lg:flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 border border-emerald-500/20">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -109,7 +104,6 @@ export default function NavbarComponent() {
               <span className="text-xs font-medium text-emerald-400">Online</span>
             </div>
 
-            {/* Profile */}
             <div className="relative">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -171,7 +165,6 @@ export default function NavbarComponent() {
               )}
             </div>
 
-            {/* Mobile menu toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden flex items-center justify-center h-9 w-9 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
@@ -182,7 +175,6 @@ export default function NavbarComponent() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {isMenuOpen && (
         <div className="md:hidden border-t border-white/[0.06] bg-[#050510]/95 backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="mx-auto max-w-7xl px-4 py-3 space-y-1">

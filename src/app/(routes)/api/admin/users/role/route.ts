@@ -4,10 +4,6 @@ import { AdminService } from "@/services/admin.service";
 
 export async function POST(request: NextRequest) {
     const session = await requireAdminSession();
-    // Extra defense-in-depth layer specific to this endpoint: role changes
-    // are master-only. The backend re-checks this from a fresh DB read
-    // regardless, but rejecting here too means an admin never even reaches
-    // the backend call for an action they can never perform.
     if (!session || session.role !== "master") {
         return NextResponse.json({ success: false, status: "INSUFFICIENT_ROLE", message: "เฉพาะ master เท่านั้นที่เปลี่ยน role ได้" }, { status: 403 });
     }

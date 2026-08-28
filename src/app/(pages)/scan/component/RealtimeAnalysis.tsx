@@ -24,8 +24,6 @@ function normalizeToolStatus(v?: unknown): TaskStatus {
 function deriveToolStatuses(progress?: TaskProgress): { virustotal: TaskStatus; mobsf: TaskStatus; cape: TaskStatus; ml: TaskStatus; gemini: TaskStatus } {
   const s = { virustotal: "waiting" as TaskStatus, mobsf: "waiting" as TaskStatus, cape: "waiting" as TaskStatus, ml: "waiting" as TaskStatus, gemini: "waiting" as TaskStatus }
 
-  // Authoritative per-tool statuses when the backend provides them
-  // (published during the gemini / finalise phase).
   const toolsExec = progress?.tools
   const hasTools = !!(toolsExec && Object.keys(toolsExec).length)
   if (hasTools && toolsExec) {
@@ -40,9 +38,6 @@ function deriveToolStatuses(progress?: TaskProgress): { virustotal: TaskStatus; 
     return s
   }
 
-  // Stage-based, sequential: only ONE stage runs at a time. As the pipeline
-  // advances, earlier stages flip to "completed" instead of staying "running",
-  // so two stages never appear active simultaneously.
   const stage = progress?.stage
   if (stage === "virustotal") {
     s.virustotal = "running"
@@ -156,7 +151,7 @@ async function fetchToolReports(taskId: string, tools: string[]): Promise<Record
     try {
       const { data } = await axios.get(`/api/report_target/${taskId}?tool=${route}`, { timeout: 10000 })
       if (data?.success) raw[route] = data.report
-    } catch { /* per-tool ok */ }
+    } catch {}
   }
   return raw
 }
@@ -174,8 +169,6 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
   const [reportUid, setReportUid] = useState<string>()
   const finishedRef = useRef(false)
 
-  // ดึง uid ของผู้ใช้ปัจจุบัน เพื่อตัดสินใจว่าเป็นเจ้าของรายงานหรือไม่ (shared
-  // cache with the rest of the app via useProfile)
   const { data: profile } = useProfile()
   const ownUid = profile?.uid
 
@@ -218,17 +211,6 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
     }
 
     if (poll.status === "success") {
-      // The backend never includes "progress" once a task reaches
-      // "success" (see controller/analysis_controller.py::
-      // _compute_analysis_report - "progress" is only attached while
-      // status != "success"), so deriveToolStatuses(poll.progress) would
-      // always fall back to every tool showing "waiting" here - a false
-      // "nothing has run yet" flash right when landing on an
-      // already-completed task's URL (e.g. from a bookmark or shared
-      // link), before fetchToolReports() below finishes fetching the
-      // real per-tool reports a few seconds later. Skip straight to a
-      // dedicated "finalizing" loading state instead of feeding the
-      // timeline momentarily-wrong statuses.
       finishedRef.current = true
       if (typeof poll.report?.privacy === "boolean") setPrivacy(poll.report.privacy)
       if (poll.report?.uid) setReportUid(poll.report.uid)
@@ -260,10 +242,6 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
     setStatus("running")
   }, [poll, pollError, taskId])
 
-  // เมื่อวิเคราะห์ครบทั้ง 3 stage สำเร็จ (status === "completed") ให้พาไป
-  // หน้ารายงานฉบับเต็ม /reports/{taskId} โดยอัตโนมัติ แทนที่จะค้างอยู่ที่
-  // หน้า live-progress นี้ต่อ - หน่วงไว้สั้น ๆ ให้ผู้ใช้เห็นสถานะ
-  // "เสร็จสมบูรณ์" ก่อนสักครู่ ไม่ใช่กระโดดออกทันทีจนรู้สึกกระตุก
   useEffect(() => {
     if (status !== "completed") return
     const timer = setTimeout(() => {
@@ -287,13 +265,11 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl space-y-4">
-        {/* Live status line */}
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Live Analysis</h2>
           <span className={cn_status(status)}>{statusText(status)}</span>
         </div>
 
-        {/* Privacy toggle — เจ้าของรายงานเท่านั้นที่ปรับได้ */}
         {isOwner && (
         <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
           <div>
@@ -321,10 +297,8 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
         </div>
         )}
 
-        {/* Original timeline UI, fed with real data */}
         <AnalysisTimeline data={analysis} />
 
-        {/* Clickable links to per-tool detail pages */}
         {status === "completed" && (
           <div className="pt-2">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">ดูรายละเอียดแต่ละเครื่องมือ</p>
@@ -348,7 +322,6 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
           </div>
         )}
 
-        {/* Download reports (on completion) */}
         {status === "completed" && md5 && availableTools.length > 0 && (
           <ReportDownload taskid={taskId} md5={md5} variant="dark" tools={availableTools} />
         )}

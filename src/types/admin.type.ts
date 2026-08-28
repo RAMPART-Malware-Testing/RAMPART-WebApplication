@@ -1,6 +1,3 @@
-/** Shape of a single row returned by every /api/admin/* endpoint that
- * surfaces a user record (list, detail, ban, unban, role-change). Mirrors
- * services.admin.admin_service.serialize_user on the backend exactly. */
 interface AdminUserListItem {
     uid: string
     username: string
@@ -37,9 +34,6 @@ interface AdminUserDetailResponse {
     data: AdminUserListItem | null
 }
 
-/** One row of a target user's analysis history as seen by an admin/master -
- * includes files the owner marked private, unlike the self-service history
- * endpoint. Mirrors services.admin.admin_service.get_user_analysis_history_admin. */
 interface AdminUserHistoryItem {
     aid: string
     task_id: string | null
@@ -96,10 +90,8 @@ interface AdminDashboardSummary {
     banned_count: number
     total_analyses: number
     malicious_count: number
-    /** Daily upload counts for the trailing window (oldest first), e.g. 14 days. */
     upload_trend: { date: string; count: number }[]
     status_breakdown: { status: string; count: number }[]
-    /** risk_level values: "Low" | "Caution" | "High" | "Critical" | "N/A" */
     risk_level_breakdown: { risk_level: string; count: number }[]
     file_type_breakdown: { file_type: string; count: number }[]
     tool_usage: { tool: string; count: number }[]
@@ -118,10 +110,6 @@ interface AdminDashboardSummaryResponse {
     data: AdminDashboardSummary
 }
 
-/** Generic {success, status, message, data} shape every admin mutation
- * (ban/unban/role-change) responds with - see utils/response.py on the
- * backend. `status` doubles as a machine-readable error code on failure
- * (e.g. "ADMIN_TARGET_FORBIDDEN", "MASTER_PROTECTED", "ACCOUNT_BANNED"). */
 interface AdminActionResponse {
     success: boolean
     status: string
@@ -129,9 +117,6 @@ interface AdminActionResponse {
     data: AdminUserListItem | null
 }
 
-/** One row from /api/admin/files or /api/admin/reports - system-wide
- * (cross-user) file listing, unlike AdminUserHistoryItem which is scoped
- * to one target user. Mirrors services.admin.admin_service._serialize_file_row. */
 interface AdminFileListItem {
     aid: string
     task_id: string | null

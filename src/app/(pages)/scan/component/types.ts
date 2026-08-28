@@ -52,7 +52,6 @@ export interface MLResult {
   status: TaskStatus
   prediction?: "Benign" | "Malware"
   confidence?: number
-  // RampartAI /predict fields (percentages 0-100)
   modelConfidence?: number
   benignProbability?: number
   malwareProbability?: number

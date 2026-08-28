@@ -18,11 +18,6 @@ const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 export default function Page({ taskid, tool }: { taskid: string; tool: string }) {
   const [reportData, setReportData] = useState<Datareport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // CAPE reports (behavior/apistats logs, signatures, network, dropped
-  // files) can easily reach tens of MB as pretty-printed JSON - dumping
-  // that unconditionally into a <pre> blocks the main thread on mount and
-  // forces the browser to lay out one giant text node. Only stringify
-  // and render it once the user explicitly asks to see it.
   const [showRawJson, setShowRawJson] = useState(false);
 
   useEffect(() => {
@@ -56,39 +51,25 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
   const statistics = report?.statistics || {};
   const cape = report?.CAPE || {};
 
-  // ตรวจสอบว่าเป็น Failure จริงหรือไม่ — แยกเฉพาะ "jar ผิด" จากกรณีอื่น
   const errorLog = debug?.log || "";
   const realErrors = (debug?.errors || []).filter(Boolean);
 
-  // จริงเฉพาะ : APK ถูกส่งไปรันแบบ jar (ไม่มี Java) — ไม่ใช่ทุก CuckooPackageError
   const hasPackageError =
     /Invalid package type/i.test(errorLog) && /jar/i.test(errorLog);
 
-  // Failure จริงอื่น ๆ (เช่น CuckooPackageError: elevation/Error 740/access ...)
   const hasRealFailure =
     realErrors.length > 0 ||
     /CuckooPackageError|failed_analysis|analysis failed/i.test(errorLog);
 
   const hasError = hasPackageError || hasRealFailure;
 
-  // ดึงบรรทัด error ที่อ่านเข้าใจง่ายจาก log — ต้องแยกให้ออกจากบรรทัด
-  // WARNING ของ auxiliary module (เช่น disguise) ที่อาจปรากฏอยู่ก่อนหน้า
-  // error ตัวจริงใน log เดียวกัน มิฉะนั้น regex ทั่วไป (เช่น "Access is
-  // denied") จะไปจับ WARNING ที่ไม่เกี่ยวข้องแทนที่จะเป็นสาเหตุจริงที่ทำ
-  // ให้การวิเคราะห์ล้มเหลว
   const auxWarningPattern = /Cannot execute auxiliary module/i;
 
-  // อันดับ 1: ข้อความจาก exception ตัวจริงที่ CAPE โยนออกมา (บรรทัด
-  // "lib.common.exceptions.CuckooPackageError: <เหตุผล>" ในไฟล์ traceback)
-  // — เป็นข้อความที่ตรงกับสาเหตุการล้มเหลวจริงที่สุด ใช้บรรทัดสุดท้าย
-  // เผื่อมีหลาย exception ซ้อนกัน (บรรทัดท้ายมักเป็นตัวที่ทำให้ task จบ)
   const packageErrorMatches = [...errorLog.matchAll(/CuckooPackageError:\s*(.+)/g)];
   const rootExceptionMessage = packageErrorMatches.length > 0
     ? packageErrorMatches[packageErrorMatches.length - 1][1].trim()
     : "";
 
-  // อันดับ 2 (fallback): บรรทัดที่มี keyword error ทั่วไป แต่ไม่ใช่บรรทัด
-  // WARNING ของ auxiliary module
   const readableLine =
     errorLog.split("\n").find((l: string) =>
       !auxWarningPattern.test(l) &&
@@ -103,15 +84,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
         ? ("Analysis failed: " + (rootExceptionMessage || readableLine || "unknown error"))
         : "";
 
-  // ── Component-level status breakdown ──────────────────────────────
-  // A single blanket "Analysis Failed" banner hides the fact that CAPE
-  // has dozens of independent sub-systems (auxiliary modules, API hooks,
-  // core behavior/network capture) - one of them failing (e.g. an
-  // auxiliary module denied registry access) does NOT mean the analysis
-  // itself failed. This breaks the raw debug log down into per-component
-  // rows so the user can see exactly what didn't work and why, alongside
-  // what DID work (behavior data, network capture, signatures - which
-  // are almost always present even when an auxiliary module warns).
   interface ComponentStatus {
     name: string;
     ok: boolean;
@@ -120,16 +92,10 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
 
   const logLines = errorLog.split("\n");
 
-  // Auxiliary modules that failed to start (e.g. "disguise" needing
-  // elevated registry access it didn't have in this VM) - cosmetic/
-  // anti-detection helpers, never the core analysis engine.
   const auxModuleFailures = [
     ...errorLog.matchAll(/Cannot execute auxiliary module modules\.auxiliary\.(\w+): (.+)/g),
   ].map((m) => ({ module: m[1], reason: m[2].trim() }));
 
-  // API hooks CAPE's monitor couldn't place inside the target process
-  // (e.g. "Unable to place hook on X") - reduces visibility into that
-  // specific API but does not stop monitoring of everything else.
   const missedHooks = [
     ...new Set(
       [...errorLog.matchAll(/Unable to place hook on ([\w:]+)/g)].map((m) => m[1])
@@ -179,8 +145,7 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
       <NavbarComponent />
 
       <div className="p-6 space-y-6 text-white max-w-6xl mx-auto">
-        
-        {/* 🔴 ERROR ALERT - กรณีวิเคราะห์ล้มเหลวจริง (core analysis ไม่ทำงาน) */}
+
         {hasError && (
           <div className="bg-red-900/50 border-l-4 border-red-500 p-4 rounded-xl">
             <h2 className="text-xl font-bold text-red-400 mb-2">⚠️ Analysis Failed</h2>
@@ -195,10 +160,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
           </div>
         )}
 
-        {/* 🟡 COMPONENT STATUS BREAKDOWN - แทนที่การขึ้น "Analysis Failed"
-            แบบเหมารวมเมื่อมีแค่บาง sub-system (auxiliary module/API hook)
-            ที่ทำงานไม่สำเร็จ แต่ core analysis (behavior/network/signatures)
-            ยังทำงานได้ปกติ - บอกชัดเจนว่าอะไรใช้ได้ อะไรใช้ไม่ได้ และทำไม */}
         {!hasError && hasNonFatalWarnings && (
           <div className="bg-gray-900 border border-yellow-700/50 rounded-xl p-4">
             <h2 className="text-lg font-bold text-yellow-400 mb-1">
@@ -232,9 +193,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
           </div>
         )}
 
-       
-
-        {/* 📊 Analysis Info */}
         <div className="bg-gray-900 p-4 rounded-xl border border-gray-700">
           <h2 className="text-xl font-bold mb-3">Analysis Details</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -249,12 +207,6 @@ export default function Page({ taskid, tool }: { taskid: string; tool: string })
           </div>
         </div>
 
-        
-
-       
-        
-
-        {/* 📄 RAW JSON (สำหรับ Debug) */}
         <ReportDownload taskid={taskid} md5={report?.target?.file?.md5} tools={[tool]} />
         <div className="bg-black p-4 rounded-xl overflow-x-auto border border-gray-700">
           <div className="flex items-center justify-between mb-2">

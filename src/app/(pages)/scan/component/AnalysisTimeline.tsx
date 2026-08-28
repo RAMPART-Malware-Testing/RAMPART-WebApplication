@@ -23,9 +23,7 @@ const stageColorMap: Record<string, string> = {
 
 function deriveStageStatus(tasks: TaskStatus[]): TaskStatus {
   if (tasks.every((s) => s === "waiting")) return "waiting"
-  // If anything is still processing, the stage is still running.
   if (tasks.some((s) => s === "running")) return "running"
-  // If at least one tool succeeded (others skipped/failed), the stage is done.
   if (tasks.some((s) => s === "completed")) return "completed"
   if (tasks.every((s) => s === "skipped")) return "skipped"
   if (tasks.every((s) => s === "failed" || s === "skipped")) return "failed"
@@ -61,7 +59,6 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* Header */}
       <motion.div
         className="space-y-1"
         initial={{ opacity: 0, y: -10 }}
@@ -79,9 +76,7 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
         <p className="text-sm text-slate-500">{data.fileName}</p>
       </motion.div>
 
-      {/* Pipeline Visualization */}
       <div className="flex gap-0">
-        {/* Left timeline track */}
         <div className="flex flex-col items-center">
           {stages.map((stage, idx) => (
             <StepConnector
@@ -93,9 +88,7 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
           ))}
         </div>
 
-        {/* Right content */}
         <div className="ml-4 flex-1 space-y-4 pb-4">
-          {/* Stage 1: VirusTotal */}
           <AnimatePresence mode="wait">
             <motion.div
               key="vt-stage"
@@ -121,7 +114,6 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
             </motion.div>
           </AnimatePresence>
 
-          {/* Stage 2: Analysis Engines */}
           <AnimatePresence mode="wait">
             <motion.div
               key="engines-stage"
@@ -141,7 +133,6 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
                   Stage 2 — Multi-Engine Analysis
                 </div>
 
-                {/* Status header for stage */}
                 <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
                   <span className="h-0.5 flex-1 bg-slate-800" />
                   <span>Parallel Processing</span>
@@ -157,7 +148,6 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
             </motion.div>
           </AnimatePresence>
 
-          {/* Stage 3: Gemini AI */}
           <AnimatePresence mode="wait">
             <motion.div
               key="gemini-stage"
@@ -191,7 +181,6 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
         </div>
       </div>
 
-      {/* Summary at bottom */}
       <AnalysisSummary data={data} />
     </div>
   )

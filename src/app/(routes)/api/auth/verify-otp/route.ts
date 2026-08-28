@@ -14,7 +14,7 @@ async function fetchProfile(accessToken: string) {
         const SERVER_URL = process.env.SERVER_URL || 'http://localhost:8006';
         const { data } = await axios_.post(`${SERVER_URL}/api/profile`, { token: accessToken });
         if (data?.success && data?.data) return data.data;
-    } catch { /* ignore */ }
+    } catch {}
     return null;
 }
 
@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
-    // login_confirm -> persist a real "session" cookie so the middleware lets /dashboard through.
     if (content === 'login_confirm') {
       const profile = await fetchProfile(result.data?.access_token)
       const session = jwtService.sign(

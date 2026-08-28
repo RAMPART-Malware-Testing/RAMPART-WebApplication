@@ -17,16 +17,13 @@ const STATUS_OPTIONS = [
 type SortField = 'created_at' | 'file_name' | 'file_size' | 'score'
 
 export default function ReportsPage() {
-  // Filters
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [fileType, setFileType] = useState('all')
 
-  // Sort: field + direction
   const [sortField, setSortField] = useState<SortField>('created_at')
   const [sortDir, setSortDir] = useState<1 | -1>(-1)
 
-  // Pagination
   const [page, setPage] = useState(1)
 
   const { data: result, isLoading } = useAnalysisHistory({
@@ -40,14 +37,10 @@ export default function ReportsPage() {
   const items = result?.data ?? []
   const pagination = result?.pagination ?? null
 
-  // reset page เมื่อ filter เปลี่ยน
   useEffect(() => {
     setPage(1)
   }, [search, status, fileType, sortField, sortDir])
 
-  // ==============================
-  // Helpers
-  // ==============================
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDir(prev => prev === 1 ? -1 : 1)
@@ -122,10 +115,6 @@ export default function ReportsPage() {
     { value: 'score', label: 'ความเสี่ยง' },
   ]
 
-  // วิเคราะห์เสร็จแล้ว (success) -> ไปหน้ารายงานฉบับเต็มโดยตรง
-  // ยังไม่เสร็จ (pending/processing/failed) -> ไปหน้า live-progress เพื่อ
-  // ติดตามสถานะ/ดูข้อความ error ต่อ (หน้า /reports/{id} ไม่ได้ poll ซ้ำ
-  // และจะขึ้น "ไม่พบรายงาน" เฉยๆ ถ้า task ยังไม่ success)
   const reportHref = (item: AnalysisHistoryItem) =>
     item.status === 'success'
       ? `/reports/${item.task_id}`
@@ -137,11 +126,9 @@ export default function ReportsPage() {
 
       <div className="max-w-6xl mx-auto space-y-5 mt-6">
 
-        {/* Filters */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
 
-            {/* Search */}
             <div className="lg:col-span-2">
               <label className="block text-sm text-blue-200/60 mb-2">ค้นหาไฟล์</label>
               <input
@@ -153,7 +140,6 @@ export default function ReportsPage() {
               />
             </div>
 
-            {/* Status */}
             <div>
               <label className="block text-sm text-blue-200/60 mb-2">สถานะ</label>
               <select
@@ -167,7 +153,6 @@ export default function ReportsPage() {
               </select>
             </div>
 
-            {/* File Type */}
             <div>
               <label className="block text-sm text-blue-200/60 mb-2">ประเภทไฟล์</label>
               <select
@@ -183,7 +168,6 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Sort */}
           <div className="flex flex-wrap items-center gap-2 mt-4">
             <span className="text-blue-200/50 text-sm">เรียงตาม:</span>
             {SORT_OPTIONS.map(o => (
@@ -204,7 +188,6 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* List */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-white font-semibold text-lg">รายงานทั้งหมด</h2>
@@ -235,14 +218,12 @@ export default function ReportsPage() {
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
 
-                    {/* Icon */}
                     <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition">
                       <span className="text-cyan-400 text-xs font-bold uppercase">
                         {item.file_type ?? '?'}
                       </span>
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="text-white font-medium truncate">{item.file_name ?? '-'}</span>
@@ -279,8 +260,6 @@ export default function ReportsPage() {
                           </>
                         )}
 
-
-
                       </div>
                     </div>
                   </div>
@@ -291,7 +270,6 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Pagination */}
           {pagination && pagination.total_pages > 1 && (
             <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
               <button

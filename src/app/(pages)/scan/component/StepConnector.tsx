@@ -29,7 +29,6 @@ interface StepConnectorProps {
 export function StepConnector({ status, index, isLast = false }: StepConnectorProps) {
   return (
     <div className="flex flex-col items-center w-8 shrink-0">
-      {/* Circle indicator */}
       <motion.div
         className={cn(
           "relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2",
@@ -51,7 +50,6 @@ export function StepConnector({ status, index, isLast = false }: StepConnectorPr
         </span>
       </motion.div>
 
-      {/* Connector line */}
       {!isLast && (
         <motion.div
           className={cn("w-0.5 h-full min-h-[24px] flex-1", LINE_COLORS[status])}

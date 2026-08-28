@@ -20,7 +20,6 @@ class AuthService {
         };
     }
 
-    // ─── Login ───────────────────────────────────────────
     async login(req: LoginParams) {
         try {
             const res = await this.http.post(`${this.uri}/api/auth/login`, {
@@ -46,7 +45,6 @@ class AuthService {
         }
     }
 
-    // ─── Register ─────────────────────────────────────────
     async register(req: RegisterParams) {
         try {
             const res = await this.http.post(`${this.uri}/api/auth/register`, {
@@ -69,7 +67,6 @@ class AuthService {
         }
     }
 
-    // ─── Reset Password ───────────────────────────────────
     async resetPassword(req: ResetPasswordParams) {
         try {
             const res = await this.http.post(`${this.uri}/api/auth/reset-passwd`, {

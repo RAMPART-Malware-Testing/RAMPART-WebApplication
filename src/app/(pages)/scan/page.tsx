@@ -34,9 +34,6 @@ export default function ScanFilesPage() {
   const [file, setFile] = useState<UploadedFile | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
-  // Privacy is set at upload time only (the backend has no endpoint to change
-  // it after analysis). Default to private; public sharing can be revisited
-  // once the backend exposes a post-analysis privacy update.
   const privacy = false
   const [showLoader, setShowLoader] = useState(false)
   const redirectTaskId = useRef<string | null>(null)
@@ -158,7 +155,6 @@ export default function ScanFilesPage() {
           <p className="text-slate-400 text-sm mt-1">อัปโหลดไฟล์เพื่อวิเคราะห์มัลแวร์ด้วยเครื่องมือหลายตัว</p>
         </div>
 
-          {/* Dropzone */}
           <div
             onClick={() => !busy && fileInputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
@@ -204,7 +200,6 @@ export default function ScanFilesPage() {
 
             {file && (
               <div className="py-2 text-left">
-                {/* File row */}
                 <div className="flex items-center gap-3 mb-4">
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
                     file.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400'
@@ -234,7 +229,6 @@ export default function ScanFilesPage() {
                   </span>
                 </div>
 
-                {/* Progress bar */}
                 {(file.status === 'uploading' || file.status === 'analyzing') && (
                   <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
                     <div
@@ -244,7 +238,6 @@ export default function ScanFilesPage() {
                   </div>
                 )}
 
-                {/* Failed error + retry */}
                 {file.status === 'failed' && (
                   <div className="mt-4">
                     <p className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-lg p-3">
@@ -260,7 +253,6 @@ export default function ScanFilesPage() {
                   </div>
                 )}
 
-                {/* Completed hint */}
                 {file.status === 'completed' && (
                   <p className="text-sm text-emerald-300 mt-3 text-center">
                     อัปโหลดสำเร็จ — กำลังนำไปหน้าวิเคราะห์...
@@ -270,7 +262,6 @@ export default function ScanFilesPage() {
             )}
           </div>
 
-          {/* Privacy info */}
           <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-4">
             <div>
               <p className="text-white font-medium text-sm">ความเป็นส่วนตัวของรายงาน</p>

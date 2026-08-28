@@ -19,13 +19,6 @@ export interface AnalysisHistoryQueryResult {
   pagination: AnalysisHistoryPagination | null
 }
 
-/** Shared query hook for POST /api/analy/history - used by the profile
- * page's upload tab, the reports list, and HistoryFileComponent. Replaces
- * three independent manual fetch implementations that all hit the same
- * backend endpoint. Returns the full paginated shape (not just the items
- * array) so callers that need pagination (reports list, HistoryFileComponent)
- * and callers that only need the flat list (profile page) both work off
- * one hook. */
 export function useAnalysisHistory(params: AnalysisHistoryQueryParams = {}) {
   const normalized = { page: 1, limit: 50, ...params }
   return useQuery({

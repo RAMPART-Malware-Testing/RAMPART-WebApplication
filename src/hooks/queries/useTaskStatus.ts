@@ -14,12 +14,6 @@ export interface TaskPoll {
   report?: any
 }
 
-/** Polls GET /api/task_id/{taskId} - the live analysis-status endpoint.
- * The backend itself now caches this DB read for 3s
- * (controller.analysis_controller._compute_analysis_report), so with
- * refetchInterval at 2.5s, concurrent viewers/admins on the same task_id
- * mostly hit that server-side cache instead of Postgres on every poll.
- * Polling stops automatically once the task reaches a terminal state. */
 export function useTaskStatus(taskId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.taskStatus(taskId),

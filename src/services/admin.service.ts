@@ -3,10 +3,6 @@ import axios from "axios";
 const ERROR_RESPONSE = { success: false, status: "SERVER_ERROR", message: "Connect Server Error!!!" };
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:8006";
 
-/** Server-side-only client for the backend's /api/admin/* endpoints.
- * Follows the same shape as profile.service.ts / dashboard.service.ts:
- * the caller's access token travels in the JSON body (not an Authorization
- * header), matching this project's existing convention everywhere else. */
 class AdminServiceClass {
     async listUsers(token: string, params: { page?: number; limit?: number; q?: string; role?: string | string[]; banned?: boolean }) {
         try {

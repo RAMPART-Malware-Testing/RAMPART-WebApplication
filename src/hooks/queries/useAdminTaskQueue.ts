@@ -24,9 +24,6 @@ export function useAdminTaskQueueList(params: AdminTaskQueueListParams) {
   })
 }
 
-/** Backend already caches queue-depth for 5s
- * (services.admin.task_queue_service.get_queue_depth) - poll at 10s on
- * top of that so concurrent admins mostly hit the server-side cache. */
 export function useAdminTaskQueueDepth() {
   return useQuery({
     queryKey: queryKeys.adminTaskQueueDepth,

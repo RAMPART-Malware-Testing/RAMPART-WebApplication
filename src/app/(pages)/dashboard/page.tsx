@@ -71,7 +71,6 @@ export default function DashboardPage() {
       <NavbarComponent />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
             ยินดีต้อนรับกลับ! 👋
@@ -79,7 +78,6 @@ export default function DashboardPage() {
           <p className="text-slate-400">นี่คือภาพรวมของระบบความปลอดภัยของคุณ</p>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="ไฟล์ทั้งหมด"
@@ -110,7 +108,6 @@ export default function DashboardPage() {
             subtitle="สมาชิกที่ลงทะเบียน"
           />
         </div>
-         {/* Public Files */}
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-white/10">
             <h3 className="text-white font-semibold flex items-center gap-2">
@@ -174,9 +171,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Malware Types */}
           <div className="lg:col-span-2 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
             <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
               <div>
@@ -212,7 +207,7 @@ export default function DashboardPage() {
                       <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold
-                            ${index === 0 ? 'bg-amber-500/20 text-amber-400' : 
+                            ${index === 0 ? 'bg-amber-500/20 text-amber-400' :
                               index === 1 ? 'bg-slate-500/20 text-slate-400' :
                               index === 2 ? 'bg-orange-500/20 text-orange-400' :
                               'bg-white/10 text-slate-400'}`}>
@@ -223,7 +218,7 @@ export default function DashboardPage() {
                         <span className="text-slate-400 text-sm">{malware.count} ครั้ง</span>
                       </div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-700"
                           style={{ width: `${percentage}%` }}
                         />
@@ -240,7 +235,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Risk Scores */}
           <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
             <div className="px-6 py-4 border-b border-white/10">
               <h3 className="text-white font-semibold flex items-center gap-2">
@@ -261,7 +255,7 @@ export default function DashboardPage() {
                         <span className={`text-sm font-bold ${colors.text}`}>{score.toFixed(0)}/100</span>
                       </div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className={`h-full ${colors.bar} rounded-full transition-all duration-700`}
                           style={{ width: `${score}%` }}
                         />
@@ -279,73 +273,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        
-        
-
-        {/* Recent Activities */}
-        {/* <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
-            <div>
-              <h3 className="text-white font-semibold flex items-center gap-2">
-                <i className="fas fa-clock text-blue-400" />
-                กิจกรรมล่าสุด
-              </h3>
-              <p className="text-slate-400 text-sm mt-1">การอัปโหลดไฟล์ล่าสุด 10 รายการ</p>
-            </div>
-            <Link 
-              href="/profile?m=report" 
-              className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-            >
-              ดูทั้งหมด
-              <i className="fas fa-arrow-right text-xs" />
-            </Link>
-          </div>
-          <div className="divide-y divide-white/5">
-            {dashboardStats.recentActivities.length > 0 ? (
-              dashboardStats.recentActivities.slice(0, 10).map((activity) => {
-                const style = STATUS_STYLES[activity.status] || STATUS_STYLES.failed
-                return (
-                  <div key={activity.id} className="px-6 py-4 hover:bg-white/5 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        <i className={`${style.icon} text-xl`} />
-                        <div className="flex-1">
-                          <p className="text-white font-medium">{truncate(activity.fileName, 50)}</p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="text-slate-500 text-xs">
-                              <i className="fas fa-file-alt mr-1" />
-                              {activity.fileType}
-                            </span>
-                            <span className="text-slate-500 text-xs">
-                              <i className="fas fa-calendar-alt mr-1" />
-                              {new Date(activity.timestamp).toLocaleString('th-TH')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <span className={`px-3 py-1 rounded-lg text-xs font-medium ${style.badge}`}>
-                        {style.label}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <div className="text-center py-12 text-slate-400">
-                <i className="fas fa-inbox text-4xl mb-3 opacity-50" />
-                <p>ไม่มีกิจกรรมล่าสุด</p>
-              </div>
-            )}
-          </div>
-        </div> */}
-
-       
       </div>
     </div>
   )
 }
 
-// Components
 function scoreInfo(score?: number) {
   if (score == null) return { text: "text-blue-300", label: "" }
   if (score < 30) return { text: "text-emerald-400", label: "ปลอดภัย" }
@@ -361,7 +293,7 @@ function fmtSize(bytes?: number | null) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
 }
 
-function StatCard({ title, value, icon, gradient, subtitle }: { 
+function StatCard({ title, value, icon, gradient, subtitle }: {
   title: string
   value: string | number
   icon: string

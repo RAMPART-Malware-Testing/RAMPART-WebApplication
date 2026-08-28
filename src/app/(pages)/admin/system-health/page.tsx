@@ -37,9 +37,6 @@ export default function SystemHealthPage() {
   const { data, isLoading, isFetching, refetch } = useAdminSystemHealth(autoRefresh)
   const load = () => { refetch() }
 
-  // Placeholder rows for checks the backend hasn't reported back yet, so
-  // the page shows "กำลังตรวจสอบ..." per-service the instant it mounts
-  // instead of one opaque spinner while the whole request is in flight.
   const checksByName = new Map((data?.checks ?? []).map((c) => [c.name, c]))
   const displayChecks: DisplayHealthCheck[] = HEALTH_CHECK_NAMES.map(
     (name) => checksByName.get(name) ?? { name, status: 'checking' as const, latency_ms: null, detail: null },

@@ -8,7 +8,7 @@ export type ToastType = "success" | "error" | "info" | "warning";
 type ToastData = {
   type: ToastType;
   message: string;
-  duration?: number; // เพิ่ม option กำหนดระยะเวลาได้
+  duration?: number;
 };
 
 type ToastContextType = {
@@ -43,10 +43,8 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
   };
 
   const show = (type: ToastType, message: string, duration: number = 3000) => {
-    // hide previous toast
     if (toast) {
       hide();
-      // small delay to allow animation
       setTimeout(() => {
         setToast({ type, message, duration });
       }, 100);

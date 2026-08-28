@@ -1,7 +1,3 @@
-/** Central query-key registry so every hook/component invalidating a
- * shared resource (e.g. after updating the profile) targets the exact
- * same cache entry TanStack Query uses elsewhere. Keep keys here instead
- * of inlining arrays in each hook file. */
 export const queryKeys = {
   profile: ["profile"] as const,
   analysisHistory: <T extends object>(params: T) => ["analysis-history", params] as const,

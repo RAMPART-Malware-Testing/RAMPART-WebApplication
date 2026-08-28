@@ -2,14 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ProfileService } from '@/services/profile.service'
 import { jwtService } from '@/services/jwt.service'
 
-/**
- * Exchanges the backend's raw OAuth access_token (handed to the browser via
- * the /auth/callback redirect) for this app's own httpOnly session cookie.
- *
- * This has to be a server route because httpOnly cookies can't be set from
- * client-side JS - the /auth/callback page calls this right after it reads
- * access_token out of the URL.
- */
 export async function POST(request: NextRequest) {
   try {
     const { access_token, expires_in } = await request.json()

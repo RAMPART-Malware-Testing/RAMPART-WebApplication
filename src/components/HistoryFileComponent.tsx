@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
 
-
 const FILE_TYPES = ['apk', 'exe', 'msi', 'bat', 'dmg', 'ipa', 'zip']
 const STATUS_OPTIONS = [
     { value: 'all', label: 'ทั้งหมด' },
@@ -20,16 +19,13 @@ interface Props {
 
 type SortField = 'created_at' | 'file_name' | 'file_size' | 'score'
 export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
-    // Filters
     const [search, setSearch] = useState('')
     const [status, setStatus] = useState('all')
     const [fileType, setFileType] = useState('all')
 
-    // Sort: field + direction
     const [sortField, setSortField] = useState<SortField>('created_at')
     const [sortDir, setSortDir] = useState<1 | -1>(-1)
 
-    // Pagination
     const [page, setPage] = useState(1)
 
     const { data: result, isLoading, refetch } = useAnalysisHistory({
@@ -43,7 +39,6 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
     const items = result?.data ?? []
     const pagination = result?.pagination ?? null
 
-    // reset page เมื่อ filter เปลี่ยน
     useEffect(() => {
         setPage(1)
     }, [search, status, fileType, sortField, sortDir])
@@ -52,9 +47,6 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
         onRegisterRefresh?.(() => { refetch() })
     }, [onRegisterRefresh, refetch])
 
-    // ==============================
-    // Helpers
-    // ==============================
     const handleSort = (field: SortField) => {
         if (sortField === field) {
             setSortDir(prev => prev === 1 ? -1 : 1)
@@ -145,14 +137,12 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
                         >
                             <div className="flex items-center gap-4 flex-1 min-w-0">
 
-                                {/* Icon */}
                                 <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition">
                                     <span className="text-cyan-400 text-xs font-bold uppercase">
                                         {item.file_type ?? '?'}
                                     </span>
                                 </div>
 
-                                {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 mb-1">
                                         <span className="text-white font-medium truncate">{item.file_name ?? '-'}</span>
@@ -194,7 +184,6 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
                 </div>
             )}
 
-            {/* Pagination */}
             {pagination && pagination.total_pages > 1 && (
                 <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
                     <button

@@ -12,7 +12,6 @@ interface ProgressIndicatorProps {
 export function ProgressIndicator({ className, label }: ProgressIndicatorProps) {
   return (
     <div className={cn("flex items-center gap-3 rounded-xl border border-blue-500/15 bg-blue-500/[0.04] px-3 py-2.5", className)}>
-      {/* Conic-gradient spinning ring */}
       <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
         <div className="spinner-ring absolute inset-0 rounded-full" />
         <span className="relative h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.9)]" />
@@ -29,7 +28,6 @@ export function ProgressIndicator({ className, label }: ProgressIndicatorProps) 
             {label || "Processing"}
           </motion.span>
         </div>
-        {/* Shimmer progress bar */}
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-800/60">
           <motion.div
             className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500"

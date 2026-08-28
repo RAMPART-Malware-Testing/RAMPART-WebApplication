@@ -54,24 +54,13 @@ interface AnalysisHistoryResponse {
     pagination: AnalysisHistoryPagination
 }
 
-/** Per-tool status published live to Redis by the Celery task
- * (bgProcessing/tasks.py::publish_progress) and surfaced through
- * /api/analy/v1/task_id while an analysis is still running. */
 interface AnalysisToolProgress {
     status: string
     score?: number | null
     task_id?: string | number | null
-    /** Present ONLY when status === 'skipped' because the tool was
-     * force-skipped after repeated errors/rate-limiting/timeouts, as
-     * opposed to being ordinarily skipped for an unsupported file type
-     * (where this field is absent/undefined). Human-unfriendly English
-     * string - translate via translateToolNote() before showing to users. */
     note?: string
 }
 
-/** Keys of tools that can carry a persisted tool_notes entry once an
- * analysis reaches status 'success' or 'failed'. rampart_ai and gemini
- * are handled separately and never appear here. */
 type ToolNotes = Partial<Record<'virustotal' | 'mobsf' | 'cape', string>>
 
 interface AnalysisProgress {

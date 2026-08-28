@@ -24,11 +24,6 @@ export default function AdminAdminsPage() {
   const [busyUid, setBusyUid] = useState<string | null>(null)
   const notify = useToast()
 
-  // Ban and demote actions on this page are master-only (an admin
-  // viewer cannot act on another admin/master at all, per
-  // ensure_can_manage_target on the backend) - hide the buttons for a
-  // non-master viewer rather than showing them and letting every click
-  // fail server-side.
   const { data: profile } = useProfile()
   const isMaster = profile?.role === 'master'
 
@@ -132,7 +127,6 @@ export default function AdminAdminsPage() {
         </p>
       </div>
 
-      {/* Filter */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <label className="block text-sm text-blue-200/60 mb-2">ค้นหา</label>
         <input
@@ -144,7 +138,6 @@ export default function AdminAdminsPage() {
         />
       </div>
 
-      {/* List */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-white font-semibold text-lg">รายชื่อผู้ดูแล</h2>
@@ -187,9 +180,6 @@ export default function AdminAdminsPage() {
                   </div>
                 </Link>
 
-                {/* master role can never be managed by anyone, and only
-                    master can manage admins - hide all buttons for master
-                    rows, and hide all buttons for a non-master viewer. */}
                 {isMaster && user.role === 'admin' && (
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     {user.is_banned ? (
@@ -223,7 +213,6 @@ export default function AdminAdminsPage() {
           </div>
         )}
 
-        {/* Pagination */}
         {pagination && pagination.total_pages > 1 && (
           <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
             <button

@@ -30,16 +30,9 @@ export default function AdminUsersPage() {
   const [isExporting, setIsExporting] = useState(false)
   const notify = useToast()
 
-  // Role-change is master-only, and an admin viewer can never act on
-  // another admin - hide those buttons entirely rather than showing them
-  // and letting every click fail server-side. UX nicety only; the
-  // backend (services/admin/authz.py::ensure_can_manage_target) enforces
-  // the real rule regardless of what this component decides to render.
   const { data: profile } = useProfile()
   const isMaster = profile?.role === 'master'
 
-  // This page is fixed to plain "user" rows only - /admin/admins is
-  // the dedicated view for admin/master accounts.
   const { data: listResult, isLoading } = useAdminUsersList({
     page,
     limit: 20,
@@ -223,7 +216,6 @@ export default function AdminUsersPage() {
           </div>
         )}
 
-        {/* Filters */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
@@ -251,7 +243,6 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* List */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
@@ -346,7 +337,6 @@ export default function AdminUsersPage() {
             </div>
           )}
 
-          {/* Pagination */}
           {pagination && pagination.total_pages > 1 && (
             <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
               <button

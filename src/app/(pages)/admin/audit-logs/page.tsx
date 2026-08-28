@@ -82,7 +82,6 @@ export default function AdminAuditLogsPage() {
           </div>
         </div>
 
-        {/* Filter */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
           <div>
             <label className="block text-sm text-blue-200/60 mb-2">ค้นหาผู้ดำเนินการ / เป้าหมาย</label>
@@ -118,7 +117,6 @@ export default function AdminAuditLogsPage() {
           </div>
         </div>
 
-        {/* List */}
         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
           {isLoading ? (
             <div className="flex justify-center py-16">

@@ -70,9 +70,7 @@ export function AnalysisSummary({ data, className }: AnalysisSummaryProps) {
         </div>
       </div>
 
-      {/* Detail summary chips */}
       <div className="mt-4 flex flex-wrap gap-2">
-        {/* Final result */}
         {finalResult && (
           <span className={cn(
             "rounded-full px-3 py-1 text-xs font-semibold",
@@ -83,7 +81,6 @@ export function AnalysisSummary({ data, className }: AnalysisSummaryProps) {
           </span>
         )}
 
-        {/* Available reports */}
         {mobsf.status === "completed" && (
           <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs text-emerald-400 border border-emerald-500/20">
             MobSF Report
@@ -95,7 +92,6 @@ export function AnalysisSummary({ data, className }: AnalysisSummaryProps) {
           </span>
         )}
 
-        {/* ML prediction */}
         {ml.status === "completed" && ml.prediction && (
           <span className={cn(
             "rounded-full px-3 py-1 text-xs border",
@@ -107,7 +103,6 @@ export function AnalysisSummary({ data, className }: AnalysisSummaryProps) {
           </span>
         )}
 
-        {/* Gemini */}
         {gemini.status === "completed" && gemini.overallRisk && (
           <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs text-purple-400 border border-purple-500/20">
             Gemini: {gemini.overallRisk}

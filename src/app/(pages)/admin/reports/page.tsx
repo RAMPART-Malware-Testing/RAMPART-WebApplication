@@ -67,10 +67,6 @@ export default function AdminReportsPage() {
     setSelected((prev) => (prev.size === items.length ? new Set() : new Set(items.map((f) => f.aid))))
   }
 
-  // ลบ report ที่ผิดพลาด/ล้าสมัย - เพราะระบบ dedup ตอนอัปโหลด (get_file_by_hash)
-  // กรอง deleted_at IS NULL อยู่แล้ว การลบ report นี้ทำให้ผู้ใช้อัปโหลดไฟล์
-  // เนื้อหาเดียวกันซ้ำแล้วระบบจะวิเคราะห์ใหม่ทั้งหมด (VirusTotal/MobSF/CAPE/
-  // RampartAI/Gemini) แทนที่จะ "reuse" ผลเก่าที่ผิดพลาดอยู่
   const handleDelete = async (file: AdminFileListItem) => {
     const { value: reason, isConfirmed } = await Swal.fire({
       title: `ลบ Report "${file.file_name}"?`,
@@ -146,7 +142,6 @@ export default function AdminReportsPage() {
         </p>
       </div>
 
-      {/* Filters */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
@@ -196,7 +191,6 @@ export default function AdminReportsPage() {
         </div>
       )}
 
-      {/* List */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
@@ -292,7 +286,6 @@ export default function AdminReportsPage() {
           </div>
         )}
 
-        {/* Pagination */}
         {pagination && pagination.total_pages > 1 && (
           <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
             <button

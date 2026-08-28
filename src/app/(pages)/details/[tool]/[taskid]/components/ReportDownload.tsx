@@ -26,14 +26,12 @@ export default function ReportDownload({ taskid, md5, variant = "light", tools }
     setBusy(tool)
     try {
       const url = `${SERVER_URL}/api/analy/v1/download/report/${tool}-${md5}.json`
-      // โหลดตรงผ่าน backend (Content-Disposition: attachment) — ไม่ขึ้นกับ CORS/blob
       const a = document.createElement("a")
       a.href = url
       a.download = `${tool}-${md5}.json`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      // บันทึกประวัติการดาวน์โหลด
       axios.post("/api/profile/download", { file_name: md5, tool, md5 }).catch(() => {})
     } catch {
       alert(`ดาวน์โหลด ${tool} ไม่สำเร็จ (ไม่มีรายงานนี้)`)

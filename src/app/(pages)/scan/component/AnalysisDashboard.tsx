@@ -34,7 +34,6 @@ export function AnalysisDashboard() {
   return (
     <div className="min-h-screen bg-[#050510] p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl space-y-6">
-        {/* Scenario Selector */}
         <motion.div
           className="relative"
           initial={{ opacity: 0, y: -10 }}
@@ -76,7 +75,6 @@ export function AnalysisDashboard() {
           </div>
         </motion.div>
 
-        {/* Timeline */}
         <AnimatePresence mode="wait">
           <motion.div
             key={selectedScenario}

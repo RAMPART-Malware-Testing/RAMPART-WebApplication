@@ -53,7 +53,6 @@ export function TaskCard({
         status={status}
       />
 
-      {/* Running state: skeleton shimmer only */}
       {status === "running" && (
         <div className="mt-3 space-y-2">
           <SkeletonBlock className="h-2.5 w-full" />
@@ -62,17 +61,14 @@ export function TaskCard({
         </div>
       )}
 
-      {/* Info message */}
       {status !== "running" && message && (
         <p className="mt-2 text-xs text-slate-400">{message}</p>
       )}
 
-      {/* Children for completed details */}
       {status === "completed" && children && (
         <div className="mt-3 border-t border-slate-800 pt-3">{children}</div>
       )}
 
-      {/* Footer with timing */}
       <div className="mt-3">
         <TaskFooter startedAt={startedAt} finishedAt={finishedAt} />
       </div>
