@@ -213,7 +213,7 @@ export default function ScanFilesPage() {
                     {file.status === 'failed' && <i className="fas fa-times-circle text-lg"></i>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium truncate">{file.name}</p>
+                    <p className="text-white font-medium truncate" title={file.name}>{file.name}</p>
                     <p className="text-slate-400 text-xs">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                   <span className={`text-xs font-medium ${

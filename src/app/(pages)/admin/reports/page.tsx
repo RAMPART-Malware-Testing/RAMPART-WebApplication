@@ -237,7 +237,7 @@ export default function AdminReportsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-white font-medium truncate">{file.file_name ?? '-'}</span>
+                        <span className="text-white font-medium truncate" title={file.file_name ?? '-'}>{file.file_name ?? '-'}</span>
                         {file.report?.risk_level && (
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${RISK_BADGE[file.report.risk_level] ?? 'text-gray-400 bg-gray-500/10 border border-gray-500/20'}`}>
                             {file.report.risk_level}

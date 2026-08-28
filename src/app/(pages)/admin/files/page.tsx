@@ -288,7 +288,7 @@ export default function AdminFilesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="text-white font-medium truncate">{file.file_name ?? '-'}</span>
+                      <span className="text-white font-medium truncate" title={file.file_name ?? '-'}>{file.file_name ?? '-'}</span>
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           file.privacy

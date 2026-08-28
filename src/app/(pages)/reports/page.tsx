@@ -226,7 +226,7 @@ export default function ReportsPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-white font-medium truncate">{item.file_name ?? '-'}</span>
+                        <span className="text-white font-medium truncate" title={item.file_name ?? '-'}>{item.file_name ?? '-'}</span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium font-medium ${getprivacyColor(item.privacy)} ${getprivacyBadge(item.privacy)}`}>
                           {item.privacy ? 'PUBLIC' : 'PRIVATE'}
                         </span>

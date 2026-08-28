@@ -149,7 +149,7 @@ export default function TaskQueuePage() {
               <div key={item.aid} className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <span className="text-white font-medium truncate">{item.file_name ?? '-'}</span>
+                    <span className="text-white font-medium truncate" title={item.file_name ?? '-'}>{item.file_name ?? '-'}</span>
                     <span className="px-2 py-0.5 rounded-full text-xs font-medium text-blue-300 bg-blue-500/10 border border-blue-500/20">
                       {item.status ?? '-'}
                     </span>

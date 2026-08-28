@@ -129,7 +129,7 @@ export default function DashboardPage() {
                       {f.file_type ?? '?'}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{f.file_name}</p>
+                      <p className="text-white text-sm font-medium truncate" title={f.file_name ?? undefined}>{f.file_name}</p>
                       <p className="text-xs text-slate-500">
                         {f.file_size ? fmtSize(f.file_size) : ''} • {f.created_at ? new Date(f.created_at).toLocaleString('th-TH') : ''}
                       </p>
