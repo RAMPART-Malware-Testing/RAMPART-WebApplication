@@ -1,13 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import axios from 'axios'
+import { useQueryClient } from '@tanstack/react-query'
 import NavbarComponent from '@/components/NavbarComponent'
 import Image from "next/image";
 import GeometricLoader from '@/components/GeometricLoader'
 import { useRouter } from "next/navigation";
 import { useTaskStatus } from '@/hooks/queries/useTaskStatus'
+import { useProfile } from '@/hooks/queries/useProfile'
+import { queryKeys } from '@/hooks/queries/queryKeys'
 
 interface RampartAiScoreData {
   malware_probability?: number | null
@@ -18,6 +21,8 @@ interface RampartAiScoreData {
 
 interface ReportData {
   task_id: string
+  uid: string
+  privacy: boolean
   package: string
   type: string
   score: number
@@ -61,6 +66,8 @@ export default function ReportDetailPage() {
   const params = useParams()
   const taskId = (params.id as string) || ''
   const [downloadingTool, setDownloadingTool] = useState<string | null>(null)
+  const [privacy, setPrivacy] = useState(false)
+  const [savingPrivacy, setSavingPrivacy] = useState(false)
   const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
   const { data: poll, isLoading } = useTaskStatus(taskId)
@@ -68,6 +75,28 @@ export default function ReportDetailPage() {
     poll?.success && poll.status === 'success' && poll.report
       ? { task_id: poll.task_id, ...poll.report }
       : null
+
+  const queryClient = useQueryClient()
+  const { data: profile } = useProfile()
+  const isOwner = !!report?.uid && report.uid === profile?.uid
+
+  useEffect(() => {
+    if (typeof report?.privacy === 'boolean') setPrivacy(report.privacy)
+  }, [report?.privacy])
+
+  async function changePrivacy(next: boolean) {
+    if (savingPrivacy || next === privacy) return
+    setSavingPrivacy(true)
+    setPrivacy(next)
+    try {
+      await axios.patch(`/api/analy/privacy/${taskId}`, { privacy: next })
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskStatus(taskId) })
+    } catch {
+      setPrivacy((prev) => !prev)
+    } finally {
+      setSavingPrivacy(false)
+    }
+  }
 
 const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
   const router = useRouter()
@@ -87,21 +116,6 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
       alert(`ดาวน์โหลด ${tool} ไม่สำเร็จ`)
     } finally {
       setDownloadingTool(null)
-    }
-  }
-
-  const getprivacyColor = (score: boolean | null) => {
-    if (score === null) return 'text-gray-400'
-    if (score == false) return 'text-red-400'
-    if (score == true) return 'text-green-400'
-    return 'text-green-400'
-  }
-
-  const getprivacyBadge = (s: boolean | null) => {
-    switch (s) {
-      case true: return 'text-green-400 bg-green-500/10 border border-green-500/20'
-      case false: return 'text-red-400 bg-red-500/10 border border-red-500/20'
-      default: return 'text-gray-400 bg-gray-500/10 border border-gray-500/20'
     }
   }
 
@@ -172,6 +186,34 @@ const DOWNLOADABLE_TOOLS = ["virustotal", "mobsf", "cape", "rampartai"]
                     <p className="text-[10px] sm:text-xs text-blue-200/30 font-mono break-all">
                       SHA256: {report.file_hash}
                     </p>
+
+                    {isOwner ? (
+                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <span className="text-xs sm:text-sm text-blue-200/50">ความเป็นส่วนตัว:</span>
+                        <div className="flex gap-1 rounded-full bg-white/5 p-1">
+                          <button
+                            type="button"
+                            onClick={() => changePrivacy(true)}
+                            disabled={savingPrivacy}
+                            className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-medium transition ${privacy ? "bg-blue-500 text-white shadow" : "text-slate-400 hover:text-white"}`}
+                          >
+                            สาธารณะ
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => changePrivacy(false)}
+                            disabled={savingPrivacy}
+                            className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-medium transition ${!privacy ? "bg-purple-500 text-white shadow" : "text-slate-400 hover:text-white"}`}
+                          >
+                            ส่วนตัว
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border ${privacy ? 'text-blue-300 bg-blue-500/10 border-blue-500/20' : 'text-purple-300 bg-purple-500/10 border-purple-500/20'}`}>
+                        {privacy ? 'สาธารณะ' : 'ส่วนตัว'}
+                      </span>
+                    )}
                   </div>
 
                   <span className="shrink-0 text-[10px] sm:text-xs bg-white/10 text-blue-200/60 px-2 sm:px-3 py-1 rounded-full">
