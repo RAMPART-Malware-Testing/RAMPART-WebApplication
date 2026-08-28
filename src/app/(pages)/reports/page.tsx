@@ -70,7 +70,7 @@ export default function ReportsPage() {
 
   const getprivacyColor = (score: boolean | null) => {
     if (score === null) return 'text-gray-400'
-    if (score == false) return 'text-red-400'
+    if (score == false) return 'text-amber-300'
     if (score == true) return 'text-green-400'
     return 'text-green-400'
   }
@@ -86,7 +86,7 @@ export default function ReportsPage() {
   const getprivacyBadge = (s: boolean | null) => {
     switch (s) {
       case true: return 'text-green-400 bg-green-500/10 border border-green-500/20'
-      case false: return 'text-red-400 bg-red-500/10 border border-red-500/20'
+      case false: return 'text-amber-300 bg-amber-500/10 border border-amber-500/20'
       default: return 'text-gray-400 bg-gray-500/10 border border-gray-500/20'
     }
   }
