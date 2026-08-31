@@ -388,7 +388,7 @@ export default function Home() {
                     {t.initial}
                   </div>
                   <div>
-                    <p className="font-bold text-sm">{t.name}</p>
+                    <p className="font-bold text-sm text-white">{t.name}</p>
                     <p className={`text-xs ${t.tint}`}>{t.role}</p>
                   </div>
                 </div>
