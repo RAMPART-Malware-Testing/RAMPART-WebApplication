@@ -45,7 +45,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${kanit.className}${inter.className}  text-white selection:bg-purple-500 selection:text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${kanit.className} text-white selection:bg-purple-500 selection:text-white`}
       >
         <Providers>
           <ToastProvider>

@@ -114,7 +114,7 @@ const GeometricLoader: React.FC<GeometricLoaderProps> = ({
           position: relative;
           opacity: 0;
           animation: fadeInText 0.6s ease-out 0.8s forwards;
-          font-family: 'Sukhumvit Set', 'Prompt', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+          font-family: var(--font-inter), 'Leelawadee UI', 'Noto Sans Thai', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         }
 
         .dot {
