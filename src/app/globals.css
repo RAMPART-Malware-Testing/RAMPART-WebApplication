@@ -4,6 +4,7 @@
 :root {
   --background: #050510;
   --foreground: #ededed;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -171,6 +172,8 @@ body {
 html {
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
+  scrollbar-color: rgba(74, 222, 128, 0.3) rgba(255, 255, 255, 0.05);
+  scrollbar-width: thin;
 }
 
 body {

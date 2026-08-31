@@ -71,13 +71,13 @@ const CollisionCards: React.FC = () => {
                             className="group opacity-0 translate-y-10 transition-all duration-700 hover:duration-300"
                             style={{ transitionDelay: `${idx * 100}ms` }}
                         >
-                            <div className="bg-white rounded-2xl p-6 border border-gray-200
-                          hover:border-purple-300 hover:shadow-xl hover:shadow-purple-100
+                            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10
+                          hover:border-purple-400/40 hover:shadow-xl hover:shadow-purple-500/10
                           transition-all duration-300 hover:-translate-y-2 cursor-pointer h-full">
 
-                                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${card.color}
+                                <div className="w-14 h-14 rounded-xl bg-white/10 border border-white/10
                             flex items-center justify-center mb-5 shadow-sm
-                            group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300`}>
+                            group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">
                                     <img
                                         src={card.image}
                                         alt={card.title}
@@ -89,11 +89,11 @@ const CollisionCards: React.FC = () => {
                                     />
                                 </div>
 
-                                <h3 className="text-xl font-bold mb-2 text-gray-800 group-hover:text-purple-600 transition-colors">
+                                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-purple-300 transition-colors">
                                     {card.title}
                                 </h3>
 
-                                <p className="text-gray-600 leading-relaxed text-sm">
+                                <p className="text-gray-300 leading-relaxed text-sm">
                                     {card.desc}
                                 </p>
 

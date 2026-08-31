@@ -271,7 +271,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-4 justify-center">
               <button
                 onClick={() => router.push("/login")}
-                className="group relative px-8 py-4 bg-white text-black font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                className="group relative px-8 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 flex items-center gap-3 overflow-hidden"
               >
                 <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-indigo-400 opacity-0 group-hover:opacity-20 transition-opacity duration-500" />
                 <span className="relative z-10 flex items-center gap-2">
@@ -430,7 +430,7 @@ export default function Home() {
 
           <div className="flex flex-wrap gap-6 justify-center">
             <button
-              className="group relative px-10 py-4 bg-white text-black font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 flex items-center gap-3 text-lg overflow-hidden"
+              className="group relative px-10 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 flex items-center gap-3 text-lg overflow-hidden"
               onClick={() => router.push("/login")}
             >
               <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-indigo-400 opacity-0 group-hover:opacity-20 transition-opacity duration-500" />

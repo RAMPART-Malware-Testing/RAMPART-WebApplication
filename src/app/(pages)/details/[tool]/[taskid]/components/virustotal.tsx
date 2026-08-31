@@ -208,7 +208,7 @@ export default function VirustotalPage({ taskid, tool }: { taskid: string; tool:
                         placeholder="Search engine..."
                         value={searchEngine}
                         onChange={(e) => setSearchEngine(e.target.value)}
-                        className="w-full mb-4 px-3 py-2 bg-[#2a2a2a] border border-gray-700 rounded"
+                        className="w-full mb-4 px-3 py-2 bg-[#2a2a2a] border border-gray-700 rounded text-white placeholder:text-slate-500"
                     />
 
                     <div className="flex gap-4 mb-4">

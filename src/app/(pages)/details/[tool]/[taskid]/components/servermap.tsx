@@ -86,17 +86,43 @@ const markerStyles = `
     }
 
     .leaflet-popup-content-wrapper {
+        background: #0f172a;
+        color: #e2e8f0;
+        border: 1px solid rgba(255,255,255,0.1);
         border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .leaflet-popup-tip {
+        background: #0f172a;
     }
 
     .leaflet-popup-content {
         margin: 12px 16px;
-        font-family: system-ui, -apple-system, sans-serif;
+        font-family: var(--font-inter, system-ui), -apple-system, sans-serif;
+    }
+
+    .leaflet-popup-close-button {
+        color: #94a3b8 !important;
+    }
+
+    .leaflet-popup-close-button:hover {
+        color: #ffffff !important;
     }
 
     .leaflet-container {
         z-index: 0 !important;
+        background: #0a0a14 !important;
+    }
+
+    .leaflet-bar a {
+        background-color: #0f172a !important;
+        color: #e2e8f0 !important;
+        border-bottom-color: rgba(255,255,255,0.1) !important;
+    }
+
+    .leaflet-bar a:hover {
+        background-color: #1e293b !important;
     }
 `;
 
@@ -118,23 +144,23 @@ export default function ServerMap({ domains }: ServerMapProps) {
     return (
         <>
             <style>{markerStyles}</style>
-            <div className="bg-white from-gray-50 to-white rounded-2xl  p-6 mb-6 border border-gray-100" style={{ position: 'relative', zIndex: 0 }}>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6" style={{ position: 'relative', zIndex: 0 }}>
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                    <h2 className="text-xl font-bold text-white">
                         🗺️ SERVER LOCATIONS
                     </h2>
                     <div className="flex gap-3 text-xs">
                         <div className="flex items-center gap-1">
                             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                            <span className="text-gray-600">Bad Server</span>
+                            <span className="text-slate-400">Bad Server</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                            <span className="text-gray-600">OFAC</span>
+                            <span className="text-slate-400">OFAC</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                            <span className="text-gray-600">Normal</span>
+                            <span className="text-slate-400">Normal</span>
                         </div>
                     </div>
                 </div>
@@ -150,7 +176,7 @@ export default function ServerMap({ domains }: ServerMapProps) {
                     <ZoomControl position="bottomright" />
 
                     <TileLayer
-                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
                         subdomains="abcd"
                         maxZoom={19}
@@ -175,21 +201,21 @@ export default function ServerMap({ domains }: ServerMapProps) {
                             >
                                 <Popup>
                                     <div className="min-w-[200px]">
-                                        <div className="font-bold text-lg mb-2 border-b pb-1">
+                                        <div className="font-bold text-lg mb-2 border-b border-white/10 pb-1 text-white">
                                             {domain}
                                         </div>
                                         <div className="space-y-1 text-sm">
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">IP:</span>
-                                                <span className="font-mono">{info.geolocation.ip}</span>
+                                                <span className="text-slate-400">IP:</span>
+                                                <span className="font-mono text-slate-200">{info.geolocation.ip}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Location:</span>
-                                                <span>{info.geolocation.city}, {info.geolocation.region}</span>
+                                                <span className="text-slate-400">Location:</span>
+                                                <span className="text-slate-200">{info.geolocation.city}, {info.geolocation.region}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500">Country:</span>
-                                                <span className="flex items-center gap-1">
+                                                <span className="text-slate-400">Country:</span>
+                                                <span className="flex items-center gap-1 text-slate-200">
                                                     {info.geolocation.country_long}
                                                     <img
                                                         src={`https://flagcdn.com/16x12/${info.geolocation.country_short.toLowerCase()}.png`}
@@ -198,14 +224,14 @@ export default function ServerMap({ domains }: ServerMapProps) {
                                                     />
                                                 </span>
                                             </div>
-                                            <div className="flex justify-between mt-2 pt-2 border-t">
+                                            <div className="flex justify-between mt-2 pt-2 border-t border-white/10">
                                                 <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                                    isBad ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                                                    isBad ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
                                                 }`}>
                                                     Bad: {info.bad}
                                                 </span>
                                                 <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                                    info.ofac ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'
+                                                    info.ofac ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-500/20 text-slate-400'
                                                 }`}>
                                                     OFAC: {info.ofac ? "⚠️ Yes" : "✓ No"}
                                                 </span>
@@ -222,23 +248,23 @@ export default function ServerMap({ domains }: ServerMapProps) {
                 </MapContainer>
 
                 <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-                    <div className="bg-blue-50 rounded-lg p-2">
-                        <div className="text-2xl font-bold text-blue-600">
+                    <div className="bg-blue-500/10 rounded-lg p-2">
+                        <div className="text-2xl font-bold text-blue-400">
                             {Object.keys(domains).length}
                         </div>
-                        <div className="text-xs text-gray-500">Total Servers</div>
+                        <div className="text-xs text-slate-400">Total Servers</div>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-2">
-                        <div className="text-2xl font-bold text-red-600">
+                    <div className="bg-red-500/10 rounded-lg p-2">
+                        <div className="text-2xl font-bold text-red-400">
                             {Object.values(domains).filter(d => d.bad !== "no").length}
                         </div>
-                        <div className="text-xs text-gray-500">Bad Servers</div>
+                        <div className="text-xs text-slate-400">Bad Servers</div>
                     </div>
-                    <div className="bg-green-50 rounded-lg p-2">
-                        <div className="text-2xl font-bold text-green-600">
+                    <div className="bg-green-500/10 rounded-lg p-2">
+                        <div className="text-2xl font-bold text-green-400">
                             {Object.values(domains).filter(d => d.bad === "no" && !d.ofac).length}
                         </div>
-                        <div className="text-xs text-gray-500">Healthy</div>
+                        <div className="text-xs text-slate-400">Healthy</div>
                     </div>
                 </div>
             </div>
