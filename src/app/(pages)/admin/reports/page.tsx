@@ -231,7 +231,7 @@ export default function AdminReportsPage() {
                     onChange={() => toggleSelect(file.aid)}
                     className="accent-cyan-500 w-4 h-4 shrink-0"
                   />
-                  <Link href={file.task_id ? `/reports/${file.task_id}` : '#'} className="flex items-center gap-4 flex-1 min-w-0">
+                  <Link href={file.task_id ? `/scan/analysis?taskId=${file.task_id}` : '#'} className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition">
                       <span className="text-cyan-400 text-xs font-bold uppercase">{file.file_type ?? '?'}</span>
                     </div>
@@ -269,7 +269,7 @@ export default function AdminReportsPage() {
                   </Link>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Link href={file.task_id ? `/reports/${file.task_id}` : '#'} className="text-cyan-400 text-sm hover:text-cyan-300 transition px-2">
+                  <Link href={file.task_id ? `/scan/analysis?taskId=${file.task_id}` : '#'} className="text-cyan-400 text-sm hover:text-cyan-300 transition px-2">
                     ดูรายงาน →
                   </Link>
                   <button

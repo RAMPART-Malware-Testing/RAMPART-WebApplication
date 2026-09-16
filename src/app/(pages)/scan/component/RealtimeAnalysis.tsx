@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import axios from "axios"
 import { useQueryClient } from "@tanstack/react-query"
+import { AnalysisResult } from "./AnalysisResult"
 import { AnalysisTimeline } from "./AnalysisTimeline"
 import GeometricLoader from "@/components/GeometricLoader"
 import ReportDownload from "../../details/[tool]/[taskid]/components/ReportDownload"
@@ -84,6 +84,14 @@ function mapRisk(risk?: string): "Low" | "Medium" | "High" | "Critical" | undefi
   return undefined
 }
 
+function extractRampartAiScore(raw: any): number | null {
+  if (raw == null) return null
+  if (typeof raw === "number") return Math.max(0, Math.min(100, raw))
+  const probability = Number(raw.malware_probability)
+  if (!Number.isFinite(probability)) return null
+  return Math.max(0, Math.min(100, probability * 100))
+}
+
 function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
   const tools: string[] = (report?.tools ?? "").split(",").map((t: string) => t.trim()).filter(Boolean)
   const vt = raw.virustotal
@@ -105,6 +113,15 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
     fileName: report?.file_name || "ไม่ทราบชื่อไฟล์",
     overallStatus: "completed",
     finalResult: vtDetection > 0 ? "Malware" : "Benign",
+    score: report?.score != null ? Number(report.score) : null,
+    riskLevel: report?.risk_level ?? null,
+    riskIndicators: Array.isArray(report?.risk_indicators) ? report.risk_indicators : [],
+    toolScores: {
+      virustotal: report?.virustotal_score != null ? Number(report.virustotal_score) : null,
+      mobsf: report?.mobsf_score != null ? Number(report.mobsf_score) : null,
+      cape: report?.cape_score != null ? Number(report.cape_score) : null,
+      rampart_ai: extractRampartAiScore(report?.rampart_ai_score),
+    },
     virusTotal: {
       status: raw.virustotal || tools.includes("virustotal") ? "completed" : "skipped",
       detectionCount: vtDetection,
@@ -158,7 +175,6 @@ async function fetchToolReports(taskId: string, tools: string[]): Promise<Record
 
 export function RealtimeAnalysis({ taskId }: { taskId: string }) {
   const queryClient = useQueryClient()
-  const router = useRouter()
   const [analysis, setAnalysis] = useState<AnalysisResponse>(emptyAnalysis())
   const [status, setStatus] = useState<"loading" | "running" | "finalizing" | "completed" | "failed" | "notfound">("loading")
   const [error, setError] = useState("")
@@ -242,14 +258,6 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
     setStatus("running")
   }, [poll, pollError, taskId])
 
-  useEffect(() => {
-    if (status !== "completed") return
-    const timer = setTimeout(() => {
-      router.push(`/reports/${taskId}`)
-    }, 1500)
-    return () => clearTimeout(timer)
-  }, [status, taskId, router])
-
   if (status === "notfound" || status === "failed") {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
@@ -298,6 +306,8 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
         )}
 
         <AnalysisTimeline data={analysis} />
+
+        {status === "completed" && <AnalysisResult data={analysis} tools={availableTools} />}
 
         {status === "completed" && (
           <div className="pt-2">

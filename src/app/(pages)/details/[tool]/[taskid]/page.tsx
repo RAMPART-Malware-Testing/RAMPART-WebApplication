@@ -26,7 +26,6 @@ export default function Page() {
     if (!tool || !allowedTools.includes(tool)) {
         return <div>Invalid tool</div>;
     }
-
     const ToolComponent = TOOL_COMPONENTS[tool];
     return <ToolComponent taskid={taskid} tool={tool} />;
 

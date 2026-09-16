@@ -103,9 +103,9 @@ export default function ReportsPage() {
 
   const scoreInfo = (score?: number) => {
     if (score == null) return { text: 'text-blue-300', label: '' }
-    if (score < 30) return { text: 'text-emerald-400', label: 'ปลอดภัย' }
+    if (score < 30) return { text: 'text-rose-400', label: 'อันตราย' }
     if (score < 60) return { text: 'text-amber-400', label: 'ปานกลาง' }
-    return { text: 'text-rose-400', label: 'อันตราย' }
+    return { text: 'text-emerald-400', label: 'ปลอดภัย' }
   }
 
   const SORT_OPTIONS: { value: SortField; label: string }[] = [
@@ -115,10 +115,7 @@ export default function ReportsPage() {
     { value: 'score', label: 'ความเสี่ยง' },
   ]
 
-  const reportHref = (item: AnalysisHistoryItem) =>
-    item.status === 'success'
-      ? `/reports/${item.task_id}`
-      : `/scan/analysis?taskId=${item.task_id}`
+  const reportHref = (item: AnalysisHistoryItem) => `/scan/analysis?taskId=${item.task_id}`
 
   return (
     <div className="min-h-screen bg-[#050510] p-6">

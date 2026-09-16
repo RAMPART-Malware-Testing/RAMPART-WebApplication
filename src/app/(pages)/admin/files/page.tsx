@@ -332,7 +332,7 @@ export default function AdminFilesPage() {
 
                 <div className="flex items-center gap-2 shrink-0">
                   {file.task_id && (
-                    <Link href={`/reports/${file.task_id}`} className="text-cyan-400 text-sm hover:text-cyan-300 transition px-2">
+                    <Link href={`/scan/analysis?taskId=${file.task_id}`} className="text-cyan-400 text-sm hover:text-cyan-300 transition px-2">
                       ดูรายงาน →
                     </Link>
                   )}

@@ -280,9 +280,9 @@ export default function DashboardPage() {
 
 function scoreInfo(score?: number) {
   if (score == null) return { text: "text-blue-300", label: "" }
-  if (score < 30) return { text: "text-emerald-400", label: "ปลอดภัย" }
+  if (score < 30) return { text: "text-rose-400", label: "อันตราย" }
   if (score < 60) return { text: "text-amber-400", label: "ปานกลาง" }
-  return { text: "text-rose-400", label: "อันตราย" }
+  return { text: "text-emerald-400", label: "ปลอดภัย" }
 }
 
 function fmtSize(bytes?: number | null) {

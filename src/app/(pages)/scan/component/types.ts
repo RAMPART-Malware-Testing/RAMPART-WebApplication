@@ -77,6 +77,10 @@ export interface AnalysisResponse {
   fileName: string
   overallStatus: "analyzing" | "completed" | "stopped"
   finalResult?: "Benign" | "Malware"
+  score?: number | null
+  riskLevel?: string | null
+  riskIndicators?: string[]
+  toolScores?: Record<string, number | null>
   virusTotal: VirusTotalResult
   mobsf: MobSFResult
   cape: CAPEResult

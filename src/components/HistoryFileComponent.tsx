@@ -95,9 +95,9 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
 
     const scoreInfo = (score?: number) => {
         if (score == null) return { text: 'text-blue-300', label: '' }
-        if (score < 30) return { text: 'text-emerald-400', label: 'ปลอดภัย' }
+        if (score < 30) return { text: 'text-rose-400', label: 'อันตราย' }
         if (score < 60) return { text: 'text-amber-400', label: 'ปานกลาง' }
-        return { text: 'text-rose-400', label: 'อันตราย' }
+        return { text: 'text-emerald-400', label: 'ปลอดภัย' }
     }
 
     const SORT_OPTIONS: { value: SortField; label: string }[] = [
@@ -132,7 +132,7 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
                     {items.map(item => (
                         <Link
                             key={item.aid}
-                            href={`/reports/${item.task_id}`}
+                            href={`/scan/analysis?taskId=${item.task_id}`}
                             className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 transition group"
                         >
                             <div className="flex items-center gap-4 flex-1 min-w-0">

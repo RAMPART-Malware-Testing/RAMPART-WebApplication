@@ -195,7 +195,7 @@ export default function AdminUserDetailPage() {
                         </div>
                       </div>
                       {item.task_id && (
-                        <Link href={`/reports/${item.task_id}`} className="text-cyan-400 ml-4 shrink-0 text-sm hover:text-cyan-300 transition">
+                        <Link href={`/scan/analysis?taskId=${item.task_id}`} className="text-cyan-400 ml-4 shrink-0 text-sm hover:text-cyan-300 transition">
                           ดูรายงาน →
                         </Link>
                       )}
