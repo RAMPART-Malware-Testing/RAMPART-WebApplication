@@ -101,6 +101,7 @@ body {
 
 .spin-slow {
   animation: slowSpin 20s linear infinite;
+  will-change: transform;
 }
 
 .reveal-on-scroll {
@@ -135,6 +136,7 @@ body {
   filter: blur(70px);
   border-radius: 50%;
   z-index: 0;
+  will-change: transform, opacity;
 }
 
 .cursor-dot {

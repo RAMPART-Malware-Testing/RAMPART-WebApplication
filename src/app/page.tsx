@@ -6,7 +6,6 @@ import Image from "next/image";
 import Navbarservice from "@/components/Navbarservice";
 import CollisionCards from "@/components/CollisionCards";
 import { useRouter } from "next/navigation";
-import GeometricLoader from "@/components/GeometricLoader";
 
 const CircuitBoard3D = dynamic(() => import("@/components/CircuitBoard3D"), { ssr: false });
 const SplineScene = dynamic(() => import("@/components/SplineScene"), { ssr: false });
@@ -120,7 +119,6 @@ function AnimatedBorderCard({ children, className = "" }: { children: React.Reac
 }
 
 export default function Home() {
-  const [pageLoaded, setPageLoaded] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const router = useRouter();
 
@@ -206,8 +204,6 @@ export default function Home() {
 
   return (
     <>
-      {!pageLoaded && <GeometricLoader loadingText="กำลังโหลด..." />}
-
       <div className="fixed inset-0 overflow-hidden -z-10">
         <div
           className="blob-bg top-[-200px] left-[-150px] animate-pulse"
@@ -238,7 +234,7 @@ export default function Home() {
       <Navbarservice />
 
       <section className="relative min-h-screen flex flex-col justify-center overflow-hidden">
-        <SplineScene onLoad={() => setPageLoaded(true)} />
+        <SplineScene />
 
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-[#050510] z-[1] pointer-events-none" />
 

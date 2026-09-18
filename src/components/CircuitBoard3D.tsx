@@ -27,6 +27,11 @@ export default function CircuitBoard3D({ src, orbit = "45deg 35deg", distance = 
   const containerRef = useRef<HTMLDivElement>(null);
   const [supported, setSupported] = useState<boolean | null>(null);
   const [failed, setFailed] = useState(false);
+  const autoRotateRef = useRef(autoRotate);
+
+  useEffect(() => {
+    autoRotateRef.current = autoRotate;
+  }, [autoRotate]);
 
   useEffect(() => {
     setSupported(isWebGLAvailable());
@@ -57,6 +62,29 @@ export default function CircuitBoard3D({ src, orbit = "45deg 35deg", distance = 
     };
   }, [animationName, supported]);
 
+  useEffect(() => {
+    if (!supported) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const model = modelRef.current as any;
+        if (!model) return;
+        if (entry.isIntersecting) {
+          model.autoRotate = autoRotateRef.current;
+          model.play?.();
+        } else {
+          model.autoRotate = false;
+          model.pause?.();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [supported]);
+
   if (supported === null) {
     return <div ref={containerRef} className="relative w-full h-full" />;
   }
@@ -86,7 +114,7 @@ export default function CircuitBoard3D({ src, orbit = "45deg 35deg", distance = 
         shadow-intensity="1"
         environment-image="neutral"
         autoplay
-        loading="eager"
+        loading="lazy"
         style={{
           width: "100%",
           height: "100%",
