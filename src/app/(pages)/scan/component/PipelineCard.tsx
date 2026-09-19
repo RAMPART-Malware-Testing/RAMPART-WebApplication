@@ -56,6 +56,13 @@ const METRIC_CONFIG = [
   { key: "receivers", label: "Receivers" },
 ] as const
 
+const dangerTier = (score: number) => {
+  if (score >= 80) return { text: "text-red-400", bar: "bg-red-500" }
+  if (score >= 60) return { text: "text-orange-400", bar: "bg-orange-500" }
+  if (score >= 30) return { text: "text-amber-400", bar: "bg-amber-500" }
+  return { text: "text-emerald-400", bar: "bg-emerald-500" }
+}
+
 export function MobSFCard({ data, className }: MobSFCardProps) {
   return (
     <TaskCard
@@ -85,21 +92,13 @@ export function MobSFCard({ data, className }: MobSFCardProps) {
               <div className="col-span-2 rounded-lg bg-slate-800/50 px-3 py-2">
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-slate-500">Risk Score</div>
-                  <div className={cn(
-                    "text-sm font-bold",
-                    data.riskScore < 30 ? "text-emerald-400" :
-                    data.riskScore < 60 ? "text-amber-400" : "text-red-400"
-                  )}>
+                  <div className={cn("text-sm font-bold", dangerTier(data.riskScore).text)}>
                     {data.riskScore}/100
                   </div>
                 </div>
                 <div className="mt-1.5 h-1.5 rounded-full bg-slate-700">
                   <motion.div
-                    className={cn(
-                      "h-full rounded-full",
-                      data.riskScore < 30 ? "bg-emerald-500" :
-                      data.riskScore < 60 ? "bg-amber-500" : "bg-red-500"
-                    )}
+                    className={cn("h-full rounded-full", dangerTier(data.riskScore).bar)}
                     initial={{ width: 0 }}
                     animate={{ width: `${data.riskScore}%` }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
@@ -140,6 +139,24 @@ export function CAPECard({ data, className }: CAPECardProps) {
     >
       {data.status === "completed" && (
         <div className="space-y-2">
+          {data.dangerScore !== undefined && (
+            <div className="rounded-lg bg-slate-800/50 px-3 py-2">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-slate-500">Danger Score</div>
+                <div className={cn("text-sm font-bold", dangerTier(data.dangerScore).text)}>
+                  {Math.round(data.dangerScore)}/100
+                </div>
+              </div>
+              <div className="mt-1.5 h-1.5 rounded-full bg-slate-700">
+                <motion.div
+                  className={cn("h-full rounded-full", dangerTier(data.dangerScore).bar)}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(0, Math.min(100, Math.round(data.dangerScore)))}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                />
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2">
             {CAPE_METRICS.map(({ key, label, icon: Icon }) => {
               const value = data[key as keyof typeof data]

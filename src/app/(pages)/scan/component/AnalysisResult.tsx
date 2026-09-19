@@ -13,16 +13,25 @@ const TOOL_META: Record<string, { label: string; logo: string }> = {
 }
 
 function scoreTier(score: number) {
-  if (score < 30) {
+  if (score >= 80) {
     return {
-      label: "อันตราย",
+      label: "อันตรายร้ายแรง",
       text: "text-red-400",
       bar: "bg-red-500",
       badge: "border-red-500/20 bg-red-500/10",
       surface: "border-red-500/20",
     }
   }
-  if (score < 60) {
+  if (score >= 60) {
+    return {
+      label: "อันตราย",
+      text: "text-orange-400",
+      bar: "bg-orange-500",
+      badge: "border-orange-500/20 bg-orange-500/10",
+      surface: "border-orange-500/20",
+    }
+  }
+  if (score >= 30) {
     return {
       label: "ความเสี่ยงปานกลาง",
       text: "text-amber-400",
@@ -71,12 +80,12 @@ export function AnalysisResult({ data, tools, className }: AnalysisResultProps) 
           transition={{ duration: 0.3 }}
         >
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            คะแนนความปลอดภัยรวม
+            คะแนนความอันตรายรวม
           </div>
 
           <div className="mt-3 rounded-lg bg-slate-800/50 px-3 py-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Overall Score</span>
+              <span className="text-xs text-slate-500">Overall Danger Score</span>
               <span className={cn("text-lg font-bold font-mono", tier?.text)}>
                 {roundedScore ?? "-"}
                 {roundedScore != null && (

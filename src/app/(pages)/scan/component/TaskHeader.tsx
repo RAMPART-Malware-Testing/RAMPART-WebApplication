@@ -26,20 +26,20 @@ export function TaskHeader({
         <div
           className={cn(
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-            status === "running" && "bg-blue-500/20",
+            status === "running" && "bg-amber-500/20",
             status === "completed" && "bg-emerald-500/20",
             status === "failed" && "bg-red-500/20",
-            status === "skipped" && "bg-amber-500/20",
+            status === "skipped" && "bg-slate-700/50",
             status === "waiting" && "bg-slate-700/50"
           )}
         >
           <Icon
             className={cn(
               "h-5 w-5",
-              status === "running" && "text-blue-400",
+              status === "running" && "text-amber-400",
               status === "completed" && "text-emerald-400",
               status === "failed" && "text-red-400",
-              status === "skipped" && "text-amber-400",
+              status === "skipped" && "text-slate-400",
               status === "waiting" && "text-slate-500"
             )}
           />

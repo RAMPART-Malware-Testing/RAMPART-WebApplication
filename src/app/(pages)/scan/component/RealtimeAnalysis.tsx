@@ -98,8 +98,11 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
   const vtStats = vt?.data?.attributes?.last_analysis_stats
   const vtDetection = Number(vtStats?.malicious || 0)
   const vtTotal = sumStats(vtStats)
-  const ms = raw.mobsf?.appsec ?? raw.mobsf ?? {}
+  const mobsfRaw = raw.mobsf ?? {}
   const cape = raw.cape ?? {}
+  const capeNet = cape.network && typeof cape.network === "object" ? cape.network : {}
+  const capeBehavior = cape.behavior && typeof cape.behavior === "object" ? cape.behavior : {}
+  const capeSummary = capeBehavior.summary && typeof capeBehavior.summary === "object" ? capeBehavior.summary : {}
   const rpred = report?.rampart_ai_score
   const rscore = rpred && typeof rpred === "object"
     ? (rpred.malware_probability != null ? Number(rpred.malware_probability) * 100 : undefined)
@@ -129,18 +132,19 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
     },
     mobsf: {
       status: raw.mobsf || tools.includes("mobsf") ? "completed" : "skipped",
-      permissions: Array.isArray(ms.permissions) ? ms.permissions.length : ms.permissions_count,
-      activities: Array.isArray(ms.activities) ? ms.activities.length : undefined,
-      services: Array.isArray(ms.services) ? ms.services.length : undefined,
-      receivers: Array.isArray(ms.receivers) ? ms.receivers.length : undefined,
-      riskScore: ms.security_score != null ? Math.round(100 - Number(ms.security_score)) : undefined,
+      permissions: mobsfRaw.permissions && typeof mobsfRaw.permissions === "object" ? Object.keys(mobsfRaw.permissions).length : undefined,
+      activities: Array.isArray(mobsfRaw.activities) ? mobsfRaw.activities.length : undefined,
+      services: Array.isArray(mobsfRaw.services) ? mobsfRaw.services.length : undefined,
+      receivers: Array.isArray(mobsfRaw.receivers) ? mobsfRaw.receivers.length : undefined,
+      riskScore: mobsfRaw.appsec?.security_score != null ? Math.round(100 - Number(mobsfRaw.appsec.security_score)) : undefined,
     },
     cape: {
       status: raw.cape || tools.includes("cape") ? "completed" : "skipped",
-      network: Array.isArray(cape.network) ? cape.network.length : undefined,
-      registry: Array.isArray(cape.registry) ? cape.registry.length : undefined,
-      files: Array.isArray(cape.files) ? cape.files.length : undefined,
-      processes: Array.isArray(cape.processes) ? cape.processes.length : undefined,
+      dangerScore: report?.cape_score != null ? Number(report.cape_score) : undefined,
+      network: (Array.isArray(capeNet.http) ? capeNet.http.length : 0) + (Array.isArray(capeNet.dns) ? capeNet.dns.length : 0),
+      registry: Array.isArray(capeSummary.keys) ? capeSummary.keys.length : 0,
+      files: Array.isArray(capeSummary.files) ? capeSummary.files.length : 0,
+      processes: Array.isArray(capeBehavior.processes) ? capeBehavior.processes.length : 0,
     },
     ml: {
       status: rpred != null ? "completed" : "skipped",
@@ -348,5 +352,5 @@ function statusText(s: string) {
 function cn_status(s: string) {
   return s === "completed"
     ? "rounded-full bg-emerald-500/10 px-3 py-1 text-xs text-emerald-400 border border-emerald-500/20"
-    : "rounded-full bg-blue-500/10 px-3 py-1 text-xs text-blue-400 border border-blue-500/20"
+    : "rounded-full bg-amber-500/10 px-3 py-1 text-xs text-amber-400 border border-amber-500/20"
 }

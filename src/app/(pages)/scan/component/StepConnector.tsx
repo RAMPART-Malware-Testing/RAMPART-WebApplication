@@ -6,18 +6,18 @@ import type { TaskStatus } from "./types"
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
   waiting: "bg-slate-700 border-slate-600",
-  running: "bg-blue-500/20 border-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.4)]",
+  running: "bg-amber-500/20 border-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.4)]",
   completed: "bg-emerald-500 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]",
   failed: "bg-red-500 border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]",
-  skipped: "bg-amber-500 border-amber-500 shadow-[0_0_12px_rgba(251,191,36,0.4)]",
+  skipped: "bg-slate-600 border-slate-500",
 }
 
 const LINE_COLORS: Record<TaskStatus, string> = {
   waiting: "bg-slate-700",
-  running: "bg-blue-500/40",
+  running: "bg-amber-500/40",
   completed: "bg-emerald-500/40",
   failed: "bg-red-500/40",
-  skipped: "bg-amber-500/40",
+  skipped: "bg-slate-600/40",
 }
 
 interface StepConnectorProps {
@@ -40,7 +40,7 @@ export function StepConnector({ status, index, isLast = false }: StepConnectorPr
       >
         {status === "running" && (
           <motion.span
-            className="absolute inset-0 rounded-full bg-blue-500/30"
+            className="absolute inset-0 rounded-full bg-amber-500/30"
             animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           />

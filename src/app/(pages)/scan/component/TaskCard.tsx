@@ -35,10 +35,10 @@ export function TaskCard({
     <motion.div
       className={cn(
         "rounded-xl border bg-slate-900/60 p-4 backdrop-blur-sm",
-        status === "running" && "border-blue-500/30 bg-blue-500/5",
+        status === "running" && "border-amber-500/30 bg-amber-500/5",
         status === "completed" && "border-emerald-500/20",
         status === "failed" && "border-red-500/20 bg-red-500/5",
-        status === "skipped" && "border-amber-500/20 bg-amber-500/5 opacity-70",
+        status === "skipped" && "border-slate-600/40 bg-slate-800/40 opacity-70 border-dashed",
         status === "waiting" && "border-slate-700/50 opacity-60",
         className
       )}

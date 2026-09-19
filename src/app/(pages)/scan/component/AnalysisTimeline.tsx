@@ -15,10 +15,10 @@ interface AnalysisTimelineProps {
 
 const stageColorMap: Record<string, string> = {
   waiting: "from-slate-800 to-slate-800/50",
-  running: "from-blue-500/10 to-blue-500/5",
+  running: "from-amber-500/10 to-amber-500/5",
   completed: "from-emerald-500/10 to-emerald-500/5",
   failed: "from-red-500/10 to-red-500/5",
-  skipped: "from-amber-500/10 to-amber-500/5",
+  skipped: "from-slate-800/40 to-slate-800/20",
 }
 
 function deriveStageStatus(tasks: TaskStatus[]): TaskStatus {
@@ -70,7 +70,7 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
             "h-px flex-1 bg-gradient-to-r",
             data.overallStatus === "completed"
               ? "from-emerald-500/30 to-transparent"
-              : "from-blue-500/30 to-transparent"
+              : "from-amber-500/30 to-transparent"
           )} />
         </div>
         <p className="text-sm text-slate-500">{data.fileName}</p>
@@ -101,7 +101,7 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
                   "rounded-2xl border bg-gradient-to-br p-4 backdrop-blur-sm",
                   stageColorMap[data.virusTotal.status],
                   data.virusTotal.status === "completed" && "border-emerald-500/20",
-                  data.virusTotal.status === "running" && "border-blue-500/30",
+                  data.virusTotal.status === "running" && "border-amber-500/30",
                   data.virusTotal.status === "failed" && "border-red-500/20",
                   data.virusTotal.detectionCount > 0 && data.virusTotal.status === "completed" && "border-red-500/30 bg-red-500/5"
                 )}
@@ -126,7 +126,7 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
                   "rounded-2xl border bg-gradient-to-br p-4 backdrop-blur-sm",
                   stageColorMap[getEngineStageStatus(data.mobsf, data.cape, data.ml)],
                   getEngineStageStatus(data.mobsf, data.cape, data.ml) === "completed" && "border-emerald-500/20",
-                  getEngineStageStatus(data.mobsf, data.cape, data.ml) === "running" && "border-blue-500/30",
+                  getEngineStageStatus(data.mobsf, data.cape, data.ml) === "running" && "border-amber-500/30",
                 )}
               >
                 <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -160,8 +160,8 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
                   "rounded-2xl border bg-gradient-to-br p-4 backdrop-blur-sm",
                   stageColorMap[data.gemini.status],
                   data.gemini.status === "completed" && "border-purple-500/20",
-                  data.gemini.status === "running" && "border-blue-500/30",
-                  data.gemini.status === "skipped" && "border-amber-500/20",
+                  data.gemini.status === "running" && "border-amber-500/30",
+                  data.gemini.status === "skipped" && "border-slate-600/40",
                 )}
               >
                 <div className="mb-2 flex items-center gap-2">

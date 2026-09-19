@@ -43,6 +43,7 @@ export interface CAPEResult {
   files?: number
   processes?: number
   behaviorReport?: string
+  dangerScore?: number
   startedAt?: string
   finishedAt?: string
   message?: string

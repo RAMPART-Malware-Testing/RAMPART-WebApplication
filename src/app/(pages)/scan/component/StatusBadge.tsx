@@ -10,10 +10,10 @@ const statusBadgeVariants = cva(
     variants: {
       status: {
         waiting: "bg-slate-700/50 text-slate-400 border border-slate-600/50",
-        running: "bg-blue-500/15 text-blue-400 border border-blue-500/30",
+        running: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
         completed: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
         failed: "bg-red-500/15 text-red-400 border border-red-500/30",
-        skipped: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
+        skipped: "bg-slate-800/60 text-slate-400 border border-slate-600/40 border-dashed",
       } satisfies Record<TaskStatus, string>,
     },
     defaultVariants: {
@@ -26,10 +26,10 @@ const dotVariants = cva("h-1.5 w-1.5 rounded-full", {
   variants: {
     status: {
       waiting: "bg-slate-500",
-      running: "bg-blue-500 animate-pulse",
+      running: "bg-amber-500 animate-pulse",
       completed: "bg-emerald-500",
       failed: "bg-red-500",
-      skipped: "bg-amber-500",
+      skipped: "bg-slate-500",
     } satisfies Record<TaskStatus, string>,
   },
   defaultVariants: {

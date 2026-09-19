@@ -23,7 +23,7 @@ export function AnalysisSummary({ data, className }: AnalysisSummaryProps) {
     if (isVTDetected) return { icon: XCircle, color: "text-red-400", bg: "bg-red-500/10 border-red-500/30" }
     if (bothAnalysisFailed) return { icon: AlertTriangle, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/30" }
     if (overallStatus === "completed") return { icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" }
-    return { icon: Info, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30" }
+    return { icon: Info, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/30" }
   }
 
   const getTitle = () => {
@@ -110,7 +110,7 @@ export function AnalysisSummary({ data, className }: AnalysisSummaryProps) {
         )}
 
         {geminiSkipped && (
-          <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs text-amber-400 border border-amber-500/20">
+          <span className="rounded-full bg-slate-700/40 px-3 py-1 text-xs text-slate-400 border border-slate-600/40">
             Report Unavailable
           </span>
         )}
