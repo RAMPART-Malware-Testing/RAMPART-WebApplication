@@ -39,10 +39,44 @@ const STATUS_STYLES: Record<RecentActivity['status'], { icon: string; badge: str
   },
 }
 
-function getRiskScoreColor(score: number) {
-  if (score >= 70) return { text: 'text-rose-400', bar: 'bg-gradient-to-r from-rose-500 to-red-500' }
-  if (score >= 40) return { text: 'text-amber-400', bar: 'bg-gradient-to-r from-amber-500 to-orange-500' }
-  return { text: 'text-emerald-400', bar: 'bg-gradient-to-r from-emerald-500 to-teal-500' }
+function dangerTier(score: number) {
+  if (score >= 80) return { label: 'อันตรายร้ายแรง', text: 'text-red-400', bar: 'bg-red-500', chip: 'bg-red-500/10 border-red-500/20' }
+  if (score >= 60) return { label: 'อันตราย', text: 'text-orange-400', bar: 'bg-orange-500', chip: 'bg-orange-500/10 border-orange-500/20' }
+  if (score >= 30) return { label: 'ความเสี่ยงปานกลาง', text: 'text-amber-400', bar: 'bg-amber-500', chip: 'bg-amber-500/10 border-amber-500/20' }
+  return { label: 'ปลอดภัย', text: 'text-emerald-400', bar: 'bg-emerald-500', chip: 'bg-emerald-500/10 border-emerald-500/20' }
+}
+
+const clamp = (v: number) => Math.max(0, Math.min(100, v))
+
+const aiChipValue = (raw: unknown): number | null => {
+  if (raw == null) return null
+  if (typeof raw === 'number') return clamp(raw)
+  const p = (raw as { malware_probability?: unknown }).malware_probability
+  const n = Number(p)
+  return Number.isFinite(n) ? clamp(n * 100) : null
+}
+
+const toolChips = (r: { virustotal_score?: number | null; mobsf_score?: number | null; cape_score?: number | null; rampart_ai_score?: unknown } | null | undefined, listedTools?: string | null) => {
+  const listed = (listedTools ?? '').split(',').map((t) => t.trim()).filter(Boolean)
+  const defs = [
+    { key: 'virustotal', label: 'VT', title: 'VirusTotal', value: r?.virustotal_score ?? null },
+    { key: 'mobsf', label: 'MobSF', title: 'MobSF Static Analysis', value: r?.mobsf_score ?? null },
+    { key: 'cape', label: 'CAPE', title: 'CAPE Sandbox', value: r?.cape_score ?? null },
+    { key: 'rampart_ai', label: 'AI', title: 'RampartAI', value: aiChipValue(r?.rampart_ai_score) },
+  ]
+  if (listed.length > 0) {
+    return defs.filter((d) => listed.some((t) => t === d.key || (d.key === 'rampart_ai' && (t === 'rampart' || t === 'rampartai'))))
+  }
+  return defs.filter((d) => d.value != null)
+}
+
+const avgChips = (item: { virustotalScore?: number | null; mobsfScore?: number | null; capeScore?: number | null; aiScore?: number | null }) => {
+  return [
+    { key: 'virustotal', label: 'VT', title: 'VirusTotal', value: item.virustotalScore ?? null },
+    { key: 'mobsf', label: 'MobSF', title: 'MobSF Static Analysis', value: item.mobsfScore ?? null },
+    { key: 'cape', label: 'CAPE', title: 'CAPE Sandbox', value: item.capeScore ?? null },
+    { key: 'rampart_ai', label: 'AI', title: 'RampartAI', value: item.aiScore ?? null },
+  ].filter((c): c is { key: string; label: string; title: string; value: number } => c.value != null)
 }
 
 export default function DashboardPage() {
@@ -155,9 +189,26 @@ export default function DashboardPage() {
                       </span>
                     )}
                     {f.report?.score != null && (
-                      <span className={`text-xs font-medium ${scoreInfo(f.report.score).text}`}>
-                        Score: {f.report.score}/100 · {scoreInfo(f.report.score).label}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                        <span className={`text-sm font-bold font-mono ${dangerTier(Number(f.report.score)).text}`}>
+                          {Math.round(Number(f.report.score))}/100
+                        </span>
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${dangerTier(Number(f.report.score)).chip} ${dangerTier(Number(f.report.score)).text}`}>
+                          {dangerTier(Number(f.report.score)).label}
+                        </span>
+                        {toolChips(f.report as any, f.tools).map((c) => {
+                          const tier = c.value != null ? dangerTier(c.value) : null
+                          return (
+                            <span
+                              key={c.key}
+                              title={c.value != null ? `${c.title}: ${Math.round(c.value)}/100` : `${c.title}: ไม่มีข้อมูล`}
+                              className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${tier ? tier.chip + ' ' + tier.text : 'text-slate-500 bg-slate-800/50 border-slate-600/40'}`}
+                            >
+                              {c.label} {c.value != null ? Math.round(c.value) : '–'}
+                            </span>
+                          )
+                        })}
+                      </div>
                     )}
                     <i className="fas fa-chevron-right text-slate-500 text-xs group-hover:translate-x-1 group-hover:text-cyan-400 transition" />
                   </div>
@@ -239,27 +290,39 @@ export default function DashboardPage() {
             <div className="px-6 py-4 border-b border-white/10">
               <h3 className="text-white font-semibold flex items-center gap-2">
                 <i className="fas fa-shield-virus text-amber-400" />
-                คะแนนความเสี่ยง
+                คะแนนความอันตราย
               </h3>
-              <p className="text-slate-400 text-sm mt-1">จำแนกตามประเภทไฟล์</p>
+              <p className="text-slate-400 text-sm mt-1">ค่าเฉลี่ยจำแนกตามประเภทไฟล์</p>
             </div>
             <div className="p-6 space-y-4">
               {dashboardStats.riskScores.length > 0 ? (
                 dashboardStats.riskScores.map((item) => {
                   const score = Math.min(Math.max(item.riskScore, 0), 100)
-                  const colors = getRiskScoreColor(score)
                   return (
                     <div key={item.fileType} className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-white text-sm font-medium">{item.fileType}</span>
-                        <span className={`text-sm font-bold ${colors.text}`}>{score.toFixed(0)}/100</span>
+                        <span className={`text-sm font-bold ${dangerTier(score).text}`}>{score.toFixed(0)}/100</span>
                       </div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
-                          className={`h-full ${colors.bar} rounded-full transition-all duration-700`}
+                          className={`h-full ${dangerTier(score).bar} rounded-full transition-all duration-700`}
                           style={{ width: `${score}%` }}
                         />
                       </div>
+                      {avgChips(item).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {avgChips(item).map((c) => (
+                            <span
+                              key={c.key}
+                              title={`${c.title} (ค่าเฉลี่ย): ${Math.round(c.value)}/100`}
+                              className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${dangerTier(c.value).chip} ${dangerTier(c.value).text}`}
+                            >
+                              {c.label} {Math.round(c.value)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 })
@@ -276,13 +339,6 @@ export default function DashboardPage() {
       </div>
     </div>
   )
-}
-
-function scoreInfo(score?: number) {
-  if (score == null) return { text: "text-blue-300", label: "" }
-  if (score < 30) return { text: "text-rose-400", label: "อันตราย" }
-  if (score < 60) return { text: "text-amber-400", label: "ปานกลาง" }
-  return { text: "text-emerald-400", label: "ปลอดภัย" }
 }
 
 function fmtSize(bytes?: number | null) {

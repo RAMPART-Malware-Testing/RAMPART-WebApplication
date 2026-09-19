@@ -17,6 +17,10 @@ export interface MalwareTypeEntry {
 export interface RiskScoreEntry {
   fileType: string
   riskScore: number
+  virustotalScore?: number | null
+  mobsfScore?: number | null
+  capeScore?: number | null
+  aiScore?: number | null
 }
 
 export interface DashboardSummary {
