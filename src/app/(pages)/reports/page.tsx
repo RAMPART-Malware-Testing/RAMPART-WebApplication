@@ -61,16 +61,9 @@ export default function ReportsPage() {
   const formatDate = (dateStr: string | null) =>
     dateStr ? new Date(dateStr).toLocaleString('th-TH') : '-'
 
-  const getRiskColor = (score: number | null) => {
-    if (score === null) return 'text-gray-400'
-    if (score <= 30) return 'text-red-400'
-    if (score <= 60) return 'text-yellow-400'
-    return 'text-green-400'
-  }
-
   const getprivacyColor = (score: boolean | null) => {
     if (score === null) return 'text-gray-400'
-    if (score == false) return 'text-amber-300'
+    if (score == false) return 'text-purple-400'
     if (score == true) return 'text-green-400'
     return 'text-green-400'
   }
@@ -86,7 +79,7 @@ export default function ReportsPage() {
   const getprivacyBadge = (s: boolean | null) => {
     switch (s) {
       case true: return 'text-green-400 bg-green-500/10 border border-green-500/20'
-      case false: return 'text-amber-300 bg-amber-500/10 border border-amber-500/20'
+      case false: return 'text-purple-400 bg-purple-500/10 border border-purple-500/20'
       default: return 'text-gray-400 bg-gray-500/10 border border-gray-500/20'
     }
   }
@@ -101,11 +94,41 @@ export default function ReportsPage() {
     }
   }
 
-  const scoreInfo = (score?: number) => {
-    if (score == null) return { text: 'text-blue-300', label: '' }
-    if (score < 30) return { text: 'text-rose-400', label: 'อันตราย' }
-    if (score < 60) return { text: 'text-amber-400', label: 'ปานกลาง' }
-    return { text: 'text-emerald-400', label: 'ปลอดภัย' }
+  const dangerTier = (score: number) => {
+    if (score >= 80) return { label: 'อันตรายร้ายแรง', text: 'text-red-400', bar: 'bg-red-500', chip: 'bg-red-500/10 border-red-500/20' }
+    if (score >= 60) return { label: 'อันตราย', text: 'text-orange-400', bar: 'bg-orange-500', chip: 'bg-orange-500/10 border-orange-500/20' }
+    if (score >= 30) return { label: 'ความเสี่ยงปานกลาง', text: 'text-amber-400', bar: 'bg-amber-500', chip: 'bg-amber-500/10 border-amber-500/20' }
+    return { label: 'ปลอดภัย', text: 'text-emerald-400', bar: 'bg-emerald-500', chip: 'bg-emerald-500/10 border-emerald-500/20' }
+  }
+
+  const RISK_LEVEL_STYLES: Record<string, string> = {
+    Low: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    Caution: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    Medium: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    High: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+    Critical: 'text-red-400 bg-red-500/10 border-red-500/20',
+  }
+
+  const clamp = (v: number) => Math.max(0, Math.min(100, v))
+
+  const toolChips = (item: AnalysisHistoryItem) => {
+    const r = item.report
+    const aiRaw = r?.rampart_ai_score ?? null
+    const aiScore = aiRaw == null ? null
+    : typeof aiRaw === 'number' ? clamp(aiRaw)
+    : aiRaw.malware_probability != null ? clamp(Number(aiRaw.malware_probability) * 100)
+    : null
+    const listed = (item.tools ?? '').split(',').map((t) => t.trim()).filter(Boolean)
+    const defs = [
+      { key: 'virustotal', label: 'VT', title: 'VirusTotal', value: r?.virustotal_score ?? null },
+      { key: 'mobsf', label: 'MobSF', title: 'MobSF Static Analysis', value: r?.mobsf_score ?? null },
+      { key: 'cape', label: 'CAPE', title: 'CAPE Sandbox', value: r?.cape_score ?? null },
+      { key: 'rampart_ai', label: 'AI', title: 'RampartAI', value: aiScore },
+    ]
+    if (listed.length > 0) {
+      return defs.filter((d) => listed.some((t) => t === d.key || (d.key === 'rampart_ai' && (t === 'rampart' || t === 'rampartai'))))
+    }
+    return defs.filter((d) => d.value != null)
   }
 
   const SORT_OPTIONS: { value: SortField; label: string }[] = [
@@ -211,7 +234,7 @@ export default function ReportsPage() {
                 <Link
                   key={item.aid}
                   href={reportHref(item)}
-                  className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 transition group"
+                  className="flex flex-col gap-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 transition group sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
 
@@ -224,7 +247,7 @@ export default function ReportsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="text-white font-medium truncate" title={item.file_name ?? '-'}>{item.file_name ?? '-'}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium font-medium ${getprivacyColor(item.privacy)} ${getprivacyBadge(item.privacy)}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getprivacyColor(item.privacy)} ${getprivacyBadge(item.privacy)}`}>
                           {item.privacy ? 'PUBLIC' : 'PRIVATE'}
                         </span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(item.status)}`}>
@@ -232,7 +255,7 @@ export default function ReportsPage() {
                         </span>
 
                         {item.report?.risk_level && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium text-orange-400 bg-orange-500/10 border border-orange-500/20">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${RISK_LEVEL_STYLES[item.report.risk_level] ?? 'text-orange-400 bg-orange-500/10 border-orange-500/20'}`}>
                             {item.report.risk_level}
                           </span>
                         )}
@@ -242,14 +265,6 @@ export default function ReportsPage() {
                         <span>{formatSize(item.file_size)}</span>
                         <span>•</span>
                         <span>{formatDate(item.created_at)}</span>
-                        {item.report?.score !== null && item.report?.score !== undefined && (
-                          <>
-                            <span>•</span>
-                            <span className={`font-medium ${scoreInfo(item.report.score).text}`}>
-                              Score: {item.report.score}/100 · {scoreInfo(item.report.score).label}
-                            </span>
-                          </>
-                        )}
                         {item.tools && (
                           <>
                             <span>•</span>
@@ -261,7 +276,40 @@ export default function ReportsPage() {
                     </div>
                   </div>
 
-                  <span className="text-cyan-400 ml-4 shrink-0">→</span>
+                  <div className="flex items-center gap-3 shrink-0 sm:justify-end">
+                    {item.report?.score != null ? (
+                      <div className="text-left sm:text-right">
+                        <div className="flex items-center justify-start sm:justify-end gap-2 flex-wrap">
+                          <span className={`text-xl font-bold font-mono ${dangerTier(item.report.score).text}`}>
+                            {Math.round(item.report.score)}
+                            <span className="text-xs font-normal text-slate-500">/100</span>
+                          </span>
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${dangerTier(item.report.score).chip} ${dangerTier(item.report.score).text}`}>
+                            {dangerTier(item.report.score).label}
+                          </span>
+                        </div>
+                        {toolChips(item).length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap justify-start sm:justify-end gap-1.5">
+                            {toolChips(item).map((c) => {
+                              const tier = c.value != null ? dangerTier(c.value) : null
+                              return (
+                                <span
+                                  key={c.key}
+                                  title={c.value != null ? `${c.title}: ${Math.round(c.value)}/100` : `${c.title}: ไม่มีข้อมูล`}
+                                  className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${tier ? tier.chip + ' ' + tier.text : 'text-slate-500 bg-slate-800/50 border-slate-600/40'}`}
+                                >
+                                  {c.label} {c.value != null ? Math.round(c.value) : '–'}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-500">{item.status === 'processing' ? 'กำลังวิเคราะห์...' : '–'}</span>
+                    )}
+                    <span className="text-cyan-400 shrink-0">→</span>
+                  </div>
                 </Link>
               ))}
             </div>

@@ -22,6 +22,10 @@ interface AnalysisHistoryReport {
     analysis_summary: string | null
     risk_indicators: string[] | null
     created_at: string | null
+    virustotal_score: number | null
+    mobsf_score: number | null
+    cape_score: number | null
+    rampart_ai_score: { malware_probability?: number; prediction?: string; confidence?: number } | number | null
 }
 
 interface AnalysisHistoryItem {

@@ -69,9 +69,10 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
 
     const getRiskColor = (score: number | null) => {
         if (score === null) return 'text-gray-400'
-        if (score <= 30) return 'text-red-400'
-        if (score <= 60) return 'text-yellow-400'
-        return 'text-green-400'
+        if (score >= 80) return 'text-red-400'
+        if (score >= 60) return 'text-orange-400'
+        if (score >= 30) return 'text-amber-400'
+        return 'text-emerald-400'
     }
 
     const getStatusBadge = (s: string | null) => {
@@ -95,8 +96,9 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
 
     const scoreInfo = (score?: number) => {
         if (score == null) return { text: 'text-blue-300', label: '' }
-        if (score < 30) return { text: 'text-rose-400', label: 'อันตราย' }
-        if (score < 60) return { text: 'text-amber-400', label: 'ปานกลาง' }
+        if (score >= 80) return { text: 'text-red-400', label: 'อันตรายร้ายแรง' }
+        if (score >= 60) return { text: 'text-orange-400', label: 'อันตราย' }
+        if (score >= 30) return { text: 'text-amber-400', label: 'ปานกลาง' }
         return { text: 'text-emerald-400', label: 'ปลอดภัย' }
     }
 
