@@ -27,8 +27,9 @@ export interface DashboardSummary {
   totalFiles: FileStats
   userFiles: FileStats
   totalUsers: number
+  highRiskFiles: number
   topMalwareTypes: {
-    daily: MalwareTypeEntry[]
+    weekly: MalwareTypeEntry[]
     monthly: MalwareTypeEntry[]
   }
   riskScores: RiskScoreEntry[]
@@ -37,7 +38,7 @@ export interface DashboardSummary {
 export interface RecentActivity {
   id: string
   fileName: string
-  status: "success" | "pending" | "failed"
+  status: "success" | "pending" | "processing" | "failed"
   timestamp: string
   fileType: string
 }
@@ -53,14 +54,15 @@ export function useDashboardSummary() {
         totalFiles: data?.totalFiles ?? EMPTY_STATS,
         userFiles: data?.userFiles ?? EMPTY_STATS,
         totalUsers: typeof data?.totalUsers === "number" ? data.totalUsers : 0,
+        highRiskFiles: typeof data?.highRiskFiles === "number" ? data.highRiskFiles : 0,
         topMalwareTypes: {
-          daily: data?.topMalwareTypes?.daily ?? [],
+          weekly: data?.topMalwareTypes?.weekly ?? [],
           monthly: data?.topMalwareTypes?.monthly ?? [],
         },
         riskScores: data?.riskScores ?? [],
       }
     },
-    staleTime: 5_000,
+    staleTime: 60_000,
   })
 }
 
@@ -71,7 +73,7 @@ export function useDashboardRecentActivities() {
       const { data } = await axios.post<RecentActivity[]>("/api/dashboard/recent-activities")
       return Array.isArray(data) ? data : []
     },
-    staleTime: 5_000,
+    staleTime: 30_000,
   })
 }
 
@@ -83,6 +85,6 @@ export function useDashboardPublicReports(page = 1, limit = 8) {
       const { data } = await axios.post("/api/dashboard/reports", { page, limit })
       return data?.data ?? []
     },
-    staleTime: 5_000,
+    staleTime: 60_000,
   })
 }

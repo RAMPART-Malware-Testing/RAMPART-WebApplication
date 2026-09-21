@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Scan,
   FileText,
+  Globe,
   User,
   Settings,
   ShieldCheck,
@@ -25,6 +26,7 @@ const baseMenuItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Scan Files", href: "/scan", icon: Scan },
   { name: "My Reports", href: "/reports", icon: FileText },
+  { name: "Public Reports", href: "/public-reports", icon: Globe },
   { name: "My Profile", href: "/profile?m=report", icon: User },
 ]
 

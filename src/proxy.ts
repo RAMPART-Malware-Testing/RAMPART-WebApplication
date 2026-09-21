@@ -4,6 +4,10 @@ import { jwtService } from "@/services/jwt.service";
 
 const GUEST_ONLY_ROUTES = ["/login", "/register", "/reset-passwd", "/verify-otp"];
 
+// /reports is the signed-in user's own reports, so it stays protected.
+// /public-reports is the open listing of analyses their owners published, and is
+// deliberately absent from this list so every role - and visitors without a
+// session - can read it.
 const PROTECTED_ROUTES = ["/home", "/dashboard", "/scan", "/details", "/profile", "/reports", "/admin"];
 
 const ROLE_PROTECTED_ROUTES: { prefix: string; roles: Array<"admin" | "master"> }[] = [

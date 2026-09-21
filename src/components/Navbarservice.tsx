@@ -8,6 +8,7 @@ const MENU = [
   { href: "/docs", label: "เอกสาร" },
   { href: "/innovation", label: "นวัตกรรม" },
   { href: "/community", label: "ชุมชน" },
+  { href: "/public-reports", label: "รายงานสาธารณะ" },
 ];
 
 export default function Navbarservice() {

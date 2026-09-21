@@ -8,6 +8,7 @@ export const queryKeys = {
   dashboardSummary: ["dashboard", "summary"] as const,
   dashboardRecentActivities: ["dashboard", "recent-activities"] as const,
   dashboardReports: (page: number, limit: number) => ["dashboard", "reports", { page, limit }] as const,
+  publicReports: <T extends object>(params: T) => ["public", "reports", params] as const,
   adminUserDetail: (uid: string) => ["admin", "user-detail", uid] as const,
   adminUserHistory: (uid: string, page: number) => ["admin", "user-history", uid, page] as const,
   adminUserLogins: (uid: string, page: number) => ["admin", "user-logins", uid, page] as const,

@@ -28,6 +28,6 @@ export function useAnalysisHistory(params: AnalysisHistoryQueryParams = {}) {
       if (!data?.success || !Array.isArray(data.data)) return { data: [], pagination: null }
       return { data: data.data, pagination: data.pagination ?? null }
     },
-    staleTime: 5_000,
+    staleTime: 30_000,
   })
 }

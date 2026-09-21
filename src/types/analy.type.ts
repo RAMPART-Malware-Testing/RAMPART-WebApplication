@@ -41,6 +41,10 @@ interface AnalysisHistoryItem {
     privacy: boolean
     created_at: string | null
     report: AnalysisHistoryReport | null
+    uploaded_by?: {
+        avatar_url?: string | null
+        username?: string
+    } | null
 }
 
 interface AnalysisHistoryPagination {
