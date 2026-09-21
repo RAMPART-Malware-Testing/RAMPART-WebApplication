@@ -37,6 +37,9 @@ export interface DashboardSummary {
 
 export interface RecentActivity {
   id: string
+  // The scan identifier /scan/analysis?taskId= resolves against. Distinct from
+  // id, which is the analysis row's primary key.
+  taskId: string | null
   fileName: string
   status: "success" | "pending" | "processing" | "failed"
   timestamp: string

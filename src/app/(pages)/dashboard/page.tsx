@@ -415,7 +415,7 @@ export default function DashboardPage() {
                 return (
                   <Link
                     key={activity.id}
-                    href={`/scan/analysis?taskId=${activity.id}`}
+                    href={activity.taskId ? `/scan/analysis?taskId=${activity.taskId}` : '#'}
                     className="flex items-center justify-between gap-4 px-6 py-3 hover:bg-white/5 transition-colors group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
