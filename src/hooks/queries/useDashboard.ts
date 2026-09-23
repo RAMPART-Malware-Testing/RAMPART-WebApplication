@@ -23,9 +23,16 @@ export interface RiskScoreEntry {
   aiScore?: number | null
 }
 
+export interface ToolStatus {
+  name: string
+  label: string
+  online: boolean
+}
+
 export interface DashboardSummary {
   totalFiles: FileStats
   userFiles: FileStats
+  publicFiles: FileStats
   totalUsers: number
   highRiskFiles: number
   topMalwareTypes: {
@@ -33,6 +40,11 @@ export interface DashboardSummary {
     monthly: MalwareTypeEntry[]
   }
   riskScores: RiskScoreEntry[]
+  tools: ToolStatus[]
+  maliciousRisk: {
+    avgScore: number | null
+    count: number
+  }
 }
 
 export interface RecentActivity {
@@ -56,6 +68,7 @@ export function useDashboardSummary() {
       return {
         totalFiles: data?.totalFiles ?? EMPTY_STATS,
         userFiles: data?.userFiles ?? EMPTY_STATS,
+        publicFiles: data?.publicFiles ?? EMPTY_STATS,
         totalUsers: typeof data?.totalUsers === "number" ? data.totalUsers : 0,
         highRiskFiles: typeof data?.highRiskFiles === "number" ? data.highRiskFiles : 0,
         topMalwareTypes: {
@@ -63,9 +76,17 @@ export function useDashboardSummary() {
           monthly: data?.topMalwareTypes?.monthly ?? [],
         },
         riskScores: data?.riskScores ?? [],
+        tools: Array.isArray(data?.tools) ? data.tools : [],
+        maliciousRisk: {
+          avgScore: typeof data?.maliciousRisk?.avgScore === "number" ? data.maliciousRisk.avgScore : null,
+          count: typeof data?.maliciousRisk?.count === "number" ? data.maliciousRisk.count : 0,
+        },
       }
     },
-    staleTime: 60_000,
+    // Keep the dashboard near-realtime after admin deletes: 3s staleness plus a
+    // 3s repoll (react-query pauses refetchInterval while the tab is hidden).
+    staleTime: 3_000,
+    refetchInterval: 3_000,
   })
 }
 
@@ -76,7 +97,8 @@ export function useDashboardRecentActivities() {
       const { data } = await axios.post<RecentActivity[]>("/api/dashboard/recent-activities")
       return Array.isArray(data) ? data : []
     },
-    staleTime: 30_000,
+    staleTime: 3_000,
+    refetchInterval: 3_000,
   })
 }
 
@@ -88,6 +110,7 @@ export function useDashboardPublicReports(page = 1, limit = 8) {
       const { data } = await axios.post("/api/dashboard/reports", { page, limit })
       return data?.data ?? []
     },
-    staleTime: 60_000,
+    staleTime: 3_000,
+    refetchInterval: 3_000,
   })
 }

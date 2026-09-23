@@ -1,5 +1,7 @@
+import axios from 'axios'
 import { authService } from '@/services/auth.service';
 import { jwtService } from '@/services/jwt.service';
+import { clientIp } from '@/lib/client-ip';
 import { NextRequest, NextResponse } from 'next/server'
 
 async function fetchProfile(accessToken: string) {
@@ -16,8 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password, recaptchaToken } = await request.json()
     const userAgent = request.headers.get("user-agent");
-    const forwardedFor = request.headers.get("x-forwarded-for");
-    const ip = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
+    const ip = clientIp(request);
 
     const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
@@ -26,8 +27,18 @@ export async function POST(request: NextRequest) {
     if (token) {
       const payload = jwtService.verify(token.value)
       if (payload) device = payload.deviceToken || ""
-    } else if (!recaptchaToken) {
-      return NextResponse.json({ success: false, require_captcha: true, message: 'กรุณายืนยัน reCAPTCHA' }, { status: 200 })
+    } else {
+      if (!recaptchaToken) {
+        return NextResponse.json({ success: false, require_captcha: true, message: 'กรุณายืนยัน reCAPTCHA' }, { status: 200 })
+      }
+      const { data: recaptchaData } = await axios.post(
+        'https://www.google.com/recaptcha/api/siteverify',
+        `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+      )
+      if (!recaptchaData.success) {
+        return NextResponse.json({ success: false, message: 'reCAPTCHA ไม่ถูกต้อง กรุณาลองใหม่' }, { status: 400 })
+      }
     }
 
     const res = await authService.login({ email, password, userAgent, ip, deviceToken: device })

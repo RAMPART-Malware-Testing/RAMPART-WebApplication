@@ -6,6 +6,7 @@ import Swal from 'sweetalert2'
 import { useToast } from '@/components/ui/ToastProvider'
 import { ROLE_LABELS } from '@/lib/roles'
 import { useProfile } from '@/hooks/queries/useProfile'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import {
   useAdminUsersList,
   useAdminBanUser,
@@ -29,6 +30,7 @@ export default function AdminUsersPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isExporting, setIsExporting] = useState(false)
   const notify = useToast()
+  const debouncedSearch = useDebouncedValue(search, 300)
 
   const { data: profile } = useProfile()
   const isMaster = profile?.role === 'master'
@@ -37,7 +39,7 @@ export default function AdminUsersPage() {
     page,
     limit: 20,
     role: 'user',
-    q: search || undefined,
+    q: debouncedSearch || undefined,
     banned: bannedFilter !== 'all' ? bannedFilter === 'banned' : undefined,
   })
   const items = listResult?.data ?? []

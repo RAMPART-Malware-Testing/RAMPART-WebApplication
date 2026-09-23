@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authService } from '@/services/auth.service';
 import { jwtService } from '@/services/jwt.service';
+import { clientIp } from '@/lib/client-ip';
 
 const OTP_REDIRECT: Record<string, string> = {
   login_confirm: "/dashboard",
@@ -31,13 +32,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'ชนิดการยืนยันไม่ถูกต้อง' });
     }
 
-    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const ip = clientIp(request);
     const userAgent = request.headers.get("User-Agent");
 
     let result;
     if (content === 'login_confirm') result = await authService.loginConfirm(token, otp, userAgent, ip);
-    else if (content === 'register_confirm') result = await authService.registerConfirm(token, otp);
-    else result = await authService.resetPasswordConfirm(token, otp, newPasswd);
+    else if (content === 'register_confirm') result = await authService.registerConfirm(token, otp, userAgent, ip);
+    else result = await authService.resetPasswordConfirm(token, otp, newPasswd, userAgent, ip);
 
     if (!result.success) {
       return NextResponse.json({

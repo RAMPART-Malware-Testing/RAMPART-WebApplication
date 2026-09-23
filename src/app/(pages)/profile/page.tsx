@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
+import axios from 'axios'
 import { useSearchParams } from 'next/navigation'
 import NavbarComponent from '@/components/NavbarComponent'
 import GeometricLoader from "@/components/GeometricLoader";
@@ -29,7 +30,8 @@ interface LoginHistory {
   timestamp: string
   ipAddress: string
   location: string
-  device: string
+  channel: string
+  os: string
   status: 'success' | 'failed'
 }
 
@@ -78,8 +80,9 @@ function ProfileContent() {
     id: it.id,
     timestamp: it.created_at || '',
     ipAddress: it.ip || '—',
-    location: it.provider ? it.provider.replace(/^\w/, (c: string) => c.toUpperCase()) : '—',
-    device: it.user_agent || it.provider || '—',
+    location: it.location || '—',
+    channel: it.channel && it.channel !== 'Unknown' ? it.channel : '—',
+    os: it.os || '—',
     status: it.status === 'success' ? 'success' as const : 'failed' as const,
   }))
 
@@ -118,15 +121,31 @@ function ProfileContent() {
     setActiveTab('profile')
   }, [modeParam])
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       alert('รหัสผ่านใหม่ไม่ตรงกัน')
       return
     }
-    console.log('Changing password:', passwordForm)
-    setChangePasswordDialog(false)
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    if (passwordForm.newPassword.length < 8) {
+      alert('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร')
+      return
+    }
+    try {
+      const res = await axios.post('/api/auth/change-password', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      })
+      if (!res.data?.success) {
+        alert(res.data?.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+        return
+      }
+      setChangePasswordDialog(false)
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      alert('เปลี่ยนรหัสผ่านสำเร็จ')
+    } catch {
+      alert('เปลี่ยนรหัสผ่านไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+    }
   }
 
   const handleEdit = (field: string, currentValue: string) => {
@@ -464,7 +483,7 @@ function ProfileContent() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <p className="text-white font-medium">{log.device}</p>
+                          <p className="text-white font-medium">{log.channel}</p>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(log.status)}`}>
                             {getStatusText(log.status)}
                           </span>
@@ -472,6 +491,7 @@ function ProfileContent() {
                         <div className="flex items-center gap-3 text-sm text-slate-400 flex-wrap">
                           <span><i className="fas fa-map-marker-alt mr-1"></i>{log.location}</span>
                           <span><i className="fas fa-network-wired mr-1"></i>{log.ipAddress}</span>
+                          <span><i className="fas fa-desktop mr-1"></i>{log.os}</span>
                           <span><i className="fas fa-calendar mr-1"></i>{formatDate(log.timestamp)}</span>
                         </div>
                       </div>

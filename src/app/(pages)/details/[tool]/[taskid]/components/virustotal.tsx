@@ -18,13 +18,12 @@ export default function VirustotalPage({ taskid, tool }: { taskid: string; tool:
     const [activeTab, setActiveTab] = useState<"detection" | "details">("detection");
     const [searchEngine, setSearchEngine] = useState("");
     const [downloadingTool, setDownloadingTool] = useState<string | null>(null)
-    const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
     const handleDownload = async (tool: string, md5: string) => {
         if (downloadingTool) return
         try {
             setDownloadingTool(tool)
-            const url = `${SERVER_URL}/api/analy/v1/download/report/${tool}-${md5}`
+            const url = `/api/analy/report-download?file=${tool}-${md5}.json`
             const { data } = await axios.get(url, { timeout: 30000 })
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
             const link = document.createElement('a')

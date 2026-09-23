@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import axios from 'axios'
 import { resolveAvatarUrl, userInitials } from '@/lib/avatar'
 import { roleLabel } from '@/lib/roles'
+import { useProfile } from '@/hooks/queries/useProfile'
 import Image from 'next/image'
 
 const SECTION_TITLES: { prefix: string; title: string; exact?: boolean }[] = [
@@ -24,17 +25,8 @@ function currentTitle(pathname: string): string {
 export default function AdminTopbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const [user, setUser] = useState<RampartUser | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-
-  useEffect(() => {
-    axios
-      .get('/api/profile')
-      .then(({ data }) => {
-        if (data?.success) setUser(data.data as RampartUser)
-      })
-      .catch(() => {})
-  }, [])
+  const { data: user } = useProfile()
 
   const handleLogout = async () => {
     try {

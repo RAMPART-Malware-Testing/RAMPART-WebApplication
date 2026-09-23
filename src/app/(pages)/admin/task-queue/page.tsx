@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/ToastProvider'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import {
   useAdminTaskQueueList,
   useAdminTaskQueueDepth,
@@ -31,12 +32,13 @@ export default function TaskQueuePage() {
   const [page, setPage] = useState(1)
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null)
   const notify = useToast()
+  const debouncedSearch = useDebouncedValue(search, 300)
 
   const { data: listResult, isLoading } = useAdminTaskQueueList({
     page,
     limit: 20,
     status: statusFilter || undefined,
-    q: search || undefined,
+    q: debouncedSearch || undefined,
   })
   const items = listResult?.data ?? []
   const pagination = listResult?.pagination ?? null

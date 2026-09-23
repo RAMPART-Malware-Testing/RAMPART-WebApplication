@@ -259,9 +259,22 @@ export default function ReportsPage() {
                             {item.report.risk_level}
                           </span>
                         )}
+
+                        {item.malware_types?.length > 0 ? (
+                          item.malware_types.map(mt => (
+                            <span key={mt.type} className="px-2 py-0.5 rounded-full text-xs font-medium border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                              <i className={`${mt.icon} mr-1`} />
+                              {mt.label}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium border border-white/10 bg-white/5 text-blue-200/50">—</span>
+                        )}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-blue-200/50">
+                        <span>ผู้ Upload: {item.uploaded_by?.username ?? '—'}</span>
+                        <span>•</span>
                         <span>{formatSize(item.file_size)}</span>
                         <span>•</span>
                         <span>{formatDate(item.created_at)}</span>

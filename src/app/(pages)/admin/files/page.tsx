@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Swal from 'sweetalert2'
 import { useToast } from '@/components/ui/ToastProvider'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import {
   useAdminFilesList,
   useAdminDeleteFile,
@@ -54,11 +55,12 @@ export default function AdminFilesPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isExporting, setIsExporting] = useState(false)
   const notify = useToast()
+  const debouncedSearch = useDebouncedValue(search, 300)
 
   const { data: listResult, isLoading } = useAdminFilesList({
     page,
     limit: 20,
-    q: search || undefined,
+    q: debouncedSearch || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     privacy: privacyFilter !== 'all' ? privacyFilter === 'private' : undefined,
   })

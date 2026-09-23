@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { authService } from '@/services/auth.service'
+import { clientIp } from '@/lib/client-ip'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -18,7 +19,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'reCAPTCHA ไม่ถูกต้อง กรุณาลองใหม่' }, { status: 400 })
     }
 
-    const res = await authService.register({ username, email, password })
+    const res = await authService.register({
+      username,
+      email,
+      password,
+      userAgent: request.headers.get('user-agent'),
+      ip: clientIp(request),
+    })
     if (!res.success) {
       return NextResponse.json({ success: false, status: res.status, message: res.message || 'ไม่สามารถลงทะเบียนได้' })
     }

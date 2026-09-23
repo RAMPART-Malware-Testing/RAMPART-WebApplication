@@ -28,6 +28,12 @@ interface AnalysisHistoryReport {
     rampart_ai_score: { malware_probability?: number; prediction?: string; confidence?: number } | number | null
 }
 
+interface AnalysisHistoryMalwareType {
+    type: string
+    label: string
+    icon: string
+}
+
 interface AnalysisHistoryItem {
     aid: number
     task_id: string | null
@@ -41,6 +47,7 @@ interface AnalysisHistoryItem {
     privacy: boolean
     created_at: string | null
     report: AnalysisHistoryReport | null
+    malware_types: AnalysisHistoryMalwareType[]
     uploaded_by?: {
         avatar_url?: string | null
         username?: string

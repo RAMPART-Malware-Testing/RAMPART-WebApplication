@@ -30,9 +30,13 @@ interface RegisterParams {
     username: string
     email: string
     password: string
+    userAgent?: string | null
+    ip?: string | null
 }
 
 interface ResetPasswordParams {
     email: string
+    userAgent?: string | null
+    ip?: string | null
 }
 

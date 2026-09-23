@@ -20,7 +20,7 @@ export function useAdminTaskQueueList(params: AdminTaskQueueListParams) {
       if (!data.success) return { data: [] as TaskQueueItem[], pagination: null as AdminPagination | null }
       return { data: data.data, pagination: data.pagination }
     },
-    staleTime: 5_000,
+    staleTime: 30_000,
   })
 }
 

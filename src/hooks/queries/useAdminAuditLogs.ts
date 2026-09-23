@@ -18,7 +18,7 @@ export function useAdminAuditLogs(params: AdminAuditLogsParams) {
       if (!data.success) return { data: [] as AuditLogItem[], pagination: null as AdminPagination | null }
       return { data: data.data, pagination: data.pagination }
     },
-    staleTime: 5_000,
+    staleTime: 60_000,
   })
 }
 

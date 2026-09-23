@@ -3,8 +3,6 @@
 import { useState } from "react"
 import axios from "axios"
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
-
 const TOOLS = [
   { key: "virustotal", label: "VirusTotal" },
   { key: "mobsf", label: "MobSF" },
@@ -25,7 +23,7 @@ export default function ReportDownload({ taskid, md5, variant = "light", tools }
     if (busy || !md5) return
     setBusy(tool)
     try {
-      const url = `${SERVER_URL}/api/analy/v1/download/report/${tool}-${md5}.json`
+      const url = `/api/analy/report-download?file=${tool}-${md5}.json`
       const a = document.createElement("a")
       a.href = url
       a.download = `${tool}-${md5}.json`

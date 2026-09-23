@@ -9,6 +9,9 @@ export interface LoginHistoryItem {
   user_agent: string | null
   status: string | null
   created_at: string | null
+  channel: string | null
+  os: string | null
+  location: string | null
 }
 
 export interface DownloadHistoryItem {
@@ -19,24 +22,26 @@ export interface DownloadHistoryItem {
   created_at: string | null
 }
 
-export function useLoginHistory() {
+export function useLoginHistory(enabled = true) {
   return useQuery({
     queryKey: queryKeys.loginHistory,
     queryFn: async (): Promise<LoginHistoryItem[]> => {
       const { data } = await axios.post("/api/profile/login-history")
       return data?.success && Array.isArray(data.data) ? data.data : []
     },
-    staleTime: 5_000,
+    staleTime: 60_000,
+    enabled,
   })
 }
 
-export function useDownloadHistory() {
+export function useDownloadHistory(enabled = true) {
   return useQuery({
     queryKey: queryKeys.downloadHistory,
     queryFn: async (): Promise<DownloadHistoryItem[]> => {
       const { data } = await axios.post("/api/profile/download-history")
       return data?.success && Array.isArray(data.data) ? data.data : []
     },
-    staleTime: 5_000,
+    staleTime: 60_000,
+    enabled,
   })
 }

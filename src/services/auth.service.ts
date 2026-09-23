@@ -51,6 +51,8 @@ class AuthService {
                 username: req.username,
                 email: req.email,
                 password: req.password,
+            }, {
+                headers: this.buildHeaders(req.userAgent, req.ip),
             });
             return res.data;
         } catch {
@@ -58,9 +60,11 @@ class AuthService {
         }
     }
 
-    async registerConfirm(token: string, otp: string) {
+    async registerConfirm(token: string, otp: string, userAgent?: string | null, ip?: string | null) {
         try {
-            const res = await this.http.post(`${this.uri}/api/auth/register/confirm`, { otp, token });
+            const res = await this.http.post(`${this.uri}/api/auth/register/confirm`, { otp, token }, {
+                headers: this.buildHeaders(userAgent, ip),
+            });
             return res.data;
         } catch {
             return ERROR_RESPONSE;
@@ -71,6 +75,8 @@ class AuthService {
         try {
             const res = await this.http.post(`${this.uri}/api/auth/reset-passwd`, {
                 email: req.email,
+            }, {
+                headers: this.buildHeaders(req.userAgent, req.ip),
             });
             return res.data;
         } catch {
@@ -78,9 +84,26 @@ class AuthService {
         }
     }
 
-    async resetPasswordConfirm(token: string, otp: string, newPasswd: string) {
+    async resetPasswordConfirm(token: string, otp: string, newPasswd: string, userAgent?: string | null, ip?: string | null) {
         try {
-            const res = await this.http.post(`${this.uri}/api/auth/reset-passwd/confirm`, { otp, token, newPasswd });
+            const res = await this.http.post(`${this.uri}/api/auth/reset-passwd/confirm`, { otp, token, newPasswd }, {
+                headers: this.buildHeaders(userAgent, ip),
+            });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async changePassword(token: string, newPasswd: string, oldPasswd: string, userAgent?: string | null, ip?: string | null) {
+        try {
+            const res = await this.http.post(`${this.uri}/api/auth/reset-passwd`, {
+                token,
+                newPasswd,
+                oldPasswd,
+            }, {
+                headers: this.buildHeaders(userAgent, ip),
+            });
             return res.data;
         } catch {
             return ERROR_RESPONSE;

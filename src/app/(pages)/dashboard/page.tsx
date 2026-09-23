@@ -136,6 +136,10 @@ export default function DashboardPage() {
     ? (dashboardStats.totalFiles.success / dashboardStats.totalFiles.total) * 100
     : 0
 
+  const maliciousAvg = dashboardStats.maliciousRisk.avgScore != null
+    ? clamp(dashboardStats.maliciousRisk.avgScore)
+    : null
+
   return (
     <div className="min-h-screen bg-[#050510] p-6">
       <NavbarComponent />
@@ -177,6 +181,55 @@ export default function DashboardPage() {
             gradient="from-orange-500 to-red-500"
             subtitle="สมาชิกที่ลงทะเบียน"
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="ไฟล์ของฉัน"
+            value={dashboardStats.userFiles.total}
+            icon="fas fa-folder-open"
+            gradient="from-violet-500 to-purple-500"
+            subtitle={`สำเร็จ ${dashboardStats.userFiles.success} • รอวิเคราะห์ ${dashboardStats.userFiles.pending} • ไม่สำเร็จ ${dashboardStats.userFiles.failed}`}
+          />
+          <StatCard
+            title="ไฟล์สาธารณะ"
+            value={dashboardStats.publicFiles.total}
+            icon="fas fa-globe"
+            gradient="from-cyan-500 to-sky-500"
+            subtitle={`สำเร็จ ${dashboardStats.publicFiles.success} • รอวิเคราะห์ ${dashboardStats.publicFiles.pending} • ไม่สำเร็จ ${dashboardStats.publicFiles.failed}`}
+          />
+          <StatCard
+            title="คะแนนเสี่ยงเฉลี่ย (มัลแวร์)"
+            value={maliciousAvg != null ? `${Math.round(maliciousAvg)}/100` : '–'}
+            icon="fas fa-biohazard"
+            gradient="from-rose-500 to-pink-500"
+            subtitle={`ค่าเฉลี่ยของไฟล์ที่เป็นมัลแวร์ ${dashboardStats.maliciousRisk.count} ไฟล์`}
+          />
+        </div>
+
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-white/10">
+            <h3 className="text-white font-semibold flex items-center gap-2">
+              <i className="fas fa-screwdriver-wrench text-cyan-400" />
+              สถานะเครื่องมือวิเคราะห์
+            </h3>
+            <p className="text-slate-400 text-sm mt-1">แสดงว่าเครื่องมือแต่ละตัว Online/Offline</p>
+          </div>
+          {dashboardStats.tools.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/5">
+              {dashboardStats.tools.map((tool) => (
+                <div key={tool.name} className="flex items-center gap-3 px-6 py-4">
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${tool.online ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'}`} />
+                  <span className="text-white text-sm font-medium flex-1">{tool.label}</span>
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${tool.online ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                    {tool.online ? 'ออนไลน์' : 'ออฟไลน์'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-400">ไม่มีข้อมูล</div>
+          )}
         </div>
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
@@ -275,7 +328,7 @@ export default function DashboardPage() {
                   <i className="fas fa-bug text-rose-400" />
                   ประเภทมัลแวร์ยอดนิยม
                 </h3>
-                <p className="text-slate-400 text-sm mt-1">5 อันดับมัลแวร์ที่พบมากที่สุด</p>
+                <p className="text-slate-400 text-sm mt-1">10 อันดับมัลแวร์ที่พบมากที่สุด</p>
               </div>
               <div className="flex gap-2">
                 {(['weekly', 'monthly'] as TimeRange[]).map((range) => (

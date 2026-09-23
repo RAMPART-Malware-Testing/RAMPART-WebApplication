@@ -30,6 +30,20 @@ interface UploadResponse {
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
+// Must mirror bgProcessing/task_handlers.py SUPPORTED_FILE_EXTS (server-side upload
+// validation in controller/Analysis/ScanFile_controller.py rejects everything else
+// with HTTP 415) — keep the two lists in sync.
+const SUPPORTED_FILE_EXTS = [
+  '.apk', '.ipa', '.xapk', '.jex', '.dex', '.apks', '.aab',
+  '.exe', '.scr', '.com', '.dll', '.cpl', '.msi', '.msp', '.cab', '.zip', '.rar', '.7z',
+  '.tar', '.gz', '.gzip', '.tgz', '.bz2', '.iso', '.doc', '.docm', '.docx', '.dotm', '.dotx',
+  '.rtf', '.mht', '.sway', '.wsf', '.vsdx', '.xls', '.xlsb', '.xlsm', '.xlsx', '.xltm', '.xltx',
+  '.ppt', '.ppam', '.ppa', '.pps', '.ppsm', '.ppsx', '.pptm', '.pptx', '.pot', '.potm', '.potx',
+  '.pub', '.pdf', '.js', '.jsx', '.hta', '.html', '.htm', '.url', '.vbs', '.py', '.ps1', '.sh',
+  '.jar', '.java', '.msg', '.eml', '.tnef', '.lnk', '.elf', '.swf',
+]
+const SUPPORTED_FILE_TYPES_TEXT = `รองรับไฟล์ประเภท: ${SUPPORTED_FILE_EXTS.join(' ')} สูงสุด 1GB`
+
 export default function ScanFilesPage() {
   const [file, setFile] = useState<UploadedFile | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -186,7 +200,7 @@ export default function ScanFilesPage() {
                 <p className="text-white font-medium">
                   {isDragging ? 'วางไฟล์ที่นี่' : 'คลิกหรือลากไฟล์มาวางที่นี่'}
                 </p>
-                <p className="text-slate-400 text-sm">รองรับไฟล์ทุกประเภท สูงสุด 1GB</p>
+                <p className="text-slate-400 text-sm">{SUPPORTED_FILE_TYPES_TEXT}</p>
 
                 <button
                   type="button"

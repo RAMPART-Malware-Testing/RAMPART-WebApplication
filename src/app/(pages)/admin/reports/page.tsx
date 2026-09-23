@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Swal from 'sweetalert2'
 import { useToast } from '@/components/ui/ToastProvider'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useAdminReportsList } from '@/hooks/queries/useAdminReports'
 import { useAdminDeleteFile, useAdminBulkDeleteFiles } from '@/hooks/queries/useAdminFiles'
 
@@ -35,11 +36,12 @@ export default function AdminReportsPage() {
   const [busyAid, setBusyAid] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const notify = useToast()
+  const debouncedSearch = useDebouncedValue(search, 300)
 
   const { data: listResult, isLoading } = useAdminReportsList({
     page,
     limit: 20,
-    q: search || undefined,
+    q: debouncedSearch || undefined,
     risk_level: riskFilter !== 'all' ? riskFilter : undefined,
   })
   const items = listResult?.data ?? []

@@ -22,7 +22,8 @@ export function useAdminFilesList(params: AdminFilesListParams) {
       if (!data.success) return { data: [] as AdminFileListItem[], pagination: null as AdminPagination | null }
       return { data: data.data, pagination: data.pagination }
     },
-    staleTime: 5_000,
+    staleTime: 60_000,
+    refetchOnMount: false,
   })
 }
 
