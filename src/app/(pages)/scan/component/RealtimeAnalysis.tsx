@@ -98,6 +98,10 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
   const vtStats = vt?.data?.attributes?.last_analysis_stats
   const vtDetection = Number(vtStats?.malicious || 0)
   const vtTotal = sumStats(vtStats)
+  const vtThreatScore = report?.virustotal_score != null ? Number(report.virustotal_score) : null
+  const vtReportUnavailable = !vtStats
+  const toolNotes: Record<string, string> =
+    report?.tool_notes && typeof report.tool_notes === "object" ? report.tool_notes : {}
   const mobsfRaw = raw.mobsf ?? {}
   const cape = raw.cape ?? {}
   const capeNet = cape.network && typeof cape.network === "object" ? cape.network : {}
@@ -115,7 +119,7 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
     fileId: report?.task_id,
     fileName: report?.file_name || "ไม่ทราบชื่อไฟล์",
     overallStatus: "completed",
-    finalResult: vtDetection > 0 ? "Malware" : "Benign",
+    finalResult: vtDetection > 0 || (vtThreatScore ?? 0) > 0 ? "Malware" : "Benign",
     score: report?.score != null ? Number(report.score) : null,
     riskLevel: report?.risk_level ?? null,
     riskIndicators: Array.isArray(report?.risk_indicators) ? report.risk_indicators : [],
@@ -129,9 +133,14 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
       status: raw.virustotal || tools.includes("virustotal") ? "completed" : "skipped",
       detectionCount: vtDetection,
       totalEngines: vtTotal,
+      threatScore: vtThreatScore,
+      reportUnavailable: vtReportUnavailable,
+      scorePending: false,
+      message: toolNotes.virustotal,
     },
     mobsf: {
       status: raw.mobsf || tools.includes("mobsf") ? "completed" : "skipped",
+      message: toolNotes.mobsf,
       permissions: mobsfRaw.permissions && typeof mobsfRaw.permissions === "object" ? Object.keys(mobsfRaw.permissions).length : undefined,
       activities: Array.isArray(mobsfRaw.activities) ? mobsfRaw.activities.length : undefined,
       services: Array.isArray(mobsfRaw.services) ? mobsfRaw.services.length : undefined,
@@ -140,6 +149,7 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
     },
     cape: {
       status: raw.cape || tools.includes("cape") ? "completed" : "skipped",
+      message: toolNotes.cape,
       dangerScore: report?.cape_score != null ? Number(report.cape_score) : undefined,
       network: (Array.isArray(capeNet.http) ? capeNet.http.length : 0) + (Array.isArray(capeNet.dns) ? capeNet.dns.length : 0),
       registry: Array.isArray(capeSummary.keys) ? capeSummary.keys.length : 0,
@@ -148,6 +158,7 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
     },
     ml: {
       status: rpred != null ? "completed" : "skipped",
+      message: toolNotes.rampart_ai,
       prediction: mlPrediction,
       confidence: rscore != null ? Math.round(rscore) : undefined,
       modelConfidence: rpred && typeof rpred === "object" && rpred.confidence != null ? Number(rpred.confidence) : undefined,
@@ -245,6 +256,8 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
     }
 
     const st = deriveToolStatuses(poll.progress)
+    const toolProgress = poll.progress?.tools ?? {}
+    const vtLiveScore = toolProgress.virustotal?.score
     if (typeof poll.report?.privacy === "boolean") setPrivacy(poll.report.privacy)
     if (poll.report?.uid) setReportUid(poll.report.uid)
     if (poll.report?.md5) setMd5(poll.report.md5)
@@ -253,11 +266,18 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
       ...prev,
       overallStatus: "analyzing",
       fileName: poll?.report?.file_name || poll?.progress?.message || prev.fileName,
-      virusTotal: { ...prev.virusTotal, status: st.virustotal },
-      mobsf: { ...prev.mobsf, status: st.mobsf },
-      cape: { ...prev.cape, status: st.cape },
-      ml: { ...prev.ml, status: st.ml },
-      gemini: { ...prev.gemini, status: st.gemini },
+      virusTotal: {
+        ...prev.virusTotal,
+        status: st.virustotal,
+        threatScore: vtLiveScore != null ? Number(vtLiveScore) : prev.virusTotal.threatScore,
+        reportUnavailable: true,
+        scorePending: true,
+        message: toolProgress.virustotal?.note ?? prev.virusTotal.message,
+      },
+      mobsf: { ...prev.mobsf, status: st.mobsf, message: toolProgress.mobsf?.note ?? prev.mobsf.message },
+      cape: { ...prev.cape, status: st.cape, message: toolProgress.cape?.note ?? prev.cape.message },
+      ml: { ...prev.ml, status: st.ml, message: toolProgress.rampart_ai?.note ?? prev.ml.message },
+      gemini: { ...prev.gemini, status: st.gemini, message: toolProgress.gemini?.note ?? prev.gemini.message },
     }))
     setStatus("running")
   }, [poll, pollError, taskId])

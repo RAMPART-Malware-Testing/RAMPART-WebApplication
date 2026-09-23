@@ -13,7 +13,10 @@ interface VirusTotalCardProps {
 }
 
 export function VirusTotalCard({ data, className }: VirusTotalCardProps) {
-  const isDetected = data.detectionCount > 0
+  const showsThreatScore = !!data.reportUnavailable
+  const pending = !!data.scorePending
+  const isDetected = data.detectionCount > 0 || (data.threatScore ?? 0) > 0
+  const valueColor = isDetected ? "text-red-400" : "text-emerald-400"
 
   return (
     <TaskCard
@@ -29,14 +32,16 @@ export function VirusTotalCard({ data, className }: VirusTotalCardProps) {
       {data.status === "completed" && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ScanSearch className={cn("h-4 w-4", isDetected ? "text-red-400" : "text-emerald-400")} />
-            <span className="text-sm text-slate-300">Detection</span>
+            <ScanSearch className={cn("h-4 w-4", valueColor)} />
+            <span className="text-sm text-slate-300">{showsThreatScore ? "Threat Score" : "Detection"}</span>
           </div>
-          <span className={cn(
-            "text-lg font-bold font-mono",
-            isDetected ? "text-red-400" : "text-emerald-400"
-          )}>
-            {data.detectionCount} <span className="text-sm font-normal text-slate-500">/ {data.totalEngines}</span>
+          <span className={cn("text-lg font-bold font-mono", valueColor)}>
+            {showsThreatScore
+              ? <>
+                  {pending ? "***" : data.threatScore != null ? Math.round(data.threatScore) : "-"}
+                  <span className="text-sm font-normal text-slate-500"> / 100</span>
+                </>
+              : <>{data.detectionCount} <span className="text-sm font-normal text-slate-500">/ {data.totalEngines}</span></>}
           </span>
         </div>
       )}

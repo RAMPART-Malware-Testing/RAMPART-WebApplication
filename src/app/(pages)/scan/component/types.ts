@@ -19,6 +19,9 @@ export interface VirusTotalResult {
   status: TaskStatus
   detectionCount: number
   totalEngines: number
+  threatScore?: number | null
+  reportUnavailable?: boolean
+  scorePending?: boolean
   startedAt?: string
   finishedAt?: string
   message?: string

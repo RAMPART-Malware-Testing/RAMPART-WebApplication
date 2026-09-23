@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { queryKeys } from "./queryKeys"
 
-export interface ToolProgress { status?: unknown; score?: number }
+export interface ToolProgress { status?: unknown; score?: number; note?: string }
 export interface TaskProgress { stage?: string; message?: string; tools?: Record<string, ToolProgress> }
 export interface TaskPoll {
   success: boolean

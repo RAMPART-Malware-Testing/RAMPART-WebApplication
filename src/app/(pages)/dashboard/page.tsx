@@ -230,7 +230,7 @@ export default function DashboardPage() {
                   <i className="fas fa-bug text-rose-400" />
                   ประเภทมัลแวร์ยอดนิยม
                 </h3>
-                <p className="text-slate-400 text-sm mt-1">5 อันดับมัลแวร์ที่พบมากที่สุด</p>
+                <p className="text-slate-400 text-sm mt-1">10 อันดับมัลแวร์ที่พบมากที่สุด</p>
               </div>
               <div className="flex gap-2">
                 {(['daily', 'monthly'] as TimeRange[]).map((range) => (
