@@ -3,22 +3,36 @@
 import { useEffect, useState } from "react";
 
 type ToastProps = {
+  id: number;
   type: "success" | "error" | "info" | "warning";
   message: string;
-  onClose: () => void;
+  duration?: number;
+  nonce?: number;
+  onClose: (id: number) => void;
 };
 
-export default function Toast({ type, message, onClose }: ToastProps) {
+export default function Toast({ id, type, message, duration = 30000, nonce = 0, onClose }: ToastProps) {
   const [isVisible, setIsVisible] = useState(true);
+  const [isShaking, setIsShaking] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onClose, 300);
-    }, 3000);
-
+    setIsVisible(true);
+    const timer = setTimeout(() => setIsVisible(false), duration);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [duration, nonce]);
+
+  useEffect(() => {
+    if (nonce === 0) return;
+    setIsShaking(true);
+    const timer = setTimeout(() => setIsShaking(false), 600);
+    return () => clearTimeout(timer);
+  }, [nonce]);
+
+  useEffect(() => {
+    if (isVisible) return;
+    const timer = setTimeout(() => onClose(id), 300);
+    return () => clearTimeout(timer);
+  }, [isVisible, id, onClose]);
 
   const getIcon = () => {
     switch (type) {
@@ -76,32 +90,28 @@ export default function Toast({ type, message, onClose }: ToastProps) {
   };
 
   return (
-    <div className="fixed top-6 right-6 z-51">
-      <div
-        className={`
-          flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg
-          transition-all duration-300 transform
-          ${getColors()}
-          ${isVisible ? "translate-x-0 opacity-100" : "translate-x-2 opacity-0"}
-        `}
-        role="alert"
-      >
-        <div className={`${getIconColors()}`}>
-          {getIcon()}
-        </div>
-        <p className="text-sm font-medium pr-2">{message}</p>
-        <button
-          onClick={() => {
-            setIsVisible(false);
-            setTimeout(onClose, 300);
-          }}
-          className="ml-auto text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+    <div
+      className={`
+        flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg
+        transition-all duration-300 transform
+        ${getColors()}
+        ${isVisible ? "translate-x-0 opacity-100" : "translate-x-2 opacity-0"}
+        ${isShaking ? "animate-toast-shake" : ""}
+      `}
+      role="alert"
+    >
+      <div className={`${getIconColors()}`}>
+        {getIcon()}
       </div>
+      <p className="text-sm font-medium pr-2">{message}</p>
+      <button
+        onClick={() => setIsVisible(false)}
+        className="ml-auto text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   );
 }

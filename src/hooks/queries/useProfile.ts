@@ -9,6 +9,7 @@ export interface ProfileData {
   avatar_url: string | null
   role: "user" | "admin" | "master"
   status: string
+  must_setup?: boolean
   created_at: string | null
 }
 
@@ -56,6 +57,34 @@ export function useUpdateAvatar() {
       queryClient.setQueryData<ProfileData | null>(queryKeys.profile, (prev) =>
         prev ? { ...prev, ...updated } : updated,
       )
+    },
+  })
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export function useChangePassword() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: ChangePasswordInput) => {
+      try {
+        const { data } = await axios.post("/api/profile/change-password", input)
+        if (!data?.success) throw new Error(data?.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ")
+        return true
+      } catch (err) {
+        if (axios.isAxiosError(err)) {
+          const message = (err.response?.data as { message?: string } | undefined)?.message
+          throw new Error(message || "เปลี่ยนรหัสผ่านไม่สำเร็จ")
+        }
+        throw err instanceof Error ? err : new Error("เปลี่ยนรหัสผ่านไม่สำเร็จ")
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.passwordHistory })
     },
   })
 }

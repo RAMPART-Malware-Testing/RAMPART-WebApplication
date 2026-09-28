@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { authService } from '@/services/auth.service';
 import { jwtService } from '@/services/jwt.service';
 import { NextRequest, NextResponse } from 'next/server'
@@ -19,6 +20,18 @@ export async function POST(request: NextRequest) {
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
 
+    if (!recaptchaToken) {
+      return NextResponse.json({ success: false, require_captcha: true, message: 'กรุณายืนยัน reCAPTCHA' }, { status: 200 })
+    }
+    const { data: recaptchaData } = await axios.post(
+      'https://www.google.com/recaptcha/api/siteverify',
+      `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+    )
+    if (!recaptchaData.success) {
+      return NextResponse.json({ success: false, require_captcha: true, message: 'reCAPTCHA ไม่ถูกต้อง กรุณาลองใหม่' }, { status: 400 })
+    }
+
     const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
     const token = cookieStore.get("deviceToken");
@@ -26,8 +39,6 @@ export async function POST(request: NextRequest) {
     if (token) {
       const payload = jwtService.verify(token.value)
       if (payload) device = payload.deviceToken || ""
-    } else if (!recaptchaToken) {
-      return NextResponse.json({ success: false, require_captcha: true, message: 'กรุณายืนยัน reCAPTCHA' }, { status: 200 })
     }
 
     const res = await authService.login({ email, password, userAgent, ip, deviceToken: device })

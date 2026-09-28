@@ -9,6 +9,7 @@ import Hero from '@/components/HeroComponent'
 import { useToast } from '@/components/ui/ToastProvider'
 import Navbarservice from '@/components/Navbarservice'
 import GeometricLoader from '@/components/GeometricLoader'
+import { validatePassword } from '@/lib/password'
 
 export default function RegisterPage() {
   const recaptchaRef = useRef<ReCAPTCHA>(null)
@@ -22,7 +23,6 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState('')
-  const [error, setError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [isshowCaptcha, setIsshowCaptcha] = useState(false)
   const [needCaptcha, setNeedCaptcha] = useState(false)
@@ -53,30 +53,6 @@ export default function RegisterPage() {
     return ''
   }
 
-  const validatePassword = (pass: string) => {
-    if (pass.length < 8) {
-      notify.warning('รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร.')
-      return 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร'
-    }
-    if (!/[A-Z]/.test(pass)) {
-      notify.warning('รหัสผ่านต้องมีตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว.')
-      return 'รหัสผ่านต้องมีตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว'
-    }
-    if (!/[a-z]/.test(pass)) {
-      notify.warning('รหัสผ่านต้องมีตัวอักษรพิมพ์เล็กอย่างน้อย 1 ตัว.')
-      return 'รหัสผ่านต้องมีตัวอักษรพิมพ์เล็กอย่างน้อย 1 ตัว'
-    }
-    if (!/[0-9]/.test(pass)) {
-      notify.warning('รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว.')
-      return 'รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว'
-    }
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pass)) {
-      notify.warning('รหัสผ่านต้องมีอักขระพิเศษอย่างน้อย 1 ตัว.')
-      return 'รหัสผ่านต้องมีอักขระพิเศษอย่างน้อย 1 ตัว'
-    }
-    return ''
-  }
-
   const resetCaptcha = () => {
     recaptchaRef.current?.reset()
     setIsVerified(false)
@@ -85,25 +61,22 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
     setPasswordError('')
 
     const formError = validateForm()
     if (formError) {
-      setError(formError)
+      notify.warning(formError)
       return
     }
 
     if (!needCaptcha) {
       setNeedCaptcha(true)
       setIsshowCaptcha(true)
-      setError('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
       notify.warning('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
       return
     }
 
     if (!isVerified || !recaptchaToken) {
-      setError('กรุณายืนยัน reCAPTCHA')
       notify.warning('กรุณายืนยัน reCAPTCHA')
       return
     }
@@ -132,25 +105,20 @@ export default function RegisterPage() {
         switch (data.status) {
           case 400:
             notify.error(data.message || 'มีบัญชีผู้ใช้นี้อยู่แล้ว')
-            setError(data.message || 'มีบัญชีผู้ใช้นี้อยู่แล้ว')
             break
           case 404:
             notify.error(data.message || 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
-            setError(data.message || 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
             break
           default:
             notify.error(data.message || 'การลงทะเบียนไม่สำเร็จ')
-            setError(data.message || 'การลงทะเบียนไม่สำเร็จ')
         }
       } else {
         notify.error(data.message || 'การลงทะเบียนไม่สำเร็จ')
-        setError(data.message || 'การลงทะเบียนไม่สำเร็จ')
       }
 
       resetCaptcha()
     } catch (err) {
       notify.error('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
       resetCaptcha()
     } finally {
       setIsLoading(false)
@@ -160,16 +128,12 @@ export default function RegisterPage() {
   const handleCaptchaChange = (token: string | null) => {
     setRecaptchaToken(token || '')
     setIsVerified(!!token)
-    if (token) {
-      setError('')
-    }
   }
 
   const handleCaptchaExpired = () => {
     setIsVerified(false)
     setRecaptchaToken('')
     notify.warning('reCAPTCHA หมดอายุ กรุณายืนยันใหม่อีกครั้ง.')
-    setError('reCAPTCHA หมดอายุ กรุณายืนยันใหม่อีกครั้ง')
   }
 
   return (
@@ -206,7 +170,18 @@ export default function RegisterPage() {
 
         <div className="relative z-10 w-full max-w-6xl mt-15">
           <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
-            <Hero />
+            <Hero>
+              {isshowCaptcha && (
+                <div className="flex justify-center lg:justify-start pt-2">
+                  <ReCAPTCHA
+                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LcGkdsrAAAAAFW6CFipeSplG7nLqICIKPm-gSln"}
+                    ref={recaptchaRef}
+                    onChange={handleCaptchaChange}
+                    onExpired={handleCaptchaExpired}
+                  />
+                </div>
+              )}
+            </Hero>
 
             <div className="w-full lg:w-auto lg:min-w-[450px] flex-1 max-w-md">
               <div className="backdrop-blur-xl bg-white/5 rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10 hover-glow transition-all duration-500">
@@ -218,15 +193,6 @@ export default function RegisterPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                  {error && (
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 backdrop-blur-sm animate-shake">
-                      <div className="flex items-center gap-3">
-                        <i className="fas fa-exclamation-circle text-red-400"></i>
-                        <p className="text-red-300 text-sm">{error}</p>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="space-y-3">
                     <label htmlFor="username" className="block text-sm font-semibold text-purple-100">
                       ชื่อผู้ใช้งาน
@@ -333,17 +299,6 @@ export default function RegisterPage() {
                       </button>
                     </div>
                   </div>
-
-                  {isshowCaptcha && (
-                    <div className="flex justify-center py-2">
-                      <ReCAPTCHA
-                        sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LcGkdsrAAAAAFW6CFipeSplG7nLqICIKPm-gSln"}
-                        ref={recaptchaRef}
-                        onChange={handleCaptchaChange}
-                        onExpired={handleCaptchaExpired}
-                      />
-                    </div>
-                  )}
 
                   <button
                     type="submit"

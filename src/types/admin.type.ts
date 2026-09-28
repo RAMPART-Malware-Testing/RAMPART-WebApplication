@@ -169,6 +169,19 @@ interface AdminLoginHistoryResponse {
     pagination: AdminPagination
 }
 
+interface AdminPasswordHistoryItem {
+    id: string
+    ip: string | null
+    user_agent: string | null
+    created_at: string | null
+}
+
+interface AdminPasswordHistoryResponse {
+    success: boolean
+    data: AdminPasswordHistoryItem[]
+    pagination: AdminPagination
+}
+
 interface AdminDownloadHistoryItem {
     id: string
     file_name: string | null

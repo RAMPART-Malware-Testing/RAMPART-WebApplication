@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
 import axios from "axios"
 import { useQueryClient } from "@tanstack/react-query"
 import { AnalysisResult } from "./AnalysisResult"
@@ -135,7 +134,6 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
       totalEngines: vtTotal,
       threatScore: vtThreatScore,
       reportUnavailable: vtReportUnavailable,
-      scorePending: false,
       message: toolNotes.virustotal,
     },
     mobsf: {
@@ -145,7 +143,9 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
       activities: Array.isArray(mobsfRaw.activities) ? mobsfRaw.activities.length : undefined,
       services: Array.isArray(mobsfRaw.services) ? mobsfRaw.services.length : undefined,
       receivers: Array.isArray(mobsfRaw.receivers) ? mobsfRaw.receivers.length : undefined,
-      riskScore: mobsfRaw.appsec?.security_score != null ? Math.round(100 - Number(mobsfRaw.appsec.security_score)) : undefined,
+      riskScore: mobsfRaw.appsec?.security_score != null
+        ? Math.round(100 - Number(mobsfRaw.appsec.security_score))
+        : report?.mobsf_score != null ? Math.round(Number(report.mobsf_score)) : undefined,
     },
     cape: {
       status: raw.cape || tools.includes("cape") ? "completed" : "skipped",
@@ -163,7 +163,9 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
       confidence: rscore != null ? Math.round(rscore) : undefined,
       modelConfidence: rpred && typeof rpred === "object" && rpred.confidence != null ? Number(rpred.confidence) : undefined,
       benignProbability: rpred && typeof rpred === "object" && rpred.benign_probability != null ? Number(rpred.benign_probability) : undefined,
-      malwareProbability: rpred && typeof rpred === "object" && rpred.malware_probability != null ? Number(rpred.malware_probability) : undefined,
+      malwareProbability: rpred && typeof rpred === "object" && rpred.malware_probability != null
+        ? Number(rpred.malware_probability)
+        : rscore != null ? rscore / 100 : undefined,
     },
     gemini: {
       status: report ? "completed" : "skipped",
@@ -258,6 +260,11 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
     const st = deriveToolStatuses(poll.progress)
     const toolProgress = poll.progress?.tools ?? {}
     const vtLiveScore = toolProgress.virustotal?.score
+    const vtLiveDetections = toolProgress.virustotal?.detections
+    const vtLiveEngines = toolProgress.virustotal?.engines
+    const mobsfLiveScore = toolProgress.mobsf?.score
+    const capeLiveScore = toolProgress.cape?.score
+    const mlLiveScore = toolProgress.rampart_ai?.score
     if (typeof poll.report?.privacy === "boolean") setPrivacy(poll.report.privacy)
     if (poll.report?.uid) setReportUid(poll.report.uid)
     if (poll.report?.md5) setMd5(poll.report.md5)
@@ -269,14 +276,31 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
       virusTotal: {
         ...prev.virusTotal,
         status: st.virustotal,
+        detectionCount: vtLiveDetections != null ? Number(vtLiveDetections) : prev.virusTotal.detectionCount,
+        totalEngines: vtLiveEngines != null ? Number(vtLiveEngines) : prev.virusTotal.totalEngines,
         threatScore: vtLiveScore != null ? Number(vtLiveScore) : prev.virusTotal.threatScore,
-        reportUnavailable: true,
-        scorePending: true,
+        reportUnavailable: vtLiveEngines == null && prev.virusTotal.totalEngines === 0,
         message: toolProgress.virustotal?.note ?? prev.virusTotal.message,
       },
-      mobsf: { ...prev.mobsf, status: st.mobsf, message: toolProgress.mobsf?.note ?? prev.mobsf.message },
-      cape: { ...prev.cape, status: st.cape, message: toolProgress.cape?.note ?? prev.cape.message },
-      ml: { ...prev.ml, status: st.ml, message: toolProgress.rampart_ai?.note ?? prev.ml.message },
+      mobsf: {
+        ...prev.mobsf,
+        status: st.mobsf,
+        message: toolProgress.mobsf?.note ?? prev.mobsf.message,
+        riskScore: mobsfLiveScore != null ? Math.round(Number(mobsfLiveScore)) : prev.mobsf.riskScore,
+      },
+      cape: {
+        ...prev.cape,
+        status: st.cape,
+        message: toolProgress.cape?.note ?? prev.cape.message,
+        dangerScore: capeLiveScore != null ? Math.round(Number(capeLiveScore)) : prev.cape.dangerScore,
+      },
+      ml: {
+        ...prev.ml,
+        status: st.ml,
+        message: toolProgress.rampart_ai?.note ?? prev.ml.message,
+        prediction: mlLiveScore != null ? (Number(mlLiveScore) >= 50 ? "Malware" : "Benign") : prev.ml.prediction,
+        malwareProbability: mlLiveScore != null ? Number(mlLiveScore) / 100 : prev.ml.malwareProbability,
+      },
       gemini: { ...prev.gemini, status: st.gemini, message: toolProgress.gemini?.note ?? prev.gemini.message },
     }))
     setStatus("running")
@@ -329,32 +353,9 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
         </div>
         )}
 
-        <AnalysisTimeline data={analysis} />
+        <AnalysisTimeline data={analysis} taskId={taskId} />
 
         {status === "completed" && <AnalysisResult data={analysis} tools={availableTools} />}
-
-        {status === "completed" && (
-          <div className="pt-2">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">ดูรายละเอียดแต่ละเครื่องมือ</p>
-            <div className="flex flex-wrap gap-3">
-              {[
-                analysis.virusTotal.status === "completed" && { tool: "virustotal", title: "VirusTotal", icon: "fas fa-shield-virus" },
-                analysis.mobsf.status === "completed" && { tool: "mobsf", title: "MobSF", icon: "fas fa-robot" },
-                analysis.cape.status === "completed" && { tool: "cape", title: "CAPE Sandbox", icon: "fas fa-flask" },
-              ].filter(Boolean).map((t: any) => (
-                <Link
-                  key={t.tool}
-                  href={`/details/${t.tool}/${taskId}`}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-sm text-white hover:bg-white/10 hover:border-cyan-500/30 hover:scale-[1.02] transition-all"
-                >
-                  <i className={`${t.icon} text-cyan-400`}></i>
-                  <span>{t.title}</span>
-                  <i className="fas fa-arrow-right text-xs text-slate-500"></i>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
 
         {status === "completed" && md5 && availableTools.length > 0 && (
           <ReportDownload taskid={taskId} md5={md5} variant="dark" tools={availableTools} />

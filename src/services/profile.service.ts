@@ -35,6 +35,76 @@ class ProfileServiceClass {
             return ERROR_RESPONSE;
         }
     }
+
+    async changeEmail(token: string, email: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/profile/change-email`, { token, email });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async resendEmailOtp(token: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/profile/resend-email-otp`, { token });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async confirmEmail(token: string, otpToken: string, otp: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/profile/confirm-email`, {
+                token,
+                otp_token: otpToken,
+                otp,
+            });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async changePassword(token: string, currentPasswd: string, newPasswd: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/profile/change-password`, {
+                token,
+                currentPasswd,
+                newPasswd,
+            });
+            return res.data;
+        } catch (err) {
+            const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+            if (Array.isArray(detail) && detail[0]?.msg) {
+                return { success: false, status: "PASSWORD_POLICY_INVALID", message: String(detail[0].msg).replace(/^Value error, /, "") };
+            }
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async passwordHistory(token: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/profile/password-history`, { token });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async notificationCounts(token: string, reportsSince: string | null, publicSince: string | null) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/profile/notifications`, {
+                token,
+                reports_since: reportsSince,
+                public_since: publicSince,
+            });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
 }
 
 export const ProfileService = new ProfileServiceClass();

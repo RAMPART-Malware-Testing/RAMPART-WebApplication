@@ -3,15 +3,27 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import axios from 'axios'
+import { useQueryClient } from '@tanstack/react-query'
 import NavbarComponent from '@/components/NavbarComponent'
 import GeometricLoader from "@/components/GeometricLoader";
-import { useProfile, useUpdateUsername, useUpdateAvatar } from '@/hooks/queries/useProfile'
-import { useLoginHistory, useDownloadHistory } from '@/hooks/queries/useProfileHistories'
+import { useProfile, useUpdateUsername, useUpdateAvatar, useChangePassword } from '@/hooks/queries/useProfile'
+import { useLoginHistory, useDownloadHistory, usePasswordHistory, HISTORY_PAGE_SIZE } from '@/hooks/queries/useProfileHistories'
 import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
+import { useToast } from '@/components/ui/ToastProvider'
+import { PASSWORD_RULES, validatePassword } from '@/lib/password'
+import { HistoryPager } from '@/components/ui/HistoryPager'
+import { roleLabel } from '@/lib/roles'
+import { queryKeys } from '@/hooks/queries/queryKeys'
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
 const USERNAME_RE = /^[a-zA-Z0-9_.\-\u0E00-\u0E7F]{3,50}$/
+const ROLE_BADGE_CLASS: Record<string, string> = {
+  user: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  admin: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  master: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+}
 const USERNAME_ERROR_MESSAGE =
   "ชื่อผู้ใช้ต้องมีความยาว 3-50 ตัวอักษร และใช้ได้เฉพาะตัวอักษรไทย ตัวอักษรอังกฤษ ตัวเลข '.', '_' และ '-' เท่านั้น"
 
@@ -55,13 +67,30 @@ function ProfileContent() {
   const modeParam = searchParams.get('m')
 
   const [activeTab, setActiveTab] = useState('profile')
+  const [loginPage, setLoginPage] = useState(1)
+  const [uploadPage, setUploadPage] = useState(1)
+  const [downloadPage, setDownloadPage] = useState(1)
+  const [passwordPage, setPasswordPage] = useState(1)
   const { data: profileData, isLoading: profileLoading } = useProfile()
-  const { data: rawLoginHistory = [], isLoading: loginLoading } = useLoginHistory()
-  const { data: uploadHistoryResult, isLoading: uploadLoading } = useAnalysisHistory({ page: 1, limit: 50 })
+  const { data: loginResult, isLoading: loginLoading, isFetching: loginFetching } = useLoginHistory(loginPage)
+  const rawLoginHistory = loginResult?.data ?? []
+  const loginPagination = loginResult?.pagination ?? null
+  const { data: uploadHistoryResult, isLoading: uploadLoading, isFetching: uploadFetching } = useAnalysisHistory({ page: uploadPage, limit: HISTORY_PAGE_SIZE })
   const rawUploadHistory = uploadHistoryResult?.data ?? []
-  const { data: rawDownloadHistory = [], isLoading: downloadLoading } = useDownloadHistory()
+  const uploadPagination = uploadHistoryResult?.pagination ?? null
+  const { data: downloadResult, isLoading: downloadLoading, isFetching: downloadFetching } = useDownloadHistory(downloadPage)
+  const rawDownloadHistory = downloadResult?.data ?? []
+  const downloadPagination = downloadResult?.pagination ?? null
+  const { data: passwordResult, isFetching: passwordFetching } = usePasswordHistory(passwordPage)
+  const passwordHistory = passwordResult?.data ?? []
+  const passwordPagination = passwordResult?.pagination ?? null
+  const { data: latestPasswordChange } = usePasswordHistory(1, 1)
+  const lastPasswordChangeAt = latestPasswordChange?.data?.[0]?.created_at ?? null
+  const queryClient = useQueryClient()
   const updateUsername = useUpdateUsername()
   const updateAvatar = useUpdateAvatar()
+  const changePassword = useChangePassword()
+  const notify = useToast()
 
   const user: UserProfile | null = profileData
     ? {
@@ -107,6 +136,15 @@ function ProfileContent() {
     newPassword: '',
     confirmPassword: ''
   })
+  const [passwordError, setPasswordError] = useState('')
+  const [changeEmailDialog, setChangeEmailDialog] = useState(false)
+  const [emailStep, setEmailStep] = useState<'email' | 'old-otp' | 'new-otp'>('email')
+  const [emailForm, setEmailForm] = useState({ newEmail: '', oldOtp: '', newOtp: '' })
+  const [emailOldToken, setEmailOldToken] = useState('')
+  const [emailNewToken, setEmailNewToken] = useState('')
+  const [emailSent, setEmailSent] = useState(true)
+  const [emailError, setEmailError] = useState('')
+  const [emailBusy, setEmailBusy] = useState(false)
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [editError, setEditError] = useState<string | null>(null)
@@ -118,15 +156,149 @@ function ProfileContent() {
     setActiveTab('profile')
   }, [modeParam])
 
-  const handlePasswordChange = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('รหัสผ่านใหม่ไม่ตรงกัน')
-      return
-    }
-    console.log('Changing password:', passwordForm)
+  const closePasswordDialog = () => {
     setChangePasswordDialog(false)
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    setPasswordError('')
+  }
+
+  const closeEmailDialog = () => {
+    setChangeEmailDialog(false)
+    setEmailStep('email')
+    setEmailForm({ newEmail: '', oldOtp: '', newOtp: '' })
+    setEmailOldToken('')
+    setEmailNewToken('')
+    setEmailError('')
+  }
+
+  const requestEmailOldOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError('')
+    const candidate = emailForm.newEmail.trim().toLowerCase()
+    if (/[^\x00-\x7F]/.test(emailForm.newEmail)) {
+      setEmailError('อีเมลต้องเป็นตัวอักษรอังกฤษ/ตัวเลขเท่านั้น (ตรวจพบอักขระภาษาอื่นปนอยู่)')
+      return
+    }
+    if (candidate.split('@').length !== 2 || !/^[^@\s]{1,64}@[^@\s]{1,190}\.[A-Za-z]{2,}$/.test(candidate)) {
+      setEmailError('รูปแบบอีเมลไม่ถูกต้อง (ตัวอย่างที่ถูกต้อง: yourname@gmail.com)')
+      return
+    }
+    setEmailBusy(true)
+    try {
+      const { data } = await axios.post('/api/profile/change-email', { email: candidate })
+      if (!data?.success) throw new Error(data?.message || 'ส่งรหัส OTP ไม่สำเร็จ')
+      setEmailOldToken(data?.data?.token ?? '')
+      setEmailSent(data?.data?.email_sent !== false)
+      setEmailStep('old-otp')
+      notify.success(data?.message || 'ส่งรหัส OTP ไปยังอีเมลเดิมของคุณแล้ว')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'ส่งรหัส OTP ไม่สำเร็จ'
+      setEmailError(message)
+      notify.error(message)
+    } finally {
+      setEmailBusy(false)
+    }
+  }
+
+  const verifyOldEmailOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError('')
+    if (emailForm.oldOtp.trim().length !== 6) {
+      setEmailError('รหัส OTP ต้องเป็นตัวเลข 6 หลัก')
+      return
+    }
+    setEmailBusy(true)
+    try {
+      const { data } = await axios.post('/api/profile/verify-old-email', {
+        otp_token: emailOldToken,
+        otp: emailForm.oldOtp.trim(),
+      })
+      if (!data?.success) throw new Error(data?.message || 'ยืนยันอีเมลเดิมไม่สำเร็จ')
+      setEmailNewToken(data?.data?.token ?? '')
+      setEmailSent(data?.data?.email_sent !== false)
+      setEmailStep('new-otp')
+      notify.success(data?.message || 'ยืนยันอีเมลเดิมแล้ว — ส่งรหัส OTP ไปยังอีเมลใหม่แล้ว')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'ยืนยันอีเมลเดิมไม่สำเร็จ'
+      setEmailError(message)
+      notify.error(message)
+    } finally {
+      setEmailBusy(false)
+    }
+  }
+
+  const resendNewEmailOtp = async () => {
+    setEmailError('')
+    setEmailBusy(true)
+    try {
+      const { data } = await axios.post('/api/profile/resend-email-otp')
+      if (!data?.success) throw new Error(data?.message || 'ส่งรหัสใหม่ไม่สำเร็จ')
+      setEmailNewToken(data?.data?.token ?? emailNewToken)
+      setEmailSent(data?.data?.email_sent !== false)
+      setEmailForm((prev) => ({ ...prev, newOtp: '' }))
+      notify.success(data?.message || 'ส่งรหัส OTP ใหม่แล้ว')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'ส่งรหัสใหม่ไม่สำเร็จ'
+      setEmailError(message)
+      notify.error(message)
+    } finally {
+      setEmailBusy(false)
+    }
+  }
+
+  const confirmNewEmailOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError('')
+    if (emailForm.newOtp.trim().length !== 6) {
+      setEmailError('รหัส OTP ต้องเป็นตัวเลข 6 หลัก')
+      return
+    }
+    setEmailBusy(true)
+    try {
+      const { data } = await axios.post('/api/profile/confirm-email', {
+        otp_token: emailNewToken,
+        otp: emailForm.newOtp.trim(),
+      })
+      if (!data?.success) throw new Error(data?.message || 'ยืนยันไม่สำเร็จ')
+      notify.success('เปลี่ยนอีเมลสำเร็จ')
+      closeEmailDialog()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.profile })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'ยืนยันไม่สำเร็จ'
+      setEmailError(message)
+      notify.error(message)
+    } finally {
+      setEmailBusy(false)
+    }
+  }
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordError('')
+
+    const policyError = validatePassword(passwordForm.newPassword)
+    if (policyError) {
+      setPasswordError(policyError)
+      return
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน')
+      return
+    }
+    if (passwordForm.newPassword === passwordForm.currentPassword) {
+      setPasswordError('รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม')
+      return
+    }
+
+    try {
+      await changePassword.mutateAsync(passwordForm)
+      notify.success('เปลี่ยนรหัสผ่านสำเร็จ')
+      closePasswordDialog()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'เปลี่ยนรหัสผ่านไม่สำเร็จ'
+      setPasswordError(message)
+      notify.error(message)
+    }
   }
 
   const handleEdit = (field: string, currentValue: string) => {
@@ -245,9 +417,18 @@ function ProfileContent() {
   const tabs = [
     { id: 'profile', label: 'ข้อมูลส่วนตัว', icon: 'fas fa-user', color: 'cyan' },
     { id: 'login', label: 'ประวัติการเข้าสู่ระบบ', icon: 'fas fa-sign-in-alt', color: 'blue' },
+    { id: 'password', label: 'ประวัติเปลี่ยนรหัสผ่าน', icon: 'fas fa-key', color: 'purple' },
     { id: 'upload', label: 'ประวัติอัพโหลด', icon: 'fas fa-upload', color: 'green' },
     { id: 'download', label: 'ประวัติดาวน์โหลด', icon: 'fas fa-download', color: 'orange' }
   ]
+
+  const TAB_ACTIVE_CLASS: Record<string, string> = {
+    cyan: 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white',
+    blue: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white',
+    purple: 'bg-gradient-to-r from-purple-500 to-purple-600 text-white',
+    green: 'bg-gradient-to-r from-green-500 to-green-600 text-white',
+    orange: 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'
+  }
 
   if (isLoading) {
     return (
@@ -256,15 +437,10 @@ function ProfileContent() {
   }
 
   return (
-    <div className="p-6 min-h-screen bg-[#050510]">
+    <div className="min-h-screen bg-[#050510] px-4 pb-6 sm:px-6 p-6">
       <NavbarComponent />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">โปรไฟล์ของฉัน</h1>
-          <p className="text-slate-400">จัดการข้อมูลส่วนตัวและดูประวัติกิจกรรมของคุณ</p>
-        </div>
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
@@ -313,8 +489,8 @@ function ProfileContent() {
                 <h2 className="text-white font-bold text-xl">{user?.username}</h2>
                 <p className="text-slate-400 text-sm mt-1">{user?.email}</p>
                 <div className="flex items-center gap-2 mt-3">
-                  <span className="px-3 py-1 bg-cyan-500/10 text-cyan-400 rounded-full text-xs font-medium border border-cyan-500/20">
-                    {user?.role === 'admin' ? 'ผู้ดูแลระบบ' : 'สมาชิกทั่วไป'}
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${ROLE_BADGE_CLASS[user?.role ?? ''] ?? ROLE_BADGE_CLASS.user}`}>
+                    {roleLabel(user?.role)}
                   </span>
                 </div>
               </div>
@@ -346,7 +522,7 @@ function ProfileContent() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                       activeTab === tab.id
-                        ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white`
+                        ? TAB_ACTIVE_CLASS[tab.color]
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
@@ -423,9 +599,23 @@ function ProfileContent() {
                               value={user?.email || ''}
                               readOnly
                               disabled
-                              title="ไม่สามารถแก้ไขอีเมลได้"
+                              title="ต้องยืนยัน OTP ที่อีเมลใหม่ก่อนจึงจะเปลี่ยนได้"
                               className="flex-1 px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white cursor-not-allowed opacity-70"
                             />
+                            <button
+                              onClick={() => {
+                                setEmailError('')
+                                setEmailStep('email')
+                                setEmailForm({ newEmail: '', oldOtp: '', newOtp: '' })
+                                setEmailOldToken('')
+                                setEmailNewToken('')
+                                setChangeEmailDialog(true)
+                              }}
+                              className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-cyan-400 text-sm font-medium hover:bg-white/10 hover:text-cyan-300 transition whitespace-nowrap"
+                            >
+                              <i className="fas fa-envelope mr-1.5"></i>
+                              เปลี่ยนอีเมล
+                            </button>
                           </div>
                         </div>
 
@@ -433,10 +623,50 @@ function ProfileContent() {
                           <label className="block text-slate-400 text-sm mb-2">บทบาท</label>
                           <input
                             type="text"
-                            value={user?.role === 'admin' ? 'ผู้ดูแลระบบ' : 'สมาชิกทั่วไป'}
+                            value={roleLabel(user?.role)}
                             readOnly
                             className="w-full px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white cursor-default"
                           />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+                      <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
+                        <i className="fas fa-lock text-cyan-400"></i>
+                        <span>ความปลอดภัย</span>
+                      </h4>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-white text-sm font-medium">รหัสผ่าน</p>
+                          <p className="text-slate-400 text-xs mt-1">
+                            ควรเปลี่ยนรหัสผ่านเป็นระยะเพื่อความปลอดภัยของบัญชี
+                          </p>
+                          {lastPasswordChangeAt && (
+                            <p className="text-slate-500 text-xs mt-1">
+                              เปลี่ยนล่าสุดเมื่อ {formatDate(lastPasswordChangeAt)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('password')}
+                            className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-sm font-medium hover:bg-white/10 hover:text-white transition-all duration-300"
+                          >
+                            ดูประวัติ
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPasswordError('')
+                              setChangePasswordDialog(true)
+                            }}
+                            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-sm font-semibold transition-all duration-300 flex items-center gap-2"
+                          >
+                            <i className="fas fa-key"></i>
+                            เปลี่ยนรหัสผ่าน
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -449,8 +679,9 @@ function ProfileContent() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="text-white font-semibold">ประวัติการเข้าสู่ระบบ</h4>
-                    <span className="text-slate-400 text-sm">ทั้งหมด {loginHistory.length} รายการ</span>
+                    <span className="text-slate-400 text-sm">ทั้งหมด {loginPagination?.total ?? loginHistory.length} รายการ</span>
                   </div>
+                  <div className="history-scroll max-h-[60vh] overflow-y-auto pr-1">
                   {loginHistory.length === 0 ? (
                     <div className="text-center py-12 text-slate-500">
                       <i className="fas fa-sign-in-alt text-3xl mb-3 opacity-40"></i>
@@ -478,6 +709,49 @@ function ProfileContent() {
                     </div>
                     ))
                   )}
+                  </div>
+                  <HistoryPager page={loginPage} totalPages={loginPagination?.total_pages ?? 1} isFetching={loginFetching} onChange={setLoginPage} />
+                </div>
+              )}
+
+              {activeTab === 'password' && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-white font-semibold">ประวัติการเปลี่ยนรหัสผ่าน</h4>
+                    <span className="text-slate-400 text-sm">ทั้งหมด {passwordPagination?.total ?? passwordHistory.length} รายการ</span>
+                  </div>
+                  <div className="history-scroll max-h-[60vh] overflow-y-auto pr-1">
+                  {passwordHistory.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500">
+                      <i className="fas fa-key text-3xl mb-3 opacity-40"></i>
+                      <p>ยังไม่มีประวัติการเปลี่ยนรหัสผ่าน</p>
+                    </div>
+                  ) : (
+                    passwordHistory.map((item) => (
+                      <div key={item.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                          <i className="fas fa-key text-purple-400"></i>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <p className="text-white font-medium">เปลี่ยนรหัสผ่านสำเร็จ</p>
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                              สำเร็จ
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-slate-400 flex-wrap">
+                            <span><i className="fas fa-network-wired mr-1"></i>{item.ip || '-'}</span>
+                            <span className="max-w-xs truncate" title={item.user_agent ?? undefined}>
+                              <i className="fas fa-desktop mr-1"></i>{item.user_agent || '-'}
+                            </span>
+                            <span><i className="fas fa-calendar mr-1"></i>{item.created_at ? formatDate(item.created_at) : '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  </div>
+                  <HistoryPager page={passwordPage} totalPages={passwordPagination?.total_pages ?? 1} isFetching={passwordFetching} onChange={setPasswordPage} />
                 </div>
               )}
 
@@ -485,9 +759,16 @@ function ProfileContent() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="text-white font-semibold">ประวัติการอัพโหลดไฟล์</h4>
-                    <span className="text-slate-400 text-sm">ทั้งหมด {uploadHistory.length} รายการ</span>
+                    <span className="text-slate-400 text-sm">ทั้งหมด {uploadPagination?.total ?? uploadHistory.length} รายการ</span>
                   </div>
-                  {uploadHistory.map((upload) => (
+                  <div className="history-scroll max-h-[60vh] overflow-y-auto pr-1">
+                  {uploadHistory.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500">
+                      <i className="fas fa-upload text-3xl mb-3 opacity-40"></i>
+                      <p>ไม่มีประวัติการอัพโหลด</p>
+                    </div>
+                  ) : (
+                    uploadHistory.map((upload) => (
                     <Link
                       key={upload.id}
                       href={`/scan/analysis?taskId=${upload.id}`}
@@ -516,7 +797,10 @@ function ProfileContent() {
                       </div>
                       <i className="fas fa-chevron-right text-slate-400 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all"></i>
                     </Link>
-                  ))}
+                    ))
+                  )}
+                  </div>
+                  <HistoryPager page={uploadPage} totalPages={uploadPagination?.total_pages ?? 1} isFetching={uploadFetching} onChange={setUploadPage} />
                 </div>
               )}
 
@@ -524,8 +808,9 @@ function ProfileContent() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="text-white font-semibold">ประวัติการดาวน์โหลดรายงาน</h4>
-                    <span className="text-slate-400 text-sm">ทั้งหมด {downloadHistory.length} รายการ</span>
+                    <span className="text-slate-400 text-sm">ทั้งหมด {downloadPagination?.total ?? downloadHistory.length} รายการ</span>
                   </div>
+                  <div className="history-scroll max-h-[60vh] overflow-y-auto pr-1">
                   {downloadHistory.length === 0 ? (
                     <div className="text-center py-12 text-slate-500">
                       <i className="fas fa-download text-3xl mb-3 opacity-40"></i>
@@ -551,6 +836,8 @@ function ProfileContent() {
                     </div>
                     ))
                   )}
+                  </div>
+                  <HistoryPager page={downloadPage} totalPages={downloadPagination?.total_pages ?? 1} isFetching={downloadFetching} onChange={setDownloadPage} />
                 </div>
               )}
             </div>
@@ -558,8 +845,184 @@ function ProfileContent() {
         </div>
       </div>
 
+      {changeEmailDialog && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeEmailDialog}>
+          <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-white/10">
+              <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+                <i className="fas fa-envelope text-cyan-400"></i>
+                เปลี่ยนอีเมล
+              </h3>
+              <p className="text-slate-400 text-sm mt-1">
+                {emailStep === 'email'
+                  ? 'กรอกอีเมลใหม่ ระบบจะส่งรหัส OTP ไปยืนยันอีเมลเดิมก่อน'
+                  : emailStep === 'old-otp'
+                    ? `กรอกรหัส OTP 6 หลักที่ส่งไปที่อีเมลเดิม (${user?.email || '-'})`
+                    : `กรอกรหัส OTP 6 หลักที่ส่งไปที่อีเมลใหม่ (${emailForm.newEmail.trim().toLowerCase()})`}
+              </p>
+            </div>
+
+            {emailStep === 'email' && (
+              <form onSubmit={requestEmailOldOtp} noValidate className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">อีเมลใหม่</label>
+                  <input
+                    type="text"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={emailForm.newEmail}
+                    onChange={(e) => {
+                      setEmailForm((prev) => ({ ...prev, newEmail: e.target.value.replace(/[^\x20-\x7E]/g, '') }))
+                      if (emailError) setEmailError('')
+                    }}
+                    placeholder="yourname@gmail.com"
+                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                    autoFocus
+                  />
+                  <p className="mt-2 text-xs text-slate-500">อีเมลปัจจุบัน: {user?.email || '-'}</p>
+                </div>
+
+                <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400">
+                  <i className="fas fa-circle-info mt-0.5"></i>
+                  <span>
+                    ยืนยัน 2 ขั้น: รหัสที่ 1 ส่งไป<b>อีเมลเดิม</b> (ยืนยันว่าเป็นเจ้าของบัญชี)
+                    แล้วรหัสที่ 2 ส่งไป<b>อีเมลใหม่</b> (ยืนยันว่าเป็นเจ้าของอีเมลใหม่)
+                  </span>
+                </div>
+
+                {emailError && (
+                  <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
+                    <i className="fas fa-exclamation-circle mt-0.5"></i>
+                    <span>{emailError}</span>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={emailBusy}
+                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  >
+                    {emailBusy ? 'กำลังส่งรหัส...' : 'ส่งรหัส OTP'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeEmailDialog}
+                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  >
+                    ยกเลิก
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {emailStep === 'old-otp' && (
+              <form onSubmit={verifyOldEmailOtp} noValidate className="p-6 space-y-4">
+                {!emailSent && (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+                    ⚠ ระบบส่งอีเมลล้มเหลว — ตรวจสอบ GMAIL_USERNAME / GMAIL_PASSWORD ใน .env ของ backend
+                  </div>
+                )}
+                <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-300">
+                  ขั้นที่ 1/2 — ยืนยันอีเมลเดิม: {user?.email || '-'}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">รหัส OTP (อีเมลเดิม)</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={emailForm.oldOtp}
+                    onChange={(e) => setEmailForm((prev) => ({ ...prev, oldOtp: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="000000"
+                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-center text-lg tracking-[0.5em] text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                    autoFocus
+                  />
+                </div>
+                {emailError && (
+                  <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
+                    <i className="fas fa-exclamation-circle mt-0.5"></i>
+                    <span>{emailError}</span>
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={emailBusy}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                >
+                  {emailBusy ? 'กำลังตรวจสอบ...' : 'ยืนยันอีเมลเดิม'}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeEmailDialog}
+                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                >
+                  ยกเลิก
+                </button>
+              </form>
+            )}
+
+            {emailStep === 'new-otp' && (
+              <form onSubmit={confirmNewEmailOtp} noValidate className="p-6 space-y-4">
+                {!emailSent && (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+                    ⚠ ระบบส่งอีเมลล้มเหลว — ตรวจสอบ GMAIL_USERNAME / GMAIL_PASSWORD ใน .env ของ backend
+                  </div>
+                )}
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+                  ขั้นที่ 2/2 — ยืนยันอีเมลใหม่: {emailForm.newEmail.trim().toLowerCase()}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">รหัส OTP (อีเมลใหม่)</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={emailForm.newOtp}
+                    onChange={(e) => setEmailForm((prev) => ({ ...prev, newOtp: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="000000"
+                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-center text-lg tracking-[0.5em] text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                    autoFocus
+                  />
+                </div>
+                {emailError && (
+                  <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
+                    <i className="fas fa-exclamation-circle mt-0.5"></i>
+                    <span>{emailError}</span>
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={emailBusy}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                >
+                  {emailBusy ? 'กำลังบันทึก...' : 'ยืนยันและเปลี่ยนอีเมล'}
+                </button>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    disabled={emailBusy}
+                    onClick={resendNewEmailOtp}
+                    className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50"
+                  >
+                    ส่งรหัสใหม่
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeEmailDialog}
+                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  >
+                    ยกเลิก
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
       {changePasswordDialog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setChangePasswordDialog(false)}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closePasswordDialog}>
           <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-white/10">
               <h3 className="text-white font-semibold text-lg flex items-center gap-2">
@@ -578,6 +1041,7 @@ function ProfileContent() {
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
                   className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent transition-all"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   required
                 />
               </div>
@@ -590,8 +1054,20 @@ function ProfileContent() {
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
                   className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent transition-all"
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   required
                 />
+                <ul className="mt-2 space-y-1">
+                  {PASSWORD_RULES.map((rule) => {
+                    const passed = rule.test(passwordForm.newPassword)
+                    return (
+                      <li key={rule.message} className={`flex items-center gap-1.5 text-xs ${passed ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        <i className={`fas ${passed ? 'fa-check-circle' : 'fa-circle'} text-[8px]`}></i>
+                        {rule.message}
+                      </li>
+                    )
+                  })}
+                </ul>
               </div>
 
               <div>
@@ -602,21 +1078,31 @@ function ProfileContent() {
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                   className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent transition-all"
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   required
                 />
               </div>
 
+              {passwordError && (
+                <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
+                  <i className="fas fa-exclamation-circle mt-0.5"></i>
+                  <span>{passwordError}</span>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  disabled={changePassword.isPending}
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-all duration-300"
                 >
-                  ยืนยัน
+                  {changePassword.isPending ? 'กำลังบันทึก...' : 'ยืนยัน'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setChangePasswordDialog(false)}
-                  className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  onClick={closePasswordDialog}
+                  disabled={changePassword.isPending}
+                  className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50"
                 >
                   ยกเลิก
                 </button>

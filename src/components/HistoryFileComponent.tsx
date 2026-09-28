@@ -186,7 +186,7 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
                 </div>
             )}
 
-            {pagination && pagination.total_pages > 1 && (
+            {pagination && (
                 <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
                     <button
                         disabled={!pagination.has_prev}

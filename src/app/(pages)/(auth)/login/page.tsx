@@ -19,18 +19,21 @@ export default function LoginPage() {
   const [isSuccessful, setIsSuccessful] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState('')
-  const [error, setError] = useState('')
   const [requireCaptcha, setRequireCaptcha] = useState(false)
 
   const notify = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
 
-    if (requireCaptcha && !isVerified) {
-      notify.warning('กรุณายืนยัน reCAPTCHA ก่อนเข้าสู่ระบบ')
-      setError('กรุณายืนยัน reCAPTCHA ก่อนเข้าสู่ระบบ')
+    if (!requireCaptcha) {
+      setRequireCaptcha(true)
+      notify.warning('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
+      return
+    }
+
+    if (!isVerified || !recaptchaToken) {
+      notify.warning('กรุณายืนยัน reCAPTCHA')
       return
     }
 
@@ -45,7 +48,6 @@ export default function LoginPage() {
 
       if (res.data.require_captcha) {
         setRequireCaptcha(true)
-        setError('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
         notify.warning('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
         return
       }
@@ -66,7 +68,6 @@ export default function LoginPage() {
 
     } catch (err: any) {
       notify.error(err.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง.')
-      setError(err.response?.data?.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
       recaptchaRef.current?.reset()
       setIsVerified(false)
       setRecaptchaToken('')
@@ -78,7 +79,6 @@ export default function LoginPage() {
   const handleCaptchaChange = (token: string | null) => {
     setRecaptchaToken(token || '')
     setIsVerified(!!token)
-    if (token) setError('')
   }
 
   const handleCaptchaExpired = () => {
@@ -115,9 +115,20 @@ export default function LoginPage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-6xl">
+      <div className="relative z-10 w-full max-w-6xl mt-20">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
-          <Hero />
+          <Hero>
+            {requireCaptcha && (
+              <div className="flex justify-center lg:justify-start pt-2">
+                <ReCAPTCHA
+                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LcGkdsrAAAAAFW6CFipeSplG7nLqICIKPm-gSln"}
+                  ref={recaptchaRef}
+                  onChange={handleCaptchaChange}
+                  onExpired={handleCaptchaExpired}
+                />
+              </div>
+            )}
+          </Hero>
 
           <div className="w-full lg:w-auto lg:min-w-[450px] flex-1 max-w-md">
             <div className="backdrop-blur-xl bg-white/5 rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10 hover-glow transition-all duration-500">
@@ -129,15 +140,6 @@ export default function LoginPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 backdrop-blur-sm animate-shake">
-                    <div className="flex items-center gap-3">
-                      <i className="fas fa-exclamation-circle text-red-400"></i>
-                      <p className="text-red-300 text-sm">{error}</p>
-                    </div>
-                  </div>
-                )}
-
                 <div className="space-y-3">
                   <label className="block text-sm font-semibold text-purple-100">อีเมล</label>
                   <div className="relative group">
@@ -185,19 +187,6 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </div>
-
-                {requireCaptcha && (
-                  <div className="flex flex-col items-center gap-2 py-2 animate-fade-in">
-                    <p className="text-yellow-400 text-sm">กรุณายืนยันตัวตนเพื่อดำเนินการต่อ</p>
-                    <ReCAPTCHA
-                      sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
-                      ref={recaptchaRef}
-                      onChange={handleCaptchaChange}
-                      onExpired={handleCaptchaExpired}
-                      theme="dark"
-                    />
-                  </div>
-                )}
 
                 <button
                   type="submit"

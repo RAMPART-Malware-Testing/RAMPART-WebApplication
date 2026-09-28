@@ -80,15 +80,49 @@ const avgChips = (item: { virustotalScore?: number | null; mobsfScore?: number |
 }
 
 export default function DashboardPage() {
-  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('daily')
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('monthly')
 
-  const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
+  const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: refetchSummary } = useDashboardSummary()
   const { data: recentActivities = [], isLoading: activitiesLoading } = useDashboardRecentActivities()
-  const { data: publicFiles = [], isLoading: publicLoading } = useDashboardPublicReports(1, 8)
+  const { data: publicFiles = [], isLoading: publicLoading } = useDashboardPublicReports(1, 5)
 
   const isLoading = summaryLoading || activitiesLoading || publicLoading
 
-  if (isLoading || !summary) return <GeometricLoader loadingText="กำลังโหลดข้อมูล..." />
+  if (isLoading) return <GeometricLoader loadingText="กำลังโหลดข้อมูล..." />
+
+  if (!summary) {
+    return (
+      <div className="min-h-screen bg-[#050510] p-6">
+        <NavbarComponent />
+        <div className="max-w-xl mx-auto py-16 text-center">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
+            <i className="fas fa-triangle-exclamation text-3xl text-amber-400"></i>
+            <p className="text-white font-medium mt-4">โหลดข้อมูลแดชบอร์ดไม่สำเร็จ</p>
+            <p className="text-slate-400 text-sm mt-2">
+              {summaryError
+                ? 'เซสชันอาจหมดอายุ หรือเชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาเข้าสู่ระบบใหม่'
+                : 'ไม่พบข้อมูลจากเซิร์ฟเวอร์'}
+            </p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={() => refetchSummary()}
+                className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 font-semibold text-white transition hover:from-cyan-600 hover:to-blue-600"
+              >
+                ลองใหม่
+              </button>
+              <Link
+                href="/logout"
+                className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 font-semibold text-white transition hover:bg-white/10"
+              >
+                เข้าสู่ระบบใหม่
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const dashboardStats = { ...summary, recentActivities }
 
@@ -143,12 +177,21 @@ export default function DashboardPage() {
           />
         </div>
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden mb-8">
-          <div className="px-6 py-4 border-b border-white/10">
-            <h3 className="text-white font-semibold flex items-center gap-2">
-              <i className="fas fa-globe text-blue-400" />
-              ไฟล์สาธารณะ (Public)
-            </h3>
-            <p className="text-slate-400 text-sm mt-1">รายงานที่เปิดให้ทุกคนดูได้</p>
+          <div className="px-6 py-4 border-b border-white/10 flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <i className="fas fa-globe text-blue-400" />
+                ไฟล์สาธารณะ (Public)
+              </h3>
+              <p className="text-slate-400 text-sm mt-1">5 รายการล่าสุดที่เปิดให้ทุกคนดูได้</p>
+            </div>
+            <Link
+              href="/public"
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-medium text-cyan-400 hover:bg-white/10 hover:text-cyan-300 transition"
+            >
+              ดูทั้งหมด
+              <i className="fas fa-arrow-right text-[10px]" />
+            </Link>
           </div>
           <div className="divide-y divide-white/5">
             {publicFiles.length > 0 ? (
@@ -248,39 +291,66 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-2.5">
               {activeMalwareList.length > 0 ? (
                 activeMalwareList.map((malware, index) => {
-                  const maxCount = Math.max(...activeMalwareList.map(m => m.count), 1)
-                  const percentage = (malware.count / maxCount) * 100
+                  const rank = index + 1
+                  const isTop = index === 0
+                  const badgeClass =
+                    index === 0
+                      ? 'bg-gradient-to-br from-amber-300 to-amber-600 text-slate-900 shadow-lg shadow-amber-500/25'
+                      : index === 1
+                        ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-900'
+                        : index === 2
+                          ? 'bg-gradient-to-br from-orange-300 to-orange-600 text-slate-900'
+                          : 'bg-white/10 text-slate-300 border border-white/10'
                   return (
-                    <div key={malware.type} className="group">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold
-                            ${index === 0 ? 'bg-amber-500/20 text-amber-400' :
-                              index === 1 ? 'bg-slate-500/20 text-slate-400' :
-                              index === 2 ? 'bg-orange-500/20 text-orange-400' :
-                              'bg-white/10 text-slate-400'}`}>
-                            {index + 1}
-                          </div>
-                          <span className="text-white font-medium">{malware.type}</span>
+                    <div
+                      key={malware.type}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+                        isTop
+                          ? 'bg-amber-500/10 border border-amber-500/25'
+                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${badgeClass}`}>
+                        {rank}
+                        {isTop && (
+                          <i className="fas fa-crown absolute -top-2 -right-1 text-[11px] text-amber-300"></i>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-white font-medium truncate" title={malware.type}>{malware.type}</span>
+                          {isTop && (
+                            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300">
+                              พบมากที่สุด
+                            </span>
+                          )}
                         </div>
-                        <span className="text-slate-400 text-sm">{malware.count} ครั้ง</span>
                       </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-700"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
+                      <span className="shrink-0 font-mono text-sm text-slate-300">
+                        {malware.count} <span className="font-sans text-slate-500">ครั้ง</span>
+                      </span>
                     </div>
                   )
                 })
               ) : (
                 <div className="text-center py-12 text-slate-400">
                   <i className="fas fa-chart-simple text-4xl mb-3 opacity-50" />
-                  <p>ไม่มีข้อมูลในขณะนี้</p>
+                  <p>
+                    {selectedTimeRange === 'daily'
+                      ? 'ไม่พบมัลแวร์จากการสแกนในวันนี้'
+                      : 'ไม่พบมัลแวร์จากการสแกนในเดือนนี้'}
+                  </p>
+                  {selectedTimeRange === 'daily' && dashboardStats.topMalwareTypes.monthly.length > 0 && (
+                    <button
+                      onClick={() => setSelectedTimeRange('monthly')}
+                      className="mt-3 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-medium text-cyan-400 hover:bg-white/10 hover:text-cyan-300 transition"
+                    >
+                      ดูผลรายเดือน ({dashboardStats.topMalwareTypes.monthly.length} ประเภท)
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -335,7 +405,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   )

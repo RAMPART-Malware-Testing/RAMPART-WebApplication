@@ -26,6 +26,7 @@ interface UploadResponse {
   success: boolean
   task_id: string
   message: string
+  detail?: string
 }
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
@@ -87,7 +88,7 @@ export default function ScanFilesPage() {
             redirectTaskId.current = response.task_id
             setShowLoader(true)
           } else {
-            throw new Error(response.message || `Server error: ${xhr.status}`)
+            throw new Error(response.message || response.detail || `Server error: ${xhr.status}`)
           }
         } catch (err) {
           setFile(prev => prev ? {

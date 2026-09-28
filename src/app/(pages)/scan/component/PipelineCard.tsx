@@ -13,8 +13,7 @@ interface VirusTotalCardProps {
 }
 
 export function VirusTotalCard({ data, className }: VirusTotalCardProps) {
-  const showsThreatScore = !!data.reportUnavailable
-  const pending = !!data.scorePending
+  const showsThreatScore = !(data.totalEngines > 0)
   const isDetected = data.detectionCount > 0 || (data.threatScore ?? 0) > 0
   const valueColor = isDetected ? "text-red-400" : "text-emerald-400"
 
@@ -38,7 +37,7 @@ export function VirusTotalCard({ data, className }: VirusTotalCardProps) {
           <span className={cn("text-lg font-bold font-mono", valueColor)}>
             {showsThreatScore
               ? <>
-                  {pending ? "***" : data.threatScore != null ? Math.round(data.threatScore) : "-"}
+                  {data.threatScore != null ? Math.round(data.threatScore) : "-"}
                   <span className="text-sm font-normal text-slate-500"> / 100</span>
                 </>
               : <>{data.detectionCount} <span className="text-sm font-normal text-slate-500">/ {data.totalEngines}</span></>}

@@ -21,7 +21,6 @@ export interface VirusTotalResult {
   totalEngines: number
   threatScore?: number | null
   reportUnavailable?: boolean
-  scorePending?: boolean
   startedAt?: string
   finishedAt?: string
   message?: string

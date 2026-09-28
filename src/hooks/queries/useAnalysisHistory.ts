@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { queryKeys } from "./queryKeys"
 
@@ -29,5 +29,6 @@ export function useAnalysisHistory(params: AnalysisHistoryQueryParams = {}) {
       return { data: data.data, pagination: data.pagination ?? null }
     },
     staleTime: 5_000,
+    placeholderData: keepPreviousData,
   })
 }

@@ -74,7 +74,7 @@ export default function TaskQueuePage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
+    <div className="max-w-7xl mx-auto space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-white">คิวงานวิเคราะห์</h1>
         <p className="text-blue-200/50 text-sm mt-1">จัดการงานวิเคราะห์ที่กำลังทำงานอยู่ในระบบ Celery</p>
@@ -101,8 +101,13 @@ export default function TaskQueuePage() {
         </div>
       )}
 
-      <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+      <div className="lg:order-2 lg:sticky lg:top-20 bg-white/5 rounded-2xl p-5 border border-white/10">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+            <i className="fas fa-filter text-cyan-400" />
+            ตัวกรอง
+          </h3>
+        <div className="grid grid-cols-1 gap-4">
           <div>
             <label className="block text-sm text-blue-200/60 mb-2">ค้นหา</label>
             <input
@@ -128,7 +133,7 @@ export default function TaskQueuePage() {
         </div>
       </div>
 
-      <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+      <div className="lg:order-1 bg-white/5 rounded-2xl p-6 border border-white/10">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-white font-semibold text-lg">รายการงาน</h2>
           {pagination && <span className="text-blue-200/50 text-sm">ทั้งหมด {pagination.total} รายการ</span>}
@@ -186,7 +191,7 @@ export default function TaskQueuePage() {
           </div>
         )}
 
-        {pagination && pagination.total_pages > 1 && (
+        {pagination && (
           <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
             <button
               disabled={!pagination.has_prev}
@@ -208,6 +213,7 @@ export default function TaskQueuePage() {
           </div>
         )}
       </div>
+        </div>
     </div>
   )
 }

@@ -11,6 +11,10 @@ const ACTION_LABELS: Record<string, string> = {
   view_user_detail: 'ดูข้อมูลผู้ใช้',
   view_private_history: 'ดูประวัติไฟล์ (รวม private)',
   delete_file: 'ลบไฟล์',
+  change_password: 'เปลี่ยนรหัสผ่าน',
+  master_setup: 'ตั้งค่าบัญชี master ครั้งแรก',
+  change_email: 'เปลี่ยนอีเมล',
+  delete_user_history: 'ลบประวัติผู้ใช้',
 }
 
 const ACTION_BADGE: Record<string, string> = {
@@ -20,6 +24,10 @@ const ACTION_BADGE: Record<string, string> = {
   view_user_detail: 'text-blue-300 bg-blue-500/10 border border-blue-500/20',
   view_private_history: 'text-amber-300 bg-amber-500/10 border border-amber-500/20',
   delete_file: 'text-orange-400 bg-orange-500/10 border border-orange-500/20',
+  change_password: 'text-purple-400 bg-purple-500/10 border border-purple-500/20',
+  master_setup: 'text-amber-400 bg-amber-500/10 border border-amber-500/20',
+  change_email: 'text-sky-400 bg-sky-500/10 border border-sky-500/20',
+  delete_user_history: 'text-rose-400 bg-rose-500/10 border border-rose-500/20',
 }
 
 function formatDate(dateStr: string | null) {
@@ -34,7 +42,7 @@ export default function AdminAuditLogsPage() {
 
   const { data: listResult, isLoading } = useAdminAuditLogs({
     page,
-    limit: 20,
+    limit: 25,
     action: actionFilter || undefined,
   })
   const rawItems = listResult?.data ?? []
@@ -61,7 +69,7 @@ export default function AdminAuditLogsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-7xl mx-auto space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <h1 className="text-2xl font-bold text-white">ประวัติการดำเนินการของผู้ดูแล</h1>
@@ -82,7 +90,12 @@ export default function AdminAuditLogsPage() {
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <div className="lg:order-2 lg:sticky lg:top-20 bg-white/5 rounded-2xl p-5 border border-white/10 space-y-4">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+            <i className="fas fa-filter text-cyan-400" />
+            ตัวกรอง
+          </h3>
           <div>
             <label className="block text-sm text-blue-200/60 mb-2">ค้นหาผู้ดำเนินการ / เป้าหมาย</label>
             <input
@@ -117,7 +130,7 @@ export default function AdminAuditLogsPage() {
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+        <div className="lg:order-1 bg-white/5 rounded-2xl p-6 border border-white/10">
           {isLoading ? (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
@@ -152,7 +165,7 @@ export default function AdminAuditLogsPage() {
             </div>
           )}
 
-          {pagination && pagination.total_pages > 1 && (
+          {pagination && (
             <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
               <button
                 disabled={!pagination.has_prev}
@@ -173,6 +186,7 @@ export default function AdminAuditLogsPage() {
               </button>
             </div>
           )}
+        </div>
         </div>
     </div>
   )

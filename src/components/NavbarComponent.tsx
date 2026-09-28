@@ -6,37 +6,39 @@ import { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import axios from "axios"
 import { useProfile } from "@/hooks/queries/useProfile"
+import { useNavBadges } from "@/hooks/queries/useNavBadges"
 import {
   LayoutDashboard,
   Scan,
   FileText,
+  Globe,
   User,
   Settings,
   ShieldCheck,
   LogOut,
   ChevronDown,
-  Menu,
-  X,
 } from "lucide-react"
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
 const baseMenuItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Scan Files", href: "/scan", icon: Scan },
-  { name: "My Reports", href: "/reports", icon: FileText },
-  { name: "My Profile", href: "/profile?m=report", icon: User },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: null },
+  { name: "Scan Files", href: "/scan", icon: Scan, badge: null },
+  { name: "My Reports", href: "/reports", icon: FileText, badge: "reports" as const },
+  { name: "Public Files", href: "/public", icon: Globe, badge: "public" as const },
+  { name: "My Profile", href: "/profile?m=report", icon: User, badge: null },
 ]
 
-const adminMenuItem = { name: "Admin", href: "/admin", icon: ShieldCheck }
+const adminMenuItem = { name: "Admin", href: "/admin", icon: ShieldCheck, badge: null }
 
 export default function NavbarComponent() {
   const router = useRouter()
   const pathname = usePathname()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
   const { data: profile } = useProfile()
+  const { data: navBadges } = useNavBadges()
+  const badges = navBadges ?? { reports: 0, public: 0 }
 
   const displayName = profile?.username || "Security Analyst"
   const displayEmail = profile?.email || "admin@rampart.security"
@@ -54,7 +56,7 @@ export default function NavbarComponent() {
       <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-16 items-center justify-between gap-2 sm:gap-4">
           <Link href="/dashboard" className="flex items-center gap-3 shrink-0 group">
             <div className="relative h-9 w-9 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10 group-hover:ring-blue-500/40 transition-all duration-300">
               <Image
@@ -71,32 +73,42 @@ export default function NavbarComponent() {
             </div>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-1 xl:gap-1.5">
             {menuItems.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
               const Icon = item.icon
+              const unread = item.badge ? badges[item.badge] : 0
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`relative flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
+                  title={unread > 0 ? `${item.name} — มี ${unread} รายการใหม่` : item.name}
+                  aria-label={unread > 0 ? `${item.name} มี ${unread} รายการใหม่` : item.name}
+                  className={`relative flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-all duration-200 sm:px-2.5 xl:px-3.5 ${
                     isActive
                       ? "text-white bg-white/10"
                       : "text-slate-400 hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  {item.name}
+                  <span className="relative shrink-0">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {unread > 0 && (
+                      <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-[#050510]">
+                        {unread > 99 ? "99+" : unread}
+                      </span>
+                    )}
+                  </span>
+                  <span className="hidden whitespace-nowrap xl:inline">{item.name}</span>
                   {isActive && (
-                    <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+                    <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 xl:left-3 xl:right-3" />
                   )}
                 </Link>
               )
             })}
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden lg:flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 border border-emerald-500/20">
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden xl:flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 border border-emerald-500/20">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -122,7 +134,7 @@ export default function NavbarComponent() {
                     initials
                   )}
                 </div>
-                <div className="hidden sm:block text-left leading-tight">
+                <div className="hidden text-left leading-tight xl:block">
                   <p className="text-xs font-medium text-white">{displayName}</p>
                   <p className="text-[10px] text-slate-500">{displayEmail}</p>
                 </div>
@@ -164,42 +176,9 @@ export default function NavbarComponent() {
                 </>
               )}
             </div>
-
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden flex items-center justify-center h-9 w-9 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-            >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
           </div>
         </div>
       </div>
-
-      {isMenuOpen && (
-        <div className="md:hidden border-t border-white/[0.06] bg-[#050510]/95 backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="mx-auto max-w-7xl px-4 py-3 space-y-1">
-            {menuItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "text-white bg-blue-500/10 border border-blue-500/20"
-                      : "text-slate-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.name}
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </nav>
   )
 }

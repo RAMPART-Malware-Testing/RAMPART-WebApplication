@@ -3,13 +3,19 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Swal from 'sweetalert2'
 import GeometricLoader from '@/components/GeometricLoader'
 import { ROLE_LABELS } from '@/lib/roles'
+import { useProfile } from '@/hooks/queries/useProfile'
+import { useAdminChangeRole } from '@/hooks/queries/useAdminUsers'
+import { useAdminDeleteHistory } from '@/hooks/queries/useAdminUserDetail'
+import { useToast } from '@/components/ui/ToastProvider'
 import {
   useAdminUserDetail,
   useAdminUserHistory,
   useAdminUserLogins,
   useAdminUserDownloads,
+  useAdminUserPasswords,
 } from '@/hooks/queries/useAdminUserDetail'
 
 function formatSize(bytes: number | null) {
@@ -34,8 +40,11 @@ const STATUS_LABELS: Record<string, string> = {
 const TABS = [
   { id: 'uploads', label: 'ประวัติการอัปโหลด', icon: 'fas fa-upload' },
   { id: 'logins', label: 'ประวัติการเข้าสู่ระบบ', icon: 'fas fa-right-to-bracket' },
+  { id: 'passwords', label: 'ประวัติการเปลี่ยนรหัสผ่าน', icon: 'fas fa-key' },
   { id: 'downloads', label: 'ประวัติการดาวน์โหลด', icon: 'fas fa-download' },
 ]
+
+type HistoryKind = 'analysis' | 'login' | 'password' | 'download'
 
 export default function AdminUserDetailPage() {
   const params = useParams()
@@ -45,9 +54,88 @@ export default function AdminUserDetailPage() {
   const [historyPage, setHistoryPage] = useState(1)
   const [loginsPage, setLoginsPage] = useState(1)
   const [downloadsPage, setDownloadsPage] = useState(1)
+  const [passwordsPage, setPasswordsPage] = useState(1)
 
   const { data: user, isLoading, isError: detailError } = useAdminUserDetail(uid)
   const notFound = detailError || (!isLoading && !user)
+
+  const { data: profile } = useProfile()
+  const isMaster = profile?.role === 'master'
+  const roleMutation = useAdminChangeRole()
+  const deleteHistory = useAdminDeleteHistory(uid)
+  const notify = useToast()
+  const [roleBusy, setRoleBusy] = useState(false)
+  const [historyBusy, setHistoryBusy] = useState<string | null>(null)
+  const canDeleteHistory = isMaster && user?.role !== 'master'
+
+  const handleDeleteHistory = async (
+    kind: HistoryKind,
+    entryId: string,
+    label: string,
+  ) => {
+    const confirm = await Swal.fire({
+      title: 'ลบประวัตินี้?',
+      html: `ลบ <b>${label}</b> ออกจากประวัติของผู้ใช้นี้ — กู้คืนไม่ได้`,
+      showCancelButton: true,
+      confirmButtonText: 'ลบ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc2626',
+      background: '#0f172a',
+      color: '#fff',
+    })
+    if (!confirm.isConfirmed) return
+
+    setHistoryBusy(entryId)
+    try {
+      await deleteHistory.mutateAsync({ kind, entryId })
+      notify.success('ลบประวัติสำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ลบประวัติไม่สำเร็จ')
+    } finally {
+      setHistoryBusy(null)
+    }
+  }
+
+  const deleteButton = (
+    kind: HistoryKind,
+    entryId: string,
+    label: string,
+  ) =>
+    canDeleteHistory ? (
+      <button
+        type="button"
+        disabled={historyBusy === entryId}
+        onClick={() => handleDeleteHistory(kind, entryId, label)}
+        title="ลบประวัตินี้ (เฉพาะ master)"
+        className="ml-3 shrink-0 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/20 disabled:opacity-40"
+      >
+        {historyBusy === entryId ? 'กำลังลบ...' : 'ลบ'}
+      </button>
+    ) : null
+
+  const handleRoleChange = async (newRole: 'user' | 'admin') => {
+    if (!user) return
+    const confirm = await Swal.fire({
+      title: `เปลี่ยนสิทธิ์ของ ${user.username} เป็น ${ROLE_LABELS[newRole]}?`,
+      showCancelButton: true,
+      confirmButtonText: 'ยืนยัน',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#0891b2',
+      background: '#0f172a',
+      color: '#fff',
+    })
+    if (!confirm.isConfirmed) return
+
+    setRoleBusy(true)
+    try {
+      await roleMutation.mutateAsync({ uid: user.uid, newRole })
+      notify.success(newRole === 'admin' ? 'เพิ่มยศเป็นผู้ดูแลระบบสำเร็จ' : 'ถอดสิทธิ์เป็นสมาชิกทั่วไปสำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ไม่สามารถเปลี่ยนสิทธิ์ได้')
+    } finally {
+      setRoleBusy(false)
+    }
+  }
 
   const { data: historyResult, isLoading: historyLoading } = useAdminUserHistory(uid, historyPage)
   const history = historyResult?.data ?? []
@@ -59,6 +147,11 @@ export default function AdminUserDetailPage() {
   const loginsPagination = loginsResult?.pagination ?? null
   const loginsLoading = loginsLoadingRaw
   const loginsLoaded = loginsFetched
+
+  const passwordsEnabled = activeTab === 'passwords'
+  const { data: passwordsResult, isLoading: passwordsLoading, isFetched: passwordsFetched } = useAdminUserPasswords(uid, passwordsPage, passwordsEnabled)
+  const passwords = passwordsResult?.data ?? []
+  const passwordsPagination = passwordsResult?.pagination ?? null
 
   const downloadsEnabled = activeTab === 'downloads'
   const { data: downloadsResult, isLoading: downloadsLoadingRaw, isFetched: downloadsFetched } = useAdminUserDownloads(uid, downloadsPage, downloadsEnabled)
@@ -107,6 +200,32 @@ export default function AdminUserDetailPage() {
             <p className="text-blue-200/60 text-sm">{user.email}</p>
             <p className="text-blue-200/40 text-xs mt-1">สมัครเมื่อ {formatDate(user.created_at)}</p>
           </div>
+
+          {isMaster && user.role !== 'master' && (
+            <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">
+              {user.role === 'user' ? (
+                <button
+                  type="button"
+                  disabled={roleBusy}
+                  onClick={() => handleRoleChange('admin')}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition disabled:opacity-40"
+                >
+                  <i className="fas fa-arrow-up mr-1.5 text-xs"></i>
+                  เพิ่มยศเป็นผู้ดูแล
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={roleBusy}
+                  onClick={() => handleRoleChange('user')}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/5 text-blue-200/70 border border-white/10 hover:bg-white/10 transition disabled:opacity-40"
+                >
+                  <i className="fas fa-arrow-down mr-1.5 text-xs"></i>
+                  ถอดสิทธิ์เป็นสมาชิกทั่วไป
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {user.is_banned && (
@@ -199,12 +318,13 @@ export default function AdminUserDetailPage() {
                           ดูรายงาน →
                         </Link>
                       )}
+                      {deleteButton('analysis', item.aid, item.file_name ?? 'ไฟล์นี้')}
                     </div>
                   ))}
                 </div>
               )}
 
-              {historyPagination && historyPagination.total_pages > 1 && (
+              {historyPagination && (
                 <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
                   <button
                     disabled={!historyPagination.has_prev}
@@ -219,6 +339,64 @@ export default function AdminUserDetailPage() {
                   <button
                     disabled={!historyPagination.has_next}
                     onClick={() => setHistoryPage((p) => p + 1)}
+                    className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition"
+                  >
+                    ถัดไป →
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'passwords' && (
+            <>
+              {passwordsLoading && !passwordsFetched ? (
+                <div className="flex justify-center py-16">
+                  <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : passwords.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="text-4xl mb-3">🔐</div>
+                  <p className="text-white font-medium">ยังไม่มีประวัติการเปลี่ยนรหัสผ่าน</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {passwords.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium text-purple-300 bg-purple-500/10 border border-purple-500/20">
+                            เปลี่ยนรหัสผ่านสำเร็จ
+                          </span>
+                        </div>
+                        <p className="text-blue-200/50 text-xs truncate">
+                          {item.ip ?? '-'} • {item.user_agent ?? '-'}
+                        </p>
+                      </div>
+                      <div className="flex items-center shrink-0">
+                        <span className="text-blue-200/40 text-xs">{formatDate(item.created_at)}</span>
+                        {deleteButton('password', item.id, 'การเปลี่ยนรหัสผ่าน')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {passwordsPagination && (
+                <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
+                  <button
+                    disabled={!passwordsPagination.has_prev}
+                    onClick={() => setPasswordsPage((p) => p - 1)}
+                    className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition"
+                  >
+                    ← ก่อนหน้า
+                  </button>
+                  <span className="text-blue-200/50 text-sm">
+                    หน้า {passwordsPagination.page} / {passwordsPagination.total_pages}
+                  </span>
+                  <button
+                    disabled={!passwordsPagination.has_next}
+                    onClick={() => setPasswordsPage((p) => p + 1)}
                     className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition"
                   >
                     ถัดไป →
@@ -258,13 +436,16 @@ export default function AdminUserDetailPage() {
                         </div>
                         <p className="text-blue-200/50 text-xs">{item.ip ?? '-'} • {item.user_agent ?? '-'}</p>
                       </div>
-                      <span className="text-blue-200/40 text-xs shrink-0">{formatDate(item.created_at)}</span>
+                      <div className="flex items-center shrink-0">
+                        <span className="text-blue-200/40 text-xs">{formatDate(item.created_at)}</span>
+                        {deleteButton('login', item.id, `การเข้าสู่ระบบ (${item.provider ?? 'password'})`)}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {loginsPagination && loginsPagination.total_pages > 1 && (
+              {loginsPagination && (
                 <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
                   <button
                     disabled={!loginsPagination.has_prev}
@@ -307,13 +488,16 @@ export default function AdminUserDetailPage() {
                         <p className="text-white text-sm font-medium">{item.file_name ?? '-'}</p>
                         <p className="text-blue-200/50 text-xs">{item.tool ?? '-'} • {item.md5 ?? '-'}</p>
                       </div>
-                      <span className="text-blue-200/40 text-xs shrink-0">{formatDate(item.created_at)}</span>
+                      <div className="flex items-center shrink-0">
+                        <span className="text-blue-200/40 text-xs">{formatDate(item.created_at)}</span>
+                        {deleteButton('download', item.id, `ดาวน์โหลด ${item.file_name ?? '-'}`)}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {downloadsPagination && downloadsPagination.total_pages > 1 && (
+              {downloadsPagination && (
                 <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
                   <button
                     disabled={!downloadsPagination.has_prev}

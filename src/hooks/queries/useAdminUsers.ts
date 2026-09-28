@@ -30,6 +30,7 @@ function useInvalidateAdminUsers() {
   const queryClient = useQueryClient()
   return () => {
     queryClient.invalidateQueries({ queryKey: ["admin", "users-list"] })
+    queryClient.invalidateQueries({ queryKey: ["admin", "user-detail"] })
   }
 }
 

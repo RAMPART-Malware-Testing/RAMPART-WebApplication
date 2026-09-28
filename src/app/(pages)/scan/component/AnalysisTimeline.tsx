@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Shield, FileText, Activity, Workflow, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -10,6 +11,7 @@ import type { AnalysisResponse, TaskStatus } from "./types"
 
 interface AnalysisTimelineProps {
   data: AnalysisResponse
+  taskId?: string
   className?: string
 }
 
@@ -38,7 +40,8 @@ function getEngineStageStatus(mobsf: AnalysisResponse["mobsf"], cape: AnalysisRe
   return deriveStageStatus([mobsf.status, cape.status, ml.status])
 }
 
-export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
+export function AnalysisTimeline({ data, taskId, className }: AnalysisTimelineProps) {
+  const detailTaskId = taskId || data.fileId
   const stages = [
     {
       id: "vt",
@@ -110,6 +113,15 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
                   Stage 1 — Initial Triage
                 </div>
                 <VirusTotalCard data={data.virusTotal} />
+                {detailTaskId && data.virusTotal.status === "completed" && (
+                  <Link
+                    href={`/details/virustotal/${detailTaskId}`}
+                    className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition"
+                  >
+                    <i className="fas fa-arrow-right"></i>
+                    ดูรายละเอียด VirusTotal
+                  </Link>
+                )}
               </motion.div>
             </motion.div>
           </AnimatePresence>
@@ -144,6 +156,29 @@ export function AnalysisTimeline({ data, className }: AnalysisTimelineProps) {
                   <CAPECard data={data.cape} />
                   <MLCard data={data.ml} className="md:col-span-2 xl:col-span-1" />
                 </div>
+
+                {detailTaskId && (
+                  <div className="mt-3 flex flex-wrap gap-4">
+                    {data.mobsf.status === "completed" && (
+                      <Link
+                        href={`/details/mobsf/${detailTaskId}`}
+                        className="inline-flex items-center gap-2 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition"
+                      >
+                        <i className="fas fa-arrow-right"></i>
+                        ดูรายละเอียด MobSF
+                      </Link>
+                    )}
+                    {data.cape.status === "completed" && (
+                      <Link
+                        href={`/details/cape/${detailTaskId}`}
+                        className="inline-flex items-center gap-2 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition"
+                      >
+                        <i className="fas fa-arrow-right"></i>
+                        ดูรายละเอียด CAPE Sandbox
+                      </Link>
+                    )}
+                  </div>
+                )}
               </motion.div>
             </motion.div>
           </AnimatePresence>

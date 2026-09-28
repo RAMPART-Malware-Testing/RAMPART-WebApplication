@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import NavbarComponent from '@/components/NavbarComponent'
 import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
+import { useMarkSeen } from '@/hooks/queries/useNavBadges'
+import { useViewedTasks } from '@/hooks/useViewedTasks'
 
 const FILE_TYPES = ['apk', 'exe', 'msi', 'bat', 'dmg', 'ipa', 'zip']
 const STATUS_OPTIONS = [
@@ -25,6 +27,12 @@ export default function ReportsPage() {
   const [sortDir, setSortDir] = useState<1 | -1>(-1)
 
   const [page, setPage] = useState(1)
+
+  useMarkSeen('reports')
+  const { viewed, markViewed } = useViewedTasks()
+
+  const isUnread = (item: AnalysisHistoryItem) =>
+    viewed !== null && item.status === 'success' && !!item.task_id && !viewed.has(item.task_id)
 
   const { data: result, isLoading } = useAnalysisHistory({
     page,
@@ -144,12 +152,23 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-[#050510] p-6">
       <NavbarComponent />
 
-      <div className="max-w-6xl mx-auto space-y-5 mt-6">
+      <div className="max-w-7xl mx-auto mt-6">
+        <div className="mb-4 flex items-center gap-3">
+          <i className="fas fa-clipboard-list text-cyan-400" />
+          <div>
+            <h1 className="text-white font-semibold text-lg">รายงานของฉัน (Private)</h1>
+            <p className="text-slate-400 text-sm">ประวัติการวิเคราะห์ไฟล์ของคุณ</p>
+          </div>
+        </div>
 
-        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-
-            <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <div className="lg:order-2 lg:sticky lg:top-20 bg-white/5 rounded-2xl p-5 border border-white/10">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+            <i className="fas fa-filter text-cyan-400" />
+            ตัวกรอง
+          </h3>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
               <label className="block text-sm text-blue-200/60 mb-2">ค้นหาไฟล์</label>
               <input
                 type="text"
@@ -208,7 +227,8 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+
+        <div className="lg:order-1 bg-white/5 rounded-2xl p-6 border border-white/10">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-white font-semibold text-lg">รายงานทั้งหมด</h2>
             {pagination && (
@@ -234,19 +254,35 @@ export default function ReportsPage() {
                 <Link
                   key={item.aid}
                   href={reportHref(item)}
-                  className="flex flex-col gap-3 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 transition group sm:flex-row sm:items-center sm:justify-between"
+                  onClick={() => markViewed(item.task_id)}
+                  className={`flex flex-col gap-3 p-4 rounded-xl border transition group sm:flex-row sm:items-center sm:justify-between ${
+                    isUnread(item)
+                      ? 'bg-rose-500/[0.04] border-rose-500/25 hover:bg-rose-500/[0.08] hover:border-rose-500/40'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-cyan-500/30'
+                  }`}
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
 
-                    <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition">
+                    <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition relative">
                       <span className="text-cyan-400 text-xs font-bold uppercase">
                         {item.file_type ?? '?'}
                       </span>
+                      {isUnread(item) && (
+                        <span
+                          title="วิเคราะห์เสร็จแล้ว แต่ยังไม่ได้เปิดดู"
+                          className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-rose-500/30"
+                        />
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="text-white font-medium truncate" title={item.file_name ?? '-'}>{item.file_name ?? '-'}</span>
+                        {isUnread(item) && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium border text-rose-400 bg-rose-500/10 border-rose-500/20">
+                            ยังไม่ได้ดู
+                          </span>
+                        )}
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getprivacyColor(item.privacy)} ${getprivacyBadge(item.privacy)}`}>
                           {item.privacy ? 'PUBLIC' : 'PRIVATE'}
                         </span>
@@ -315,7 +351,7 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {pagination && pagination.total_pages > 1 && (
+          {pagination && (
             <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/10">
               <button
                 disabled={!pagination.has_prev}
@@ -338,6 +374,7 @@ export default function ReportsPage() {
               </button>
             </div>
           )}
+        </div>
         </div>
 
       </div>

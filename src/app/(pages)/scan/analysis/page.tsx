@@ -1,14 +1,20 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import NavbarComponent from "@/components/NavbarComponent"
 import { RealtimeAnalysis } from "../component/RealtimeAnalysis"
 import GeometricLoader from "@/components/GeometricLoader"
+import { useViewedTasks } from "@/hooks/useViewedTasks"
 
 function AnalysisBody() {
   const searchParams = useSearchParams()
   const taskId = searchParams.get("taskId")
+  const { markViewed } = useViewedTasks()
+
+  useEffect(() => {
+    markViewed(taskId)
+  }, [taskId, markViewed])
 
   if (!taskId) {
     return (

@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { queryKeys } from "./queryKeys"
+
+export const HISTORY_PAGE_SIZE = 25
 
 export interface LoginHistoryItem {
   id: string
@@ -19,24 +21,36 @@ export interface DownloadHistoryItem {
   created_at: string | null
 }
 
-export function useLoginHistory() {
+export interface PasswordHistoryItem {
+  id: string
+  ip: string | null
+  user_agent: string | null
+  created_at: string | null
+}
+
+type HistoryResult<T> = { data: T[]; pagination: AnalysisHistoryPagination | null }
+
+function useHistoryQuery<T>(key: readonly unknown[], endpoint: string, page: number, limit: number) {
   return useQuery({
-    queryKey: queryKeys.loginHistory,
-    queryFn: async (): Promise<LoginHistoryItem[]> => {
-      const { data } = await axios.post("/api/profile/login-history")
-      return data?.success && Array.isArray(data.data) ? data.data : []
+    queryKey: [...key, page, limit],
+    queryFn: async (): Promise<HistoryResult<T>> => {
+      const { data } = await axios.post(endpoint, { page, limit })
+      if (!data?.success || !Array.isArray(data.data)) return { data: [], pagination: null }
+      return { data: data.data, pagination: data.pagination ?? null }
     },
     staleTime: 5_000,
+    placeholderData: keepPreviousData,
   })
 }
 
-export function useDownloadHistory() {
-  return useQuery({
-    queryKey: queryKeys.downloadHistory,
-    queryFn: async (): Promise<DownloadHistoryItem[]> => {
-      const { data } = await axios.post("/api/profile/download-history")
-      return data?.success && Array.isArray(data.data) ? data.data : []
-    },
-    staleTime: 5_000,
-  })
+export function useLoginHistory(page = 1, limit = HISTORY_PAGE_SIZE) {
+  return useHistoryQuery<LoginHistoryItem>([...queryKeys.loginHistory], "/api/profile/login-history", page, limit)
+}
+
+export function useDownloadHistory(page = 1, limit = HISTORY_PAGE_SIZE) {
+  return useHistoryQuery<DownloadHistoryItem>([...queryKeys.downloadHistory], "/api/profile/download-history", page, limit)
+}
+
+export function usePasswordHistory(page = 1, limit = HISTORY_PAGE_SIZE) {
+  return useHistoryQuery<PasswordHistoryItem>([...queryKeys.passwordHistory], "/api/profile/password-history", page, limit)
 }

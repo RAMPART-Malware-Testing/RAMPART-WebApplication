@@ -4,9 +4,60 @@ const ERROR_RESPONSE = { success: false, status: "SERVER_ERROR", message: "Conne
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:8006";
 
 class AdminServiceClass {
+    async masterSetupEmail(token: string, email: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/setup/email`, { token, email });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async masterSetupConfirm(token: string, otpToken: string | null, otp: string | null, newPasswd: string, skipOtp = false) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/setup/confirm`, {
+                token,
+                otp_token: otpToken,
+                otp,
+                newPasswd,
+                skip_otp: skipOtp,
+            });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
     async listUsers(token: string, params: { page?: number; limit?: number; q?: string; role?: string | string[]; banned?: boolean }) {
         try {
             const res = await axios.post(`${SERVER_URL}/api/admin/users`, { token, ...params });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async getUserPasswordHistory(token: string, targetUid: string, params: { page?: number; limit?: number }) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/users/password-history`, {
+                token,
+                target_uid: targetUid,
+                ...params,
+            });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async deleteUserHistory(token: string, targetUid: string, kind: string, entryId: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/users/history-delete`, {
+                token,
+                target_uid: targetUid,
+                kind,
+                entry_id: entryId,
+            });
             return res.data;
         } catch {
             return ERROR_RESPONSE;
