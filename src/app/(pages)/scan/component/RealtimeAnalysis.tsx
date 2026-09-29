@@ -335,17 +335,17 @@ export function RealtimeAnalysis({ taskId }: { taskId: string }) {
           <div className="flex gap-1 rounded-full bg-white/5 p-1">
             <button
               type="button"
-              onClick={() => changePrivacy(true)}
+              onClick={() => changePrivacy(false)}
               disabled={savingPrivacy}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${privacy ? "bg-blue-500 text-white shadow" : "text-slate-400 hover:text-white"}`}
+              className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${!privacy ? "bg-blue-500 text-white shadow" : "text-slate-400 hover:text-white"}`}
             >
               สาธารณะ
             </button>
             <button
               type="button"
-              onClick={() => changePrivacy(false)}
+              onClick={() => changePrivacy(true)}
               disabled={savingPrivacy}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${!privacy ? "bg-purple-500 text-white shadow" : "text-slate-400 hover:text-white"}`}
+              className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${privacy ? "bg-purple-500 text-white shadow" : "text-slate-400 hover:text-white"}`}
             >
               ส่วนตัว
             </button>

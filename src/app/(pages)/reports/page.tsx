@@ -71,9 +71,9 @@ export default function ReportsPage() {
 
   const getprivacyColor = (score: boolean | null) => {
     if (score === null) return 'text-gray-400'
-    if (score == false) return 'text-purple-400'
-    if (score == true) return 'text-green-400'
-    return 'text-green-400'
+    if (score == false) return 'text-green-400'
+    if (score == true) return 'text-purple-400'
+    return 'text-gray-400'
   }
 
   const getStatusBadge = (s: string | null) => {
@@ -86,8 +86,8 @@ export default function ReportsPage() {
   }
   const getprivacyBadge = (s: boolean | null) => {
     switch (s) {
-      case true: return 'text-green-400 bg-green-500/10 border border-green-500/20'
-      case false: return 'text-purple-400 bg-purple-500/10 border border-purple-500/20'
+      case true: return 'text-purple-400 bg-purple-500/10 border border-purple-500/20'
+      case false: return 'text-green-400 bg-green-500/10 border border-green-500/20'
       default: return 'text-gray-400 bg-gray-500/10 border border-gray-500/20'
     }
   }
@@ -284,7 +284,7 @@ export default function ReportsPage() {
                           </span>
                         )}
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getprivacyColor(item.privacy)} ${getprivacyBadge(item.privacy)}`}>
-                          {item.privacy ? 'PUBLIC' : 'PRIVATE'}
+                          {item.privacy ? 'PRIVATE' : 'PUBLIC'}
                         </span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(item.status)}`}>
                           {getStatusLabel(item.status)}

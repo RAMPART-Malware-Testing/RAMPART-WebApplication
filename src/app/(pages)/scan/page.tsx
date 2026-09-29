@@ -35,7 +35,7 @@ export default function ScanFilesPage() {
   const [file, setFile] = useState<UploadedFile | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
-  const privacy = false
+  const privacy = true
   const [showLoader, setShowLoader] = useState(false)
   const redirectTaskId = useRef<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
