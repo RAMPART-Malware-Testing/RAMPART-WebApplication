@@ -25,7 +25,8 @@ const OAUTH_ERROR_TEXT: Record<string, string> = {
 }
 
 function oauthErrorText(error: string, message?: string | null) {
-  return OAUTH_ERROR_TEXT[error] ?? (message ? `เข้าสู่ระบบไม่สำเร็จ: ${message}` : 'เข้าสู่ระบบไม่สำเร็จ')
+  const base = OAUTH_ERROR_TEXT[error] ?? 'เข้าสู่ระบบไม่สำเร็จ'
+  return message ? `${base} (${message})` : base
 }
 
 export default function LoginPage() {
