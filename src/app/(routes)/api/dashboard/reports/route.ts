@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     const SERVER_URL = process.env.SERVER_URL || "http://localhost:8006";
     try {
         const res = await axios.post(`${SERVER_URL}/api/analy/v1/dashboard/reports`, {
+            token: session.accessToken,
             page: body.page || 1,
             limit: Math.min(body.limit || 10, 50),
             s: body.s || null,
