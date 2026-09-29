@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { appUrl } from '@/lib/app-url'
+import { appUrl, publicOrigin } from '@/lib/app-url'
 
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:8006'
 const ALLOWED_PROVIDERS = new Set(['google', 'github'])
@@ -17,9 +17,14 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
         return loginFail(request, 'OAUTH_PROVIDER_UNSUPPORTED')
     }
 
+    const origin = encodeURIComponent(publicOrigin(request))
+
     let upstream: Response
     try {
-        upstream = await fetch(`${SERVER_URL}/api/auth/${provider}/login`, { redirect: 'manual' })
+        upstream = await fetch(
+            `${SERVER_URL}/api/auth/${provider}/login?redirect_origin=${origin}`,
+            { redirect: 'manual' },
+        )
     } catch {
         return loginFail(request, 'OAUTH_SERVER_UNREACHABLE')
     }
