@@ -5,7 +5,7 @@ import { appUrl } from "@/lib/app-url";
 
 const GUEST_ONLY_ROUTES = ["/login", "/register", "/reset-passwd", "/verify-otp"];
 
-const PROTECTED_ROUTES = ["/home", "/dashboard", "/scan", "/details", "/profile", "/reports", "/admin", "/setup"];
+const PROTECTED_ROUTES = ["/home", "/dashboard", "/scan", "/details", "/profile", "/reports", "/public", "/admin", "/setup"];
 
 const ROLE_PROTECTED_ROUTES: { prefix: string; roles: Array<"admin" | "master"> }[] = [
     { prefix: "/admin", roles: ["admin", "master"] },
@@ -153,6 +153,8 @@ export const config = {
         "/scan/:path*",
         "/profile/:path*",
         "/reports/:path*",
+        "/public",
+        "/public/:path*",
         "/setup/:path*",
         "/setup",
         "/admin/:path*",
