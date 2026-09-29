@@ -16,6 +16,7 @@ import {
   Settings,
   ShieldCheck,
   LogOut,
+  LogIn,
   ChevronDown,
 } from "lucide-react"
 
@@ -40,8 +41,8 @@ export default function NavbarComponent() {
   const { data: navBadges } = useNavBadges()
   const badges = navBadges ?? { reports: 0, public: 0 }
 
-  const displayName = profile?.username || "Security Analyst"
-  const displayEmail = profile?.email || "admin@rampart.security"
+  const displayName = profile?.username || ""
+  const displayEmail = profile?.email || ""
   const initials = (displayName.trim().charAt(0) || "U").toUpperCase()
   const avatarSrc = profile?.avatar_url && !avatarLoadFailed ? `${SERVER_URL}${profile.avatar_url}` : null
   const isAdmin = profile?.role === "admin" || profile?.role === "master"
@@ -116,6 +117,15 @@ export default function NavbarComponent() {
               <span className="text-xs font-medium text-emerald-400">Online</span>
             </div>
 
+            {!profile ? (
+              <Link
+                href="/login"
+                className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-1.5 border border-white/[0.08] hover:bg-white/10 hover:border-white/15 transition-all duration-200 text-xs font-medium text-white"
+              >
+                <LogIn className="h-4 w-4" />
+                เข้าสู่ระบบ
+              </Link>
+            ) : (
             <div className="relative">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -176,6 +186,7 @@ export default function NavbarComponent() {
                 </>
               )}
             </div>
+            )}
           </div>
         </div>
       </div>
