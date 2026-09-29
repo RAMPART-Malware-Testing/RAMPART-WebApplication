@@ -16,6 +16,11 @@ export async function GET(request: NextRequest) {
     }
 
     const response = NextResponse.redirect(new URL("/dashboard", request.url));
-    await applyOAuthSession(response, accessToken, deviceTokenRaw);
+    const ok = await applyOAuthSession(response, accessToken, deviceTokenRaw);
+    if (!ok) {
+        const base = new URL("/login", request.url);
+        base.searchParams.set("error", "OAUTH_SESSION_FAILED");
+        return NextResponse.redirect(base);
+    }
     return response;
 }

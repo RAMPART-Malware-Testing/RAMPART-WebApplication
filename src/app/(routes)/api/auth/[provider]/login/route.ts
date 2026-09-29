@@ -3,16 +3,32 @@ import { NextRequest, NextResponse } from 'next/server'
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:8006'
 const ALLOWED_PROVIDERS = new Set(['google', 'github'])
 
+function loginFail(request: NextRequest, error: string, message?: string) {
+    const base = new URL('/login', request.url)
+    base.searchParams.set('error', error)
+    if (message) base.searchParams.set('message', message)
+    return NextResponse.redirect(base)
+}
+
 export async function GET(request: NextRequest, context: { params: Promise<{ provider: string }> }) {
     const { provider } = await context.params
     if (!ALLOWED_PROVIDERS.has(provider)) {
-        return NextResponse.json({ success: false, message: 'Unsupported OAuth provider' }, { status: 404 })
+        return loginFail(request, 'OAUTH_PROVIDER_UNSUPPORTED')
     }
 
-    const upstream = await fetch(`${SERVER_URL}/api/auth/${provider}/login`, { redirect: 'manual' })
+    let upstream: Response
+    try {
+        upstream = await fetch(`${SERVER_URL}/api/auth/${provider}/login`, { redirect: 'manual' })
+    } catch {
+        return loginFail(request, 'OAUTH_SERVER_UNREACHABLE')
+    }
+
     const location = upstream.headers.get('location')
     if (!location) {
-        return NextResponse.json({ success: false, message: 'ไม่สามารถเริ่มการเข้าสู่ระบบได้ กรุณาลองใหม่' }, { status: 502 })
+        if (upstream.status === 503) {
+            return loginFail(request, 'OAUTH_NOT_CONFIGURED')
+        }
+        return loginFail(request, 'OAUTH_START_FAILED', `HTTP ${upstream.status}`)
     }
 
     const response = NextResponse.redirect(location, { status: 302 })

@@ -10,6 +10,24 @@ import { useToast } from '@/components/ui/ToastProvider'
 import Navbarservice from '@/components/Navbarservice'
 import GeometricLoader from '@/components/GeometricLoader'
 
+
+const OAUTH_ERROR_TEXT: Record<string, string> = {
+  OAUTH_PROVIDER_ERROR: 'เข้าสู่ระบบด้วยผู้ให้บริการภายนอกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+  OAUTH_EMAIL_MISSING: 'บัญชีผู้ให้บริการนี้ไม่มีอีเมลที่ใช้งานได้ กรุณาใช้บัญชีอื่นหรือสมัครใหม่',
+  OAUTH_ACCOUNT_LINKED: 'อีเมลนี้ถูกผูกกับบัญชีอื่นอยู่แล้ว',
+  OAUTH_PROVIDER_UNSUPPORTED: 'ยังไม่รองรับผู้ให้บริการนี้',
+  OAUTH_CALLBACK_FAILED: 'ยืนยันตัวตนกับผู้ให้บริการไม่สำเร็จ กรุณาลองใหม่',
+  OAUTH_TOKEN_MISSING: 'ไม่ได้รับโทเค็นจากผู้ให้บริการ กรุณาลองใหม่',
+  OAUTH_SESSION_FAILED: 'สร้างเซสชันไม่สำเร็จ กรุณาลองเข้าสู่ระบบใหม่',
+  OAUTH_SERVER_UNREACHABLE: 'เชื่อมต่อเซิร์ฟเวอร์ยืนยันตัวตนไม่ได้ กรุณาตรวจสอบว่า backend รันอยู่ แล้วลองใหม่',
+  OAUTH_NOT_CONFIGURED: 'ผู้ให้บริการนี้ยังไม่ได้ตั้งค่าในเซิร์ฟเวอร์ (ตรวจสอบ GOOGLE_/GITHUB_CLIENT_ID/SECRET ใน .env)',
+  OAUTH_START_FAILED: 'เริ่มการเข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+}
+
+function oauthErrorText(error: string, message?: string | null) {
+  return OAUTH_ERROR_TEXT[error] ?? (message ? `เข้าสู่ระบบไม่สำเร็จ: ${message}` : 'เข้าสู่ระบบไม่สำเร็จ')
+}
+
 export default function LoginPage() {
   const recaptchaRef = useRef<ReCAPTCHA>(null)
   const [email, setEmail] = useState('')
@@ -22,6 +40,18 @@ export default function LoginPage() {
   const [requireCaptcha, setRequireCaptcha] = useState(false)
 
   const notify = useToast();
+  const oauthErrorHandled = useRef(false)
+
+  useEffect(() => {
+    if (oauthErrorHandled.current) return
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const error = params.get('error')
+    if (!error) return
+    oauthErrorHandled.current = true
+    notify.error(oauthErrorText(error, params.get('message')))
+    window.history.replaceState({}, '', '/login')
+  }, [notify])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

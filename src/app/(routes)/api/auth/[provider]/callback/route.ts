@@ -51,6 +51,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
     }
 
     const response = NextResponse.redirect(new URL("/dashboard", request.url));
-    await applyOAuthSession(response, accessToken, target.searchParams.get("device_token"));
+    const ok = await applyOAuthSession(response, accessToken, target.searchParams.get("device_token"));
+    if (!ok) {
+        return loginError(request, "OAUTH_SESSION_FAILED");
+    }
     return response;
 }

@@ -17,11 +17,12 @@ export async function applyOAuthSession(
     response: NextResponse,
     accessToken: string,
     deviceToken?: string | null,
-) {
+): Promise<boolean> {
     const profile = await fetchProfile(accessToken);
+    if (!profile) return false;
 
     const wrapped = jwtService.sign(
-        { token: accessToken, type: "session", data: profile ?? ({ role: "user" } as RampartUser) },
+        { token: accessToken, type: "session", data: profile },
         "7d",
     );
     response.cookies.set("access_token", wrapped, {
@@ -42,4 +43,6 @@ export async function applyOAuthSession(
             maxAge: SESSION_MAX_AGE,
         });
     }
+
+    return true;
 }

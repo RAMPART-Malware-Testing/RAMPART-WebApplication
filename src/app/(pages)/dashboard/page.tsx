@@ -176,95 +176,7 @@ export default function DashboardPage() {
             subtitle="สมาชิกที่ลงทะเบียน"
           />
         </div>
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden mb-8">
-          <div className="px-6 py-4 border-b border-white/10 flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-white font-semibold flex items-center gap-2">
-                <i className="fas fa-globe text-blue-400" />
-                ไฟล์สาธารณะ (Public)
-              </h3>
-              <p className="text-slate-400 text-sm mt-1">5 รายการล่าสุดที่เปิดให้ทุกคนดูได้</p>
-            </div>
-            <Link
-              href="/public"
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-medium text-cyan-400 hover:bg-white/10 hover:text-cyan-300 transition"
-            >
-              ดูทั้งหมด
-              <i className="fas fa-arrow-right text-[10px]" />
-            </Link>
-          </div>
-          <div className="divide-y divide-white/5">
-            {publicFiles.length > 0 ? (
-              publicFiles.map((f: any) => (
-                <Link
-                  key={f.aid || f.task_id}
-                  href={`/scan/analysis?taskId=${f.task_id}`}
-                  className="flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-9 h-9 shrink-0 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-cyan-400 text-xs font-bold uppercase">
-                      {f.file_type ?? '?'}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-white text-sm font-medium truncate" title={f.file_name ?? undefined}>{f.file_name}</p>
-                      <p className="text-xs text-slate-500">
-                        {f.file_size ? fmtSize(f.file_size) : ''} • {f.created_at ? new Date(f.created_at).toLocaleString('th-TH') : ''}
-                      </p>
-                      {f.uploaded_by && (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="h-4 w-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-[8px] font-bold text-white overflow-hidden">
-                            {f.uploaded_by.avatar_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={`${SERVER_URL}${f.uploaded_by.avatar_url}`} alt="avatar" className="w-full h-full object-cover" />
-                            ) : (
-                              (f.uploaded_by.username || '?').charAt(0).toUpperCase()
-                            )}
-                          </span>
-                          <span className="text-[11px] text-slate-400">{f.uploaded_by.username}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    {f.status && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${f.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : f.status === 'failed' ? 'bg-rose-500/10 text-rose-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                        {f.status}
-                      </span>
-                    )}
-                    {f.report?.score != null && (
-                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                        <span className={`text-sm font-bold font-mono ${dangerTier(Number(f.report.score)).text}`}>
-                          {Math.round(Number(f.report.score))}/100
-                        </span>
-                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${dangerTier(Number(f.report.score)).chip} ${dangerTier(Number(f.report.score)).text}`}>
-                          {dangerTier(Number(f.report.score)).label}
-                        </span>
-                        {toolChips(f.report as any, f.tools).map((c) => {
-                          const tier = c.value != null ? dangerTier(c.value) : null
-                          return (
-                            <span
-                              key={c.key}
-                              title={c.value != null ? `${c.title}: ${Math.round(c.value)}/100` : `${c.title}: ไม่มีข้อมูล`}
-                              className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${tier ? tier.chip + ' ' + tier.text : 'text-slate-500 bg-slate-800/50 border-slate-600/40'}`}
-                            >
-                              {c.label} {c.value != null ? Math.round(c.value) : '–'}
-                            </span>
-                          )
-                        })}
-                      </div>
-                    )}
-                    <i className="fas fa-chevron-right text-slate-500 text-xs group-hover:translate-x-1 group-hover:text-cyan-400 transition" />
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <div className="text-center py-12 text-slate-400">
-                <i className="fas fa-globe text-4xl mb-3 opacity-40" />
-                <p>ไม่มีไฟล์</p>
-              </div>
-            )}
-          </div>
-        </div>
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
             <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
@@ -403,6 +315,95 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-white/10 flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <i className="fas fa-globe text-blue-400" />
+                ไฟล์สาธารณะ (Public)
+              </h3>
+              <p className="text-slate-400 text-sm mt-1">5 รายการล่าสุดที่เปิดให้ทุกคนดูได้</p>
+            </div>
+            <Link
+              href="/public"
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-medium text-cyan-400 hover:bg-white/10 hover:text-cyan-300 transition"
+            >
+              ดูทั้งหมด
+              <i className="fas fa-arrow-right text-[10px]" />
+            </Link>
+          </div>
+          <div className="divide-y divide-white/5">
+            {publicFiles.length > 0 ? (
+              publicFiles.map((f: any) => (
+                <Link
+                  key={f.aid || f.task_id}
+                  href={`/scan/analysis?taskId=${f.task_id}`}
+                  className="flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-9 h-9 shrink-0 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-cyan-400 text-xs font-bold uppercase">
+                      {f.file_type ?? '?'}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-white text-sm font-medium truncate" title={f.file_name ?? undefined}>{f.file_name}</p>
+                      <p className="text-xs text-slate-500">
+                        {f.file_size ? fmtSize(f.file_size) : ''} • {f.created_at ? new Date(f.created_at).toLocaleString('th-TH') : ''}
+                      </p>
+                      {f.uploaded_by && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="h-4 w-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-[8px] font-bold text-white overflow-hidden">
+                            {f.uploaded_by.avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={`${SERVER_URL}${f.uploaded_by.avatar_url}`} alt="avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              (f.uploaded_by.username || '?').charAt(0).toUpperCase()
+                            )}
+                          </span>
+                          <span className="text-[11px] text-slate-400">{f.uploaded_by.username}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {f.status && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${f.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : f.status === 'failed' ? 'bg-rose-500/10 text-rose-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                        {f.status}
+                      </span>
+                    )}
+                    {f.report?.score != null && (
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                        <span className={`text-sm font-bold font-mono ${dangerTier(Number(f.report.score)).text}`}>
+                          {Math.round(Number(f.report.score))}/100
+                        </span>
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${dangerTier(Number(f.report.score)).chip} ${dangerTier(Number(f.report.score)).text}`}>
+                          {dangerTier(Number(f.report.score)).label}
+                        </span>
+                        {toolChips(f.report as any, f.tools).map((c) => {
+                          const tier = c.value != null ? dangerTier(c.value) : null
+                          return (
+                            <span
+                              key={c.key}
+                              title={c.value != null ? `${c.title}: ${Math.round(c.value)}/100` : `${c.title}: ไม่มีข้อมูล`}
+                              className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${tier ? tier.chip + ' ' + tier.text : 'text-slate-500 bg-slate-800/50 border-slate-600/40'}`}
+                            >
+                              {c.label} {c.value != null ? Math.round(c.value) : '–'}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    )}
+                    <i className="fas fa-chevron-right text-slate-500 text-xs group-hover:translate-x-1 group-hover:text-cyan-400 transition" />
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="text-center py-12 text-slate-400">
+                <i className="fas fa-globe text-4xl mb-3 opacity-40" />
+                <p>ไม่มีไฟล์</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
