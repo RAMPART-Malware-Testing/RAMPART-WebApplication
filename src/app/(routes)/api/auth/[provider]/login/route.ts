@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { appUrl } from '@/lib/app-url'
 
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:8006'
 const ALLOWED_PROVIDERS = new Set(['google', 'github'])
 
 function loginFail(request: NextRequest, error: string, message?: string) {
-    const base = new URL('/login', request.url)
+    const base = appUrl(request, '/login')
     base.searchParams.set('error', error)
     if (message) base.searchParams.set('message', message)
     return NextResponse.redirect(base)

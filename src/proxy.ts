@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtService } from "@/services/jwt.service";
+import { appUrl } from "@/lib/app-url";
 
 const GUEST_ONLY_ROUTES = ["/login", "/register", "/reset-passwd", "/verify-otp"];
 
@@ -11,7 +12,7 @@ const ROLE_PROTECTED_ROUTES: { prefix: string; roles: Array<"admin" | "master"> 
 ];
 
 function redirect(path: string, request: NextRequest, clearCookie = false) {
-    const response = NextResponse.redirect(new URL(path, request.url));
+    const response = NextResponse.redirect(appUrl(request, path));
     if (clearCookie) response.cookies.delete("access_token");
     return response;
 }

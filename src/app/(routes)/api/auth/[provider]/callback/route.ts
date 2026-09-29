@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyOAuthSession } from "@/lib/oauth-session";
+import { appUrl } from "@/lib/app-url";
 
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:8006";
 const ALLOWED_PROVIDERS = new Set(["google", "github"]);
 
 function loginError(request: NextRequest, error: string, message?: string | null) {
-    const base = new URL("/login", request.url);
+    const base = appUrl(request, "/login");
     base.searchParams.set("error", error);
     if (message) base.searchParams.set("message", message);
     return NextResponse.redirect(base);
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
         return loginError(request, "OAUTH_TOKEN_MISSING");
     }
 
-    const response = NextResponse.redirect(new URL("/dashboard", request.url));
+    const response = NextResponse.redirect(appUrl(request, "/dashboard"));
     const ok = await applyOAuthSession(response, accessToken, target.searchParams.get("device_token"));
     if (!ok) {
         return loginError(request, "OAUTH_SESSION_FAILED");
