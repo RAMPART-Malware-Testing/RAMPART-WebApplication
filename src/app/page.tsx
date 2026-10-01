@@ -7,7 +7,6 @@ import Navbarservice from "@/components/Navbarservice";
 import CollisionCards from "@/components/CollisionCards";
 import { useRouter } from "next/navigation";
 
-const CircuitBoard3D = dynamic(() => import("@/components/CircuitBoard3D"), { ssr: false });
 const SplineScene = dynamic(() => import("@/components/SplineScene"), { ssr: false });
 
 function ParticleField() {
@@ -312,12 +311,7 @@ export default function Home() {
         <div className="absolute -left-40 bottom-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: "10s" }} />
 
         <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row gap-12 items-center">
-            <div className="flex-1 reveal-on-scroll h-[400px] lg:h-[600px]" ref={addToRevealRefs}>
-              <CircuitBoard3D src="/circuit_board.glb" orbit="45deg 35deg" distance="1.2m" />
-            </div>
-
-            <div className="flex-1 space-y-6 reveal-on-scroll" ref={addToRevealRefs}>
+          <div className="max-w-3xl mx-auto text-center space-y-6 reveal-on-scroll" ref={addToRevealRefs}>
               <div className="inline-block px-4 py-1 bg-purple-500/10 rounded-full border border-purple-500/30 text-purple-300 text-sm font-mono animate-pulse">
                 ✦ เครื่องมือชั้นนำ ✦
               </div>
@@ -333,7 +327,7 @@ export default function Home() {
                 เพื่อให้คุณมั่นใจในทุกการใช้งาน กล้าที่จะตรวจจับ กล้าที่จะป้องกัน
                 เพื่อความปลอดภัยที่คุณวางใจได้ในทุกสถานการณ์
               </p>
-              <div className="flex flex-wrap gap-3 mt-4">
+              <div className="flex flex-wrap gap-3 mt-4 justify-center">
                 {["Cape Sandbox", "MobSF", "VirusTotal", "Gemini AI"].map((t) => (
                   <span key={t} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/30 transition-all duration-300 cursor-default">
                     {t}
@@ -341,12 +335,11 @@ export default function Home() {
                 ))}
               </div>
               <button
-                className="mt-6 px-8 py-3 rounded-full bg-white/5 border border-white/20 font-semibold hover:bg-purple-500/40 hover:border-purple-300 transition-all flex items-center gap-2 group"
+                className="mt-6 px-8 py-3 rounded-full bg-white/5 border border-white/20 font-semibold hover:bg-purple-500/40 hover:border-purple-300 transition-all inline-flex items-center gap-2 group"
               >
                 สำรวจผลงาน{" "}
                 <i className="fas fa-arrow-right group-hover:translate-x-2 transition-transform duration-300"></i>
               </button>
-            </div>
           </div>
         </div>
       </section>
