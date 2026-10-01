@@ -30,6 +30,7 @@ export interface DashboardSummary {
   topMalwareTypes: {
     daily: MalwareTypeEntry[]
     monthly: MalwareTypeEntry[]
+    all: MalwareTypeEntry[]
   }
   riskScores: RiskScoreEntry[]
 }
@@ -56,6 +57,7 @@ export function useDashboardSummary() {
         topMalwareTypes: {
           daily: data?.topMalwareTypes?.daily ?? [],
           monthly: data?.topMalwareTypes?.monthly ?? [],
+          all: data?.topMalwareTypes?.all ?? [],
         },
         riskScores: data?.riskScores ?? [],
       }

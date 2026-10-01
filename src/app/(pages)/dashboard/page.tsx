@@ -20,7 +20,21 @@ function truncate(text?: string, max = 30) {
   return text.slice(0, max) + '...'
 }
 
-type TimeRange = 'daily' | 'monthly'
+type TimeRange = 'daily' | 'monthly' | 'all'
+
+const TIME_RANGES: TimeRange[] = ['daily', 'monthly', 'all']
+
+const TIME_RANGE_LABELS: Record<TimeRange, string> = {
+  daily: 'รายวัน',
+  monthly: 'รายเดือน',
+  all: 'ทั้งหมด',
+}
+
+const TIME_RANGE_EMPTY_TEXT: Record<TimeRange, string> = {
+  daily: 'ไม่พบมัลแวร์จากการสแกนในวันนี้',
+  monthly: 'ไม่พบมัลแวร์จากการสแกนในเดือนนี้',
+  all: 'ยังไม่พบมัลแวร์จากการสแกนเลย',
+}
 
 const STATUS_STYLES: Record<RecentActivity['status'], { icon: string; badge: string; label: string }> = {
   success: {
@@ -127,9 +141,7 @@ export default function DashboardPage() {
 
   const dashboardStats = { ...summary, recentActivities }
 
-  const activeMalwareList = selectedTimeRange === 'daily'
-    ? dashboardStats.topMalwareTypes.daily
-    : dashboardStats.topMalwareTypes.monthly
+  const activeMalwareList = dashboardStats.topMalwareTypes[selectedTimeRange]
 
   const totalSuccessRate = dashboardStats.totalFiles.total > 0
     ? (dashboardStats.totalFiles.success / dashboardStats.totalFiles.total) * 100
@@ -189,7 +201,7 @@ export default function DashboardPage() {
                 <p className="text-slate-400 text-sm mt-1">10 อันดับมัลแวร์ที่พบมากที่สุด</p>
               </div>
               <div className="flex gap-2">
-                {(['daily', 'monthly'] as TimeRange[]).map((range) => (
+                {TIME_RANGES.map((range) => (
                   <button
                     key={range}
                     onClick={() => setSelectedTimeRange(range)}
@@ -199,7 +211,7 @@ export default function DashboardPage() {
                         : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    {range === 'daily' ? 'รายวัน' : 'รายเดือน'}
+                    {TIME_RANGE_LABELS[range]}
                   </button>
                 ))}
               </div>
@@ -251,19 +263,20 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-center py-12 text-slate-400">
                   <i className="fas fa-chart-simple text-4xl mb-3 opacity-50" />
-                  <p>
-                    {selectedTimeRange === 'daily'
-                      ? 'ไม่พบมัลแวร์จากการสแกนในวันนี้'
-                      : 'ไม่พบมัลแวร์จากการสแกนในเดือนนี้'}
-                  </p>
-                  {selectedTimeRange === 'daily' && dashboardStats.topMalwareTypes.monthly.length > 0 && (
-                    <button
-                      onClick={() => setSelectedTimeRange('monthly')}
-                      className="mt-3 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-medium text-cyan-400 hover:bg-white/10 hover:text-cyan-300 transition"
-                    >
-                      ดูผลรายเดือน ({dashboardStats.topMalwareTypes.monthly.length} ประเภท)
-                    </button>
-                  )}
+                  <p>{TIME_RANGE_EMPTY_TEXT[selectedTimeRange]}</p>
+                  <div className="mt-3 flex flex-wrap justify-center gap-2">
+                    {TIME_RANGES.filter(
+                      (range) => range !== selectedTimeRange && dashboardStats.topMalwareTypes[range].length > 0,
+                    ).map((range) => (
+                      <button
+                        key={range}
+                        onClick={() => setSelectedTimeRange(range)}
+                        className="rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-medium text-cyan-400 hover:bg-white/10 hover:text-cyan-300 transition"
+                      >
+                        ดูผล{TIME_RANGE_LABELS[range]} ({dashboardStats.topMalwareTypes[range].length} ประเภท)
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
