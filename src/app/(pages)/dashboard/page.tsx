@@ -95,7 +95,7 @@ const avgChips = (item: { virustotalScore?: number | null; mobsfScore?: number |
 }
 
 export default function DashboardPage() {
-  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('monthly')
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('all')
 
   const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: refetchSummary } = useDashboardSummary()
   const { data: recentActivities = [], isLoading: activitiesLoading } = useDashboardRecentActivities()
