@@ -121,35 +121,12 @@ export default function Home() {
   const [scrollY, setScrollY] = useState(0);
   const router = useRouter();
 
-  const revealRefs = useRef<(HTMLDivElement | null)[]>([]);
   const counterRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    const reveals = revealRefs.current.filter((el) => el !== null);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("revealed");
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: "0px 0px -80px 0px" }
-    );
-    reveals.forEach((el) => observer.observe(el!));
-    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -188,12 +165,6 @@ export default function Home() {
     counters.forEach((el) => counterObserver.observe(el!));
     return () => counterObserver.disconnect();
   }, []);
-
-  const addToRevealRefs = (el: HTMLDivElement | null) => {
-    if (el && !revealRefs.current.includes(el)) {
-      revealRefs.current.push(el);
-    }
-  };
 
   const addToCounterRefs = (el: HTMLDivElement | null) => {
     if (el && !counterRefs.current.includes(el)) {
@@ -292,7 +263,7 @@ export default function Home() {
 
       <section className="py-24 px-6 relative bg-[#050510]">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 reveal-on-scroll" ref={addToRevealRefs}>
+          <div className="text-center mb-16">
             <span className="text-purple-300 font-mono tracking-widest text-sm uppercase bg-white/5 px-4 py-1 rounded-full border border-purple-500/20">
               ทำไมต้อง RAMPART
             </span>
@@ -311,7 +282,7 @@ export default function Home() {
         <div className="absolute -left-40 bottom-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: "10s" }} />
 
         <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center space-y-6 reveal-on-scroll" ref={addToRevealRefs}>
+          <div className="max-w-3xl mx-auto text-center space-y-6">
               <div className="inline-block px-4 py-1 bg-purple-500/10 rounded-full border border-purple-500/30 text-purple-300 text-sm font-mono animate-pulse">
                 ✦ เครื่องมือชั้นนำ ✦
               </div>
@@ -346,7 +317,7 @@ export default function Home() {
 
       <section className="py-24 px-6 relative">
         <div className="absolute top-0 right-0 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-[120px]" />
-        <div className="max-w-6xl mx-auto text-center reveal-on-scroll" ref={addToRevealRefs}>
+        <div className="max-w-6xl mx-auto text-center">
           <span className="text-purple-300 font-mono tracking-widest text-sm uppercase bg-white/5 px-4 py-1 rounded-full border border-purple-500/20">
             เสียงจากผู้ใช้จริง
           </span>
@@ -362,8 +333,7 @@ export default function Home() {
             ].map((t, i) => (
               <div
                 key={t.name}
-                className="backdrop-blur-md bg-white/5 p-8 rounded-2xl border border-white/10 text-left hover:scale-[1.03] hover:border-purple-500/30 transition-all duration-500 group reveal-on-scroll"
-                ref={addToRevealRefs}
+                className="backdrop-blur-md bg-white/5 p-8 rounded-2xl border border-white/10 text-left hover:scale-[1.03] hover:border-purple-500/30 transition-all duration-500 group"
                 style={{ transitionDelay: `${i * 0.15}s` }}
               >
                 <div className="flex gap-1 mb-4">
@@ -400,7 +370,7 @@ export default function Home() {
           <div className="absolute inset-0 w-[500px] h-[500px] rounded-full border border-indigo-500/8 animate-ping" style={{ animationDuration: "7s", animationDelay: "1.5s" }} />
         </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10 reveal-on-scroll" ref={addToRevealRefs}>
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 bg-white/5 rounded-full px-5 py-2 mb-8 border border-white/10 backdrop-blur-sm hover:border-purple-500/30 transition-all duration-500">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />

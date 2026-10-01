@@ -104,18 +104,6 @@ body {
   will-change: transform;
 }
 
-.reveal-on-scroll {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.9s cubic-bezier(0.2, 0.9, 0.4, 1.1),
-    transform 0.9s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-}
-
-.reveal-on-scroll.revealed {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .hover-glow {
   transition: all 0.4s ease;
 }
