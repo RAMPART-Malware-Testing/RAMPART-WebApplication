@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
+import { fileTypeLabel, hasFileType } from '@/lib/file-type'
 
 const FILE_TYPES = ['apk', 'exe', 'msi', 'bat', 'dmg', 'ipa', 'zip']
 const STATUS_OPTIONS = [
@@ -140,8 +141,11 @@ export default function HistoryFileComponent({ onRegisterRefresh }: Props) {
                             <div className="flex items-center gap-4 flex-1 min-w-0">
 
                                 <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition">
-                                    <span className="text-cyan-400 text-xs font-bold uppercase">
-                                        {item.file_type ?? '?'}
+                                    <span
+                                        title={hasFileType(item.file_type) ? `ประเภทไฟล์: ${fileTypeLabel(item.file_type)}` : 'ไม่ระบุประเภทไฟล์'}
+                                        className={`font-bold uppercase ${hasFileType(item.file_type) ? 'text-cyan-400 text-xs' : 'text-slate-500 text-[10px]'}`}
+                                    >
+                                        {fileTypeLabel(item.file_type)}
                                     </span>
                                 </div>
 

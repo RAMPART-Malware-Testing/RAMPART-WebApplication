@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import NavbarComponent from '@/components/NavbarComponent'
 import { usePublicReports, type PublicReportItem } from '@/hooks/queries/usePublicReports'
-import { useMarkSeen } from '@/hooks/queries/useNavBadges'
+import { fileTypeLabel, hasFileType } from '@/lib/file-type'
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 const PAGE_SIZE = 5
@@ -90,8 +90,6 @@ export default function PublicFilesPage() {
   useEffect(() => {
     setPage(1)
   }, [query, status, fileType, sortField, sortDir])
-
-  useMarkSeen('public')
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -236,8 +234,11 @@ export default function PublicFilesPage() {
                     <div className="flex items-center gap-4 flex-1 min-w-0">
 
                       <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition">
-                        <span className="text-cyan-400 text-xs font-bold uppercase">
-                          {item.file_type ?? '?'}
+                        <span
+                          title={hasFileType(item.file_type) ? `ประเภทไฟล์: ${fileTypeLabel(item.file_type)}` : 'ไม่ระบุประเภทไฟล์'}
+                          className={`font-bold uppercase ${hasFileType(item.file_type) ? 'text-cyan-400 text-xs' : 'text-slate-500 text-[10px]'}`}
+                        >
+                          {fileTypeLabel(item.file_type)}
                         </span>
                       </div>
 

@@ -7,10 +7,9 @@ import { getCursor, markSeen, type ReadScope } from "@/lib/readState"
 
 export interface NavBadgeCounts {
   reports: number
-  public: number
 }
 
-const EMPTY_COUNTS: NavBadgeCounts = { reports: 0, public: 0 }
+const EMPTY_COUNTS: NavBadgeCounts = { reports: 0 }
 const POLL_INTERVAL_MS = 60_000
 
 export function useNavBadges() {
@@ -24,11 +23,10 @@ export function useNavBadges() {
       const owner = uid as string
       const { data } = await axios.post("/api/profile/notifications", {
         reports_since: getCursor(owner, "reports"),
-        public_since: getCursor(owner, "public"),
       })
       const counts = data?.data
       if (!counts) return EMPTY_COUNTS
-      return { reports: Number(counts.reports) || 0, public: Number(counts.public) || 0 }
+      return { reports: Number(counts.reports) || 0 }
     },
     staleTime: 30_000,
     refetchInterval: () =>

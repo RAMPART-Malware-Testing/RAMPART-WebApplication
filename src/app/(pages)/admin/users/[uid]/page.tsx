@@ -10,6 +10,7 @@ import { useProfile } from '@/hooks/queries/useProfile'
 import { useAdminChangeRole } from '@/hooks/queries/useAdminUsers'
 import { useAdminDeleteHistory } from '@/hooks/queries/useAdminUserDetail'
 import { useToast } from '@/components/ui/ToastProvider'
+import { fileTypeLabel, hasFileType } from '@/lib/file-type'
 import {
   useAdminUserDetail,
   useAdminUserHistory,
@@ -277,7 +278,12 @@ export default function AdminUserDetailPage() {
                     <div key={item.aid} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
                         <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                          <span className="text-cyan-400 text-xs font-bold uppercase">{item.file_type ?? '?'}</span>
+                          <span
+                            title={hasFileType(item.file_type) ? `ประเภทไฟล์: ${fileTypeLabel(item.file_type)}` : 'ไม่ระบุประเภทไฟล์'}
+                            className={`font-bold uppercase ${hasFileType(item.file_type) ? 'text-cyan-400 text-xs' : 'text-slate-500 text-[10px]'}`}
+                          >
+                            {fileTypeLabel(item.file_type)}
+                          </span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">

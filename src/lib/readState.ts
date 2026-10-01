@@ -1,4 +1,4 @@
-export type ReadScope = 'reports' | 'public'
+export type ReadScope = 'reports'
 
 const storageKey = (uid: string, scope: ReadScope) => `rampart:seen:${scope}:${uid}`
 

@@ -10,6 +10,7 @@ import {
   useDashboardPublicReports,
   type RecentActivity,
 } from '@/hooks/queries/useDashboard'
+import { fileTypeLabel, hasFileType } from '@/lib/file-type'
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
 
@@ -343,8 +344,11 @@ export default function DashboardPage() {
                   className="flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-9 h-9 shrink-0 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-cyan-400 text-xs font-bold uppercase">
-                      {f.file_type ?? '?'}
+                    <span
+                      title={hasFileType(f.file_type) ? `ประเภทไฟล์: ${fileTypeLabel(f.file_type)}` : 'ไม่ระบุประเภทไฟล์'}
+                      className={`w-9 h-9 shrink-0 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center font-bold uppercase ${hasFileType(f.file_type) ? 'text-cyan-400 text-xs' : 'text-slate-500 text-[10px]'}`}
+                    >
+                      {fileTypeLabel(f.file_type)}
                     </span>
                     <div className="min-w-0">
                       <p className="text-white text-sm font-medium truncate" title={f.file_name ?? undefined}>{f.file_name}</p>

@@ -6,6 +6,7 @@ import Swal from 'sweetalert2'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useAdminReportsList } from '@/hooks/queries/useAdminReports'
 import { useAdminDeleteFile, useAdminBulkDeleteFiles } from '@/hooks/queries/useAdminFiles'
+import { fileTypeLabel, hasFileType } from '@/lib/file-type'
 
 const RISK_LEVELS = ['Low', 'Caution', 'High', 'Critical']
 
@@ -238,7 +239,12 @@ export default function AdminReportsPage() {
                   />
                   <Link href={file.task_id ? `/scan/analysis?taskId=${file.task_id}` : '#'} className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="w-11 h-11 shrink-0 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition">
-                      <span className="text-cyan-400 text-xs font-bold uppercase">{file.file_type ?? '?'}</span>
+                      <span
+                        title={hasFileType(file.file_type) ? `ประเภทไฟล์: ${fileTypeLabel(file.file_type)}` : 'ไม่ระบุประเภทไฟล์'}
+                        className={`font-bold uppercase ${hasFileType(file.file_type) ? 'text-cyan-400 text-xs' : 'text-slate-500 text-[10px]'}`}
+                      >
+                        {fileTypeLabel(file.file_type)}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">

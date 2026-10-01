@@ -26,7 +26,7 @@ const baseMenuItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: null },
   { name: "Scan Files", href: "/scan", icon: Scan, badge: null },
   { name: "My Reports", href: "/reports", icon: FileText, badge: "reports" as const },
-  { name: "Public Files", href: "/public", icon: Globe, badge: "public" as const },
+  { name: "Public Files", href: "/public", icon: Globe, badge: null },
   { name: "My Profile", href: "/profile?m=report", icon: User, badge: null },
 ]
 
@@ -39,7 +39,7 @@ export default function NavbarComponent() {
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
   const { data: profile } = useProfile()
   const { data: navBadges } = useNavBadges()
-  const badges = navBadges ?? { reports: 0, public: 0 }
+  const badges = navBadges ?? { reports: 0 }
 
   const displayName = profile?.username || ""
   const displayEmail = profile?.email || ""
