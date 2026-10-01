@@ -9,6 +9,7 @@ import Hero from '@/components/HeroComponent'
 import { useToast } from '@/components/ui/ToastProvider'
 import Navbarservice from '@/components/Navbarservice'
 import GeometricLoader from '@/components/GeometricLoader'
+import CaptchaModal from '@/components/CaptchaModal'
 import { validatePassword } from '@/lib/password'
 
 export default function RegisterPage() {
@@ -24,8 +25,7 @@ export default function RegisterPage() {
   const [isVerified, setIsVerified] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState('')
   const [passwordError, setPasswordError] = useState('')
-  const [isshowCaptcha, setIsshowCaptcha] = useState(false)
-  const [needCaptcha, setNeedCaptcha] = useState(false)
+  const [captchaOpen, setCaptchaOpen] = useState(false)
 
   const notify = useToast();
 
@@ -69,15 +69,9 @@ export default function RegisterPage() {
       return
     }
 
-    if (!needCaptcha) {
-      setNeedCaptcha(true)
-      setIsshowCaptcha(true)
-      notify.warning('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
-      return
-    }
-
     if (!isVerified || !recaptchaToken) {
-      notify.warning('กรุณายืนยัน reCAPTCHA')
+      setCaptchaOpen(true)
+      notify.warning('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
       return
     }
 
@@ -128,6 +122,7 @@ export default function RegisterPage() {
   const handleCaptchaChange = (token: string | null) => {
     setRecaptchaToken(token || '')
     setIsVerified(!!token)
+    if (token) setCaptchaOpen(false)
   }
 
   const handleCaptchaExpired = () => {
@@ -140,6 +135,14 @@ export default function RegisterPage() {
     <>
       {isLoading && <GeometricLoader loadingText='กำลังโหลด'/>}
       {isSuccessful && <GeometricLoader loadingText='กำลังสมัครสมาชิก'/>}
+      <CaptchaModal
+        open={captchaOpen}
+        captchaRef={recaptchaRef}
+        onVerify={handleCaptchaChange}
+        onExpired={handleCaptchaExpired}
+        onClose={() => setCaptchaOpen(false)}
+        description="กรุณายืนยัน reCAPTCHA เพื่อสมัครสมาชิก"
+      />
       <Navbarservice />
       <div className="min-h-screen bg-[#050510] flex items-center justify-center p-4 relative overflow-hidden">
         <div className="fixed inset-0 overflow-hidden -z-10">
@@ -170,18 +173,7 @@ export default function RegisterPage() {
 
         <div className="relative z-10 w-full max-w-6xl mt-15">
           <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
-            <Hero>
-              {isshowCaptcha && (
-                <div className="flex justify-center lg:justify-start pt-2">
-                  <ReCAPTCHA
-                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LcGkdsrAAAAAFW6CFipeSplG7nLqICIKPm-gSln"}
-                    ref={recaptchaRef}
-                    onChange={handleCaptchaChange}
-                    onExpired={handleCaptchaExpired}
-                  />
-                </div>
-              )}
-            </Hero>
+            <Hero />
 
             <div className="w-full lg:w-auto lg:min-w-[450px] flex-1 max-w-md">
               <div className="backdrop-blur-xl bg-white/5 rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10 hover-glow transition-all duration-500">
@@ -302,7 +294,7 @@ export default function RegisterPage() {
 
                   <button
                     type="submit"
-                    disabled={isLoading || (needCaptcha && !isVerified)}
+                    disabled={isLoading}
                     className="group relative w-full bg-gradient-to-r from-purple-600 to-indigo-600 py-4 px-4 rounded-2xl font-bold text-white shadow-[0_8px_32px_rgba(128,90,213,0.4)] hover:shadow-[0_12px_40px_rgba(128,90,213,0.7)] hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none transition-all duration-300 flex items-center justify-center space-x-3 overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
