@@ -39,7 +39,7 @@ export function AnalysisDashboard() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
@@ -62,7 +62,7 @@ export function AnalysisDashboard() {
                 <button
                   key={key}
                   onClick={() => handleScenarioChange(key)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                     selectedScenario === key
                       ? "bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.15)]"
                       : "bg-slate-800/50 text-slate-500 border border-slate-700/50 hover:border-slate-600 hover:text-slate-400"

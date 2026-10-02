@@ -53,13 +53,13 @@ export default function NavbarComponent() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#050510]/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#050510]/60">
+    <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#050510]/95">
       <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-16 items-center justify-between gap-2 sm:gap-4">
           <Link href="/dashboard" className="flex items-center gap-3 shrink-0 group">
-            <div className="relative h-9 w-9 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10 group-hover:ring-blue-500/40 transition-all duration-300">
+            <div className="relative h-9 w-9 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10 group-hover:ring-blue-500/40 transition-[--tw-ring-color] duration-300">
               <Image
                 src="/logo_bg_white.png"
                 alt="RAMPART"
@@ -85,7 +85,7 @@ export default function NavbarComponent() {
                   href={item.href}
                   title={unread > 0 ? `${item.name} — มี ${unread} รายการใหม่` : item.name}
                   aria-label={unread > 0 ? `${item.name} มี ${unread} รายการใหม่` : item.name}
-                  className={`relative flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-all duration-200 sm:px-2.5 xl:px-3.5 ${
+                  className={`relative flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-colors duration-200 sm:px-2.5 xl:px-3.5 ${
                     isActive
                       ? "text-white bg-white/10"
                       : "text-slate-400 hover:text-white hover:bg-white/5"
@@ -120,7 +120,7 @@ export default function NavbarComponent() {
             {!profile ? (
               <Link
                 href="/login"
-                className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-1.5 border border-white/[0.08] hover:bg-white/10 hover:border-white/15 transition-all duration-200 text-xs font-medium text-white"
+                className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-1.5 border border-white/[0.08] hover:bg-white/10 hover:border-white/15 transition-colors duration-200 text-xs font-medium text-white"
               >
                 <LogIn className="h-4 w-4" />
                 เข้าสู่ระบบ
@@ -129,7 +129,7 @@ export default function NavbarComponent() {
             <div className="relative">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2.5 rounded-xl bg-white/5 px-3 py-1.5 border border-white/[0.08] hover:bg-white/10 hover:border-white/15 transition-all duration-200"
+                className="flex items-center gap-2.5 rounded-xl bg-white/5 px-3 py-1.5 border border-white/[0.08] hover:bg-white/10 hover:border-white/15 transition-colors duration-200"
               >
                 <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-blue-500/20 overflow-hidden">
                   {avatarSrc ? (
@@ -158,7 +158,7 @@ export default function NavbarComponent() {
               {isProfileOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
-                  <div className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-white/[0.08] bg-slate-900/95 backdrop-blur-2xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-60 rounded-xl border border-white/[0.08] bg-slate-900/95 shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                     <div className="px-4 py-3 border-b border-white/[0.06]">
                       <p className="text-sm font-medium text-white">{displayName}</p>
                       <p className="text-xs text-slate-500">{displayEmail}</p>

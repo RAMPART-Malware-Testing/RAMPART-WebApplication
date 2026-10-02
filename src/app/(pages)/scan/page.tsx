@@ -162,7 +162,7 @@ export default function ScanFilesPage() {
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             className={`
-              relative rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-300
+              relative rounded-2xl border-2 border-dashed p-8 text-center transition-colors duration-300
               ${busy
                 ? 'border-white/10 bg-white/[0.02] cursor-not-allowed'
                 : isDragging
@@ -233,7 +233,7 @@ export default function ScanFilesPage() {
                 {(file.status === 'uploading' || file.status === 'analyzing') && (
                   <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-[width] duration-300"
                       style={{ width: `${file.status === 'analyzing' ? 100 : file.progress}%` }}
                     />
                   </div>

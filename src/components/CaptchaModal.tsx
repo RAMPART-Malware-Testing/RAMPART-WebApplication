@@ -41,7 +41,7 @@ export default function CaptchaModal({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4"
     >
       <div className="relative w-full max-w-sm rounded-2xl border border-cyan-500/30 bg-[#0a0a18] p-6 shadow-[0_0_60px_rgba(34,211,238,0.25)]">
         <button

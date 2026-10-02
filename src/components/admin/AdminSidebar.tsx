@@ -37,7 +37,7 @@ export default function AdminSidebar({ collapsed, onToggle }: Props) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-slate-950/95 backdrop-blur-xl border-r border-white/10 flex flex-col transition-all duration-300 z-40 ${
+      className={`fixed left-0 top-0 h-screen bg-slate-950/95 border-r border-white/10 flex flex-col transition-[width] duration-300 z-40 ${
         collapsed ? 'w-[76px]' : 'w-64'
       }`}
     >
@@ -66,7 +66,7 @@ export default function AdminSidebar({ collapsed, onToggle }: Props) {
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 active
                   ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
@@ -83,14 +83,14 @@ export default function AdminSidebar({ collapsed, onToggle }: Props) {
         <Link
           href="/dashboard"
           title={collapsed ? 'กลับสู่หน้าหลัก' : undefined}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
         >
           <i className="fas fa-arrow-left w-4 text-center shrink-0" />
           {!collapsed && <span>กลับสู่หน้าหลัก</span>}
         </Link>
         <button
           onClick={onToggle}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-white hover:bg-white/5 transition-colors"
         >
           <i className={`fas ${collapsed ? 'fa-angles-right' : 'fa-angles-left'} w-4 text-center shrink-0`} />
           {!collapsed && <span>ย่อเมนู</span>}

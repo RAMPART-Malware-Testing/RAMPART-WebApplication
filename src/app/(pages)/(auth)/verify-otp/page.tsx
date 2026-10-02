@@ -201,28 +201,7 @@ function VerifyOtpPageContent() {
       <Navbarservice />
 
       <div className="min-h-screen bg-[#050510] flex items-center justify-center p-4 relative overflow-hidden">
-        <div className="fixed inset-0 overflow-hidden -z-10">
-          <div className="blob-bg top-[-200px] left-[-150px] animate-pulse" style={{ animationDuration: "12s" }} />
-          <div
-            className="blob-bg bottom-[-250px] right-[-200px]"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(139,92,246,0.3) 0%, rgba(59,130,246,0.1) 70%)",
-              animationDelay: "-3s",
-              animationDuration: "15s",
-            }}
-          />
-          <div
-            className="absolute w-[500px] h-[500px] top-1/3 left-1/4 rounded-full bg-cyan-500/10 blur-[100px] animate-pulse"
-            style={{ animationDuration: "18s" }}
-          />
-          <div className="absolute w-[600px] h-[600px] bottom-10 right-0 bg-indigo-600/10 blur-[120px] spin-slow" />
-        </div>
-
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
+        <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(120,119,198,0.18),transparent_55%),radial-gradient(ellipse_at_80%_100%,rgba(59,130,246,0.12),transparent_55%)]" />
 
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]"></div>
 
@@ -234,7 +213,7 @@ function VerifyOtpPageContent() {
             </Hero>
 
             <div className="w-full max-w-md flex-1">
-              <div className="backdrop-blur-xl bg-white/5 rounded-3xl shadow-2xl border border-white/10 p-8 lg:p-10 hover-glow transition-all duration-500 relative">
+              <div className="bg-white/5 rounded-3xl shadow-[0_8px_32px_rgba(128,90,213,0.25)] border border-white/10 p-8 lg:p-10 relative transition-shadow duration-300 hover:shadow-[0_8px_32px_rgba(128,90,213,0.4)]">
                 <div className="text-center mb-8">
                   <h2 className="text-2xl lg:text-3xl font-bold mb-2 bg-gradient-to-r from-white via-purple-200 to-indigo-300 bg-clip-text text-transparent">
                     {config.title}
@@ -286,7 +265,7 @@ function VerifyOtpPageContent() {
                           onChange={(e) => handleOtpChange(index, e.target.value)}
                           onKeyDown={(e) => handleKeyDown(index, e)}
                           disabled={isLocked}
-                          className="w-full h-14 sm:h-16 text-center bg-white/5 border border-white/10 rounded-xl text-white text-2xl font-bold focus:ring-2 focus:ring-purple-500 focus:bg-white/10 transition-all outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="w-full h-14 sm:h-16 text-center bg-white/5 border border-white/10 rounded-xl text-white text-2xl font-bold focus:ring-2 focus:ring-purple-500 focus:bg-white/10 transition-colors outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                           autoFocus={index === 0}
                         />
                       ))}
@@ -304,7 +283,7 @@ function VerifyOtpPageContent() {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="New Secure Password"
-                          className="w-full pl-11 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-200/30 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                          className="w-full pl-11 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-200/30 focus:ring-2 focus:ring-purple-500 outline-none transition-colors"
                         />
                         <button
                           type="button"
@@ -324,7 +303,7 @@ function VerifyOtpPageContent() {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Confirm Password"
-                          className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-200/30 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                          className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-200/30 focus:ring-2 focus:ring-purple-500 outline-none transition-colors"
                         />
                       </div>
                     </div>
@@ -334,7 +313,7 @@ function VerifyOtpPageContent() {
                     <button
                       type="submit"
                       disabled={isLoading || isLocked || otp.join("").length < 6}
-                      className="group relative w-full bg-gradient-to-r from-purple-600 to-indigo-600 py-4 rounded-2xl font-bold text-white shadow-[0_8px_32px_rgba(128,90,213,0.4)] hover:shadow-[0_12px_40px_rgba(128,90,213,0.7)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-3 overflow-hidden"
+                      className="group relative w-full bg-gradient-to-r from-purple-600 to-indigo-600 py-4 rounded-2xl font-bold text-white shadow-[0_4px_16px_rgba(128,90,213,0.3)] hover:shadow-[0_4px_16px_rgba(128,90,213,0.45)] transition-shadow disabled:opacity-50 flex items-center justify-center gap-3"
                     >
                       <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
                       <span className="relative z-10 flex items-center gap-3">
@@ -352,7 +331,7 @@ function VerifyOtpPageContent() {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="w-full py-4 rounded-2xl font-semibold text-gray-500/60 hover:text-red-500 hover:bg-red-500/10 transition-all border border-gray-200 hover:border-red-500/20 flex items-center justify-center gap-2"
+                      className="w-full py-4 rounded-2xl font-semibold text-gray-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors border border-gray-200 hover:border-red-500/20 flex items-center justify-center gap-2"
                     >
                       <i className="fas fa-sign-out-alt"></i>
                       ยกเลิกการยืนยัน
@@ -365,58 +344,6 @@ function VerifyOtpPageContent() {
         </div>
 
         <style jsx global>{`
-      @keyframes floatOrb {
-        0% {
-          transform: translate(0px, 0px) scale(1);
-          opacity: 0.6;
-        }
-        50% {
-          transform: translate(30px, -40px) scale(1.2);
-          opacity: 0.9;
-        }
-        100% {
-          transform: translate(-20px, 30px) scale(1);
-          opacity: 0.6;
-        }
-      }
-
-      @keyframes slowSpin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      .spin-slow {
-        animation: slowSpin 20s linear infinite;
-      }
-
-      .blob-bg {
-        position: absolute;
-        width: 700px;
-        height: 700px;
-        background: radial-gradient(
-          circle,
-          rgba(79, 70, 229, 0.25) 0%,
-          rgba(6, 182, 212, 0.1) 70%,
-          transparent 100%
-        );
-        filter: blur(70px);
-        border-radius: 50%;
-        z-index: 0;
-      }
-
-      .hover-glow {
-        transition: all 0.4s ease;
-      }
-
-      .hover-glow:hover {
-        box-shadow: 0 0 28px rgba(99, 102, 241, 0.6);
-        transform: translateY(-6px) scale(1.01);
-      }
-
       @keyframes shake {
         0%,
         100% {

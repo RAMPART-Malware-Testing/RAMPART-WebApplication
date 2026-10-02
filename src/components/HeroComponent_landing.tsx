@@ -22,14 +22,12 @@ export default function Hero({
         <div className="text-center lg:text-left space-y-8 flex-1"  style={{ ...style }}>
             <div className="flex justify-center lg:justify-start mb-6">
                 <div className="relative">
-                    <div className="absolute -inset-4 bg-gradient-to-r from-white to-white rounded-[50%] blur-3xl opacity-90"></div>
-
                     <div className="w-64 h-64 lg:w-94 lg:h-94 ">
                         <Image
                             src={logo}
                             alt="RAMPART Security"
                             fill
-                            className="object-contain filter"
+                            className="object-contain"
                             priority
                         />
                     </div>

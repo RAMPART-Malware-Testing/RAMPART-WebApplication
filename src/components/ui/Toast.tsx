@@ -93,7 +93,7 @@ export default function Toast({ id, type, message, duration = 30000, nonce = 0, 
     <div
       className={`
         flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg
-        transition-all duration-300 transform
+        transition-[opacity,transform] duration-300 transform
         ${getColors()}
         ${isVisible ? "translate-x-0 opacity-100" : "translate-x-2 opacity-0"}
         ${isShaking ? "animate-toast-shake" : ""}

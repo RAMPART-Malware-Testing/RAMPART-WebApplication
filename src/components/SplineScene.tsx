@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { isWebGLAvailable } from "@/lib/webgl";
+import { getRenderTier, type RenderTier } from "@/lib/webgl";
 
 const Spline = dynamic(() => import("@splinetool/react-spline"), { ssr: false });
 
@@ -18,8 +18,11 @@ function SplineFallback() {
 }
 
 export default function SplineScene({ onLoad }: { onLoad?: () => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<{ stop: () => void; play: () => void } | null>(null);
   const called = useRef(false);
-  const [webglOk, setWebglOk] = useState<boolean | null>(null);
+  const [tier, setTier] = useState<RenderTier | null>(null);
+  const [inView, setInView] = useState(false);
   const [failed, setFailed] = useState(false);
 
   const finish = useCallback(() => {
@@ -30,18 +33,38 @@ export default function SplineScene({ onLoad }: { onLoad?: () => void }) {
   }, [onLoad]);
 
   useEffect(() => {
-    setWebglOk(isWebGLAvailable());
+    setTier(getRenderTier());
   }, []);
 
   useEffect(() => {
-    if (webglOk === false) {
-      setFailed(true);
-      finish();
-    }
-  }, [webglOk, finish]);
+    const node = containerRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (webglOk !== true) return;
+    const onVisibilityChange = () => {
+      const app = appRef.current;
+      if (!app) return;
+      if (document.visibilityState === "hidden") app.stop();
+      else app.play();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
+  useEffect(() => {
+    if (tier === null || tier === "off" || !inView) return;
     const timer = setTimeout(() => {
       if (!called.current) {
         setFailed(true);
@@ -49,13 +72,9 @@ export default function SplineScene({ onLoad }: { onLoad?: () => void }) {
       }
     }, LOAD_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [webglOk, finish]);
+  }, [tier, inView, finish]);
 
-  if (webglOk === null) {
-    return <div className="absolute inset-0 z-0" />;
-  }
-
-  if (failed || webglOk === false) {
+  if (tier === "off" || failed) {
     return (
       <div className="absolute inset-0 z-0">
         <SplineFallback />
@@ -63,8 +82,12 @@ export default function SplineScene({ onLoad }: { onLoad?: () => void }) {
     );
   }
 
+  if (tier === null || !inView) {
+    return <div ref={containerRef} className="absolute inset-0 z-0" />;
+  }
+
   return (
-    <div className="absolute inset-0 z-0">
+    <div ref={containerRef} className="absolute inset-0 z-0">
       <ErrorBoundary
         fallback={<SplineFallback />}
         onError={() => {
@@ -74,7 +97,12 @@ export default function SplineScene({ onLoad }: { onLoad?: () => void }) {
       >
         <Spline
           scene="/ai_data_model_interaction.spline"
-          onLoad={finish}
+          renderOnDemand={tier === "lite"}
+          onLoad={(app) => {
+            appRef.current = app;
+            if (document.visibilityState === "hidden") app.stop();
+            finish();
+          }}
         />
       </ErrorBoundary>
     </div>

@@ -49,7 +49,7 @@ export function AnalysisSummary({ data, className }: AnalysisSummaryProps) {
   return (
     <motion.div
       className={cn(
-        "rounded-2xl border p-6 backdrop-blur-sm",
+        "rounded-2xl border p-6",
         bg,
         className
       )}

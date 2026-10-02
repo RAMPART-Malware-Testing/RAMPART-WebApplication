@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { isWebGLAvailable } from "@/lib/webgl";
+import { getRenderTier } from "@/lib/webgl";
 
 type Props = {
   src: string;
@@ -34,7 +34,7 @@ export default function CircuitBoard3D({ src, orbit = "45deg 35deg", distance = 
   }, [autoRotate]);
 
   useEffect(() => {
-    setSupported(isWebGLAvailable());
+    setSupported(getRenderTier() !== "off");
   }, []);
 
   useEffect(() => {

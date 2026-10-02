@@ -34,7 +34,7 @@ export function TaskCard({
   return (
     <motion.div
       className={cn(
-        "rounded-xl border bg-slate-900/60 p-4 backdrop-blur-sm",
+        "rounded-xl border bg-slate-900/60 p-4",
         status === "running" && "border-amber-500/30 bg-amber-500/5",
         status === "completed" && "border-emerald-500/20",
         status === "failed" && "border-red-500/20 bg-red-500/5",

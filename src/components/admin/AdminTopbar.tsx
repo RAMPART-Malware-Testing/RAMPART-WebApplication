@@ -47,7 +47,7 @@ export default function AdminTopbar() {
   const avatarUrl = resolveAvatarUrl(user?.avatar_url)
 
   return (
-    <header className="h-16 shrink-0 bg-slate-900/80 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-6 sticky top-0 z-30">
+    <header className="h-16 shrink-0 bg-slate-900/95 border-b border-white/10 flex items-center justify-between px-6 sticky top-0 z-30">
       <div>
         <h2 className="text-white font-semibold text-lg leading-tight">{currentTitle(pathname)}</h2>
         <p className="text-slate-500 text-xs">RAMPART Back Office</p>
@@ -73,7 +73,7 @@ export default function AdminTopbar() {
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 mt-2 w-52 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+          <div className="absolute right-0 mt-2 w-52 bg-slate-900/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden">
             <div className="py-2">
               <button
                 onClick={() => router.push('/profile')}

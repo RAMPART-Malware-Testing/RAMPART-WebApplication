@@ -191,7 +191,7 @@ export default function DashboardPage() {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+          <div className="lg:col-span-2 bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
             <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
               <div>
                 <h3 className="text-white font-semibold flex items-center gap-2">
@@ -205,7 +205,7 @@ export default function DashboardPage() {
                   <button
                     key={range}
                     onClick={() => setSelectedTimeRange(range)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
                       selectedTimeRange === range
                         ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg'
                         : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
@@ -282,7 +282,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+          <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
             <div className="px-6 py-4 border-b border-white/10">
               <h3 className="text-white font-semibold flex items-center gap-2">
                 <i className="fas fa-shield-virus text-amber-400" />
@@ -302,7 +302,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
-                          className={`h-full ${dangerTier(score).bar} rounded-full transition-all duration-700`}
+                          className={`h-full ${dangerTier(score).bar} rounded-full transition-[width] duration-700`}
                           style={{ width: `${score}%` }}
                         />
                       </div>
@@ -331,7 +331,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden mb-8">
+        <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-white/10 flex items-start justify-between gap-4">
             <div>
               <h3 className="text-white font-semibold flex items-center gap-2">
@@ -444,7 +444,7 @@ function StatCard({ title, value, icon, gradient, subtitle }: {
   subtitle: string
 }) {
   return (
-    <div className="group relative overflow-hidden bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300">
+    <div className="group relative overflow-hidden bg-white/5 rounded-2xl border border-white/10 hover:border-white/20 transition-colors duration-200">
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-full -mr-16 -mt-16" />
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">

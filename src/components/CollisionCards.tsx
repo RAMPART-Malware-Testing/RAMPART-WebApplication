@@ -68,20 +68,19 @@ const CollisionCards: React.FC = () => {
                         <div
                             key={card.id}
                             ref={el => { cardRefs.current[idx] = el }}
-                            className="group opacity-0 translate-y-10 transition-all duration-700 hover:duration-300"
+                            className="group opacity-0 translate-y-10 transition-[opacity,transform] duration-700"
                             style={{ transitionDelay: `${idx * 100}ms` }}
                         >
-                            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10
-                          hover:border-purple-400/40 hover:shadow-xl hover:shadow-purple-500/10
-                          transition-all duration-300 hover:-translate-y-2 cursor-pointer h-full">
+                            <div className="bg-white/5 rounded-2xl p-6 border border-white/10
+                          hover:border-purple-400/40 transition-colors duration-300 cursor-pointer h-full">
 
-                                <div className="w-14 h-14 rounded-xl bg-white/10 border border-white/10
+                                <div className={`w-14 h-14 rounded-xl ${card.color} border border-white/20
                             flex items-center justify-center mb-5 shadow-sm
-                            group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">
+                            group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300`}>
                                     <img
                                         src={card.image}
                                         alt={card.title}
-                                        className="w-18 h-18 object-contain"
+                                        className="w-12 h-12 object-contain"
                                         onError={(e) => {
                                             (e.target as HTMLImageElement).style.display = 'none';
                                             (e.target as HTMLImageElement).parentElement!.innerHTML = card.title.charAt(0);
@@ -97,7 +96,7 @@ const CollisionCards: React.FC = () => {
                                     {card.desc}
                                 </p>
 
-                                <div className="mt-4 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-purple-400 to-transparent transition-all duration-500" />
+                                <div className="mt-4 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-purple-400 to-transparent transition-[width] duration-500" />
                             </div>
                         </div>
                     ))}

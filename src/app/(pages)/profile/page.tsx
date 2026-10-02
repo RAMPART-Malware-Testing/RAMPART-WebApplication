@@ -443,7 +443,7 @@ function ProfileContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-4 space-y-6">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+            <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
               <div className="relative h-24 bg-gradient-to-r from-cyan-500 to-blue-600">
                 <div className="absolute -bottom-12 left-6">
                   <div className="relative w-24 h-24">
@@ -514,13 +514,13 @@ function ProfileContent() {
           </div>
 
           <div className="lg:col-span-8">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 mb-6 overflow-x-auto">
+            <div className="bg-white/5 rounded-2xl border border-white/10 mb-6 overflow-x-auto">
               <div className="flex p-1 gap-1">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
                       activeTab === tab.id
                         ? TAB_ACTIVE_CLASS[tab.color]
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -533,7 +533,7 @@ function ProfileContent() {
               </div>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+            <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
               {activeTab === 'profile' && (
                 <div className="space-y-6">
                   <div className="grid gap-6">
@@ -652,7 +652,7 @@ function ProfileContent() {
                           <button
                             type="button"
                             onClick={() => setActiveTab('password')}
-                            className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-sm font-medium hover:bg-white/10 hover:text-white transition-all duration-300"
+                            className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-sm font-medium hover:bg-white/10 hover:text-white transition-colors duration-200"
                           >
                             ดูประวัติ
                           </button>
@@ -662,7 +662,7 @@ function ProfileContent() {
                               setPasswordError('')
                               setChangePasswordDialog(true)
                             }}
-                            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-sm font-semibold transition-all duration-300 flex items-center gap-2"
+                            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-sm font-semibold transition-colors duration-200 flex items-center gap-2"
                           >
                             <i className="fas fa-key"></i>
                             เปลี่ยนรหัสผ่าน
@@ -689,7 +689,7 @@ function ProfileContent() {
                     </div>
                   ) : (
                     loginHistory.map((log) => (
-                    <div key={log.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+                    <div key={log.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors duration-200">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${log.status === 'success' ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
                         <i className={`${log.status === 'success' ? 'fas fa-check-circle text-emerald-400' : 'fas fa-times-circle text-rose-400'}`}></i>
                       </div>
@@ -728,7 +728,7 @@ function ProfileContent() {
                     </div>
                   ) : (
                     passwordHistory.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+                      <div key={item.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors duration-200">
                         <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
                           <i className="fas fa-key text-purple-400"></i>
                         </div>
@@ -772,7 +772,7 @@ function ProfileContent() {
                     <Link
                       key={upload.id}
                       href={`/scan/analysis?taskId=${upload.id}`}
-                      className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300 group cursor-pointer"
+                      className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors duration-200 group cursor-pointer"
                     >
                       <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
                         <i className="fas fa-file text-cyan-400"></i>
@@ -795,7 +795,7 @@ function ProfileContent() {
                           )}
                         </div>
                       </div>
-                      <i className="fas fa-chevron-right text-slate-400 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all"></i>
+                      <i className="fas fa-chevron-right text-slate-400 group-hover:text-cyan-400 group-hover:translate-x-1 transition-[transform,color] duration-200"></i>
                     </Link>
                     ))
                   )}
@@ -818,7 +818,7 @@ function ProfileContent() {
                     </div>
                   ) : (
                     downloadHistory.map((download) => (
-                    <div key={download.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
+                    <div key={download.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors duration-200 group">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                         <i className="fas fa-file-pdf text-emerald-400"></i>
                       </div>
@@ -830,7 +830,7 @@ function ProfileContent() {
                           <span><i className="fas fa-database mr-1"></i>{formatFileSize(download.fileSize)}</span>
                         </div>
                       </div>
-                      <button className="p-2 text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-all group-hover:scale-110">
+                      <button className="p-2 text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors">
                         <i className="fas fa-download"></i>
                       </button>
                     </div>
@@ -846,7 +846,7 @@ function ProfileContent() {
       </div>
 
       {changeEmailDialog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeEmailDialog}>
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4" onClick={closeEmailDialog}>
           <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-white/10">
               <h3 className="text-white font-semibold text-lg flex items-center gap-2">
@@ -901,14 +901,14 @@ function ProfileContent() {
                   <button
                     type="submit"
                     disabled={emailBusy}
-                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
                   >
                     {emailBusy ? 'กำลังส่งรหัส...' : 'ส่งรหัส OTP'}
                   </button>
                   <button
                     type="button"
                     onClick={closeEmailDialog}
-                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
                   >
                     ยกเลิก
                   </button>
@@ -948,14 +948,14 @@ function ProfileContent() {
                 <button
                   type="submit"
                   disabled={emailBusy}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
                 >
                   {emailBusy ? 'กำลังตรวจสอบ...' : 'ยืนยันอีเมลเดิม'}
                 </button>
                 <button
                   type="button"
                   onClick={closeEmailDialog}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
                 >
                   ยกเลิก
                 </button>
@@ -994,7 +994,7 @@ function ProfileContent() {
                 <button
                   type="submit"
                   disabled={emailBusy}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
                 >
                   {emailBusy ? 'กำลังบันทึก...' : 'ยืนยันและเปลี่ยนอีเมล'}
                 </button>
@@ -1003,14 +1003,14 @@ function ProfileContent() {
                     type="button"
                     disabled={emailBusy}
                     onClick={resendNewEmailOtp}
-                    className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50"
+                    className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 py-3 rounded-xl font-semibold transition-colors duration-200 disabled:opacity-50"
                   >
                     ส่งรหัสใหม่
                   </button>
                   <button
                     type="button"
                     onClick={closeEmailDialog}
-                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
                   >
                     ยกเลิก
                   </button>
@@ -1022,7 +1022,7 @@ function ProfileContent() {
       )}
 
       {changePasswordDialog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closePasswordDialog}>
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4" onClick={closePasswordDialog}>
           <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-white/10">
               <h3 className="text-white font-semibold text-lg flex items-center gap-2">
@@ -1039,7 +1039,7 @@ function ProfileContent() {
                   type="password"
                   value={passwordForm.currentPassword}
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                  className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent transition-[border-color,box-shadow] duration-200"
                   placeholder="••••••••"
                   autoComplete="current-password"
                   required
@@ -1052,7 +1052,7 @@ function ProfileContent() {
                   type="password"
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                  className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent transition-[border-color,box-shadow] duration-200"
                   placeholder="••••••••"
                   autoComplete="new-password"
                   required
@@ -1076,7 +1076,7 @@ function ProfileContent() {
                   type="password"
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                  className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent transition-[border-color,box-shadow] duration-200"
                   placeholder="••••••••"
                   autoComplete="new-password"
                   required
@@ -1094,7 +1094,7 @@ function ProfileContent() {
                 <button
                   type="submit"
                   disabled={changePassword.isPending}
-                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-colors duration-200"
                 >
                   {changePassword.isPending ? 'กำลังบันทึก...' : 'ยืนยัน'}
                 </button>
@@ -1102,7 +1102,7 @@ function ProfileContent() {
                   type="button"
                   onClick={closePasswordDialog}
                   disabled={changePassword.isPending}
-                  className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50"
+                  className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-colors duration-200 disabled:opacity-50"
                 >
                   ยกเลิก
                 </button>

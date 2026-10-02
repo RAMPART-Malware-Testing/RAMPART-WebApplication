@@ -244,7 +244,7 @@ export default function AdminUserDetailPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors duration-200 ${
                 activeTab === tab.id ? 'bg-cyan-500/15 text-cyan-300' : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >

@@ -94,7 +94,7 @@ const FloatingBadge = ({ icon, img, text, x, y, delay }: { icon?: string; img?: 
       animation: `float 7s ease-in-out infinite, fadeInUp 1s ease-out ${delay} forwards`,
     }}
   >
-    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xl rounded-full px-4 py-2 border border-white/20 shadow-lg">
+    <div className="flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 border border-white/20 shadow-lg">
       {img ? (
         <Image src={img} alt={text} width={18} height={18} className="rounded-sm" />
       ) : (
@@ -108,9 +108,8 @@ const FloatingBadge = ({ icon, img, text, x, y, delay }: { icon?: string; img?: 
 function AnimatedBorderCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`relative group ${className}`}>
-      <div className="absolute -inset-[2px] bg-gradient-to-r from-purple-600 via-indigo-500 to-fuchsia-500 rounded-2xl opacity-0 group-hover:opacity-100 blur transition duration-700" />
       <div className="absolute -inset-[1px] bg-gradient-to-r from-purple-500 via-indigo-400 to-fuchsia-400 rounded-2xl opacity-0 group-hover:opacity-100 animate-gradient-x" />
-      <div className="relative bg-black/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10">
+      <div className="relative bg-black/40 rounded-2xl overflow-hidden border border-white/10">
         {children}
       </div>
     </div>
@@ -174,32 +173,14 @@ export default function Home() {
 
   return (
     <>
-      <div className="fixed inset-0 overflow-hidden -z-10">
-        <div
-          className="blob-bg top-[-200px] left-[-150px] animate-pulse"
-          style={{ animationDuration: "12s" }}
-        />
-        <div
-          className="blob-bg bottom-[-250px] right-[-200px]"
-          style={{
-            background: "radial-gradient(circle, rgba(139,92,246,0.3) 0%, rgba(59,130,246,0.1) 70%)",
-            animationDelay: "-3s",
-            animationDuration: "15s",
-          }}
-        />
-        <div
-          className="absolute w-[500px] h-[500px] top-1/3 left-1/4 rounded-full bg-cyan-500/10 blur-[100px] animate-pulse"
-          style={{ animationDuration: "18s" }}
-        />
-        <div className="absolute w-[600px] h-[600px] bottom-10 right-0 bg-indigo-600/10 blur-[120px] spin-slow" />
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: "linear-gradient(rgba(168,139,250,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(168,139,250,0.1) 1px, transparent 1px)",
-            backgroundSize: "80px 80px",
-          }}
-        />
-      </div>
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(120,119,198,0.18),transparent_55%),radial-gradient(ellipse_at_80%_100%,rgba(59,130,246,0.12),transparent_55%)]" />
+      <div
+        className="fixed inset-0 -z-10 opacity-[0.03] pointer-events-none"
+        style={{
+          backgroundImage: "linear-gradient(rgba(168,139,250,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(168,139,250,0.1) 1px, transparent 1px)",
+          backgroundSize: "80px 80px",
+        }}
+      />
 
       <Navbarservice />
 
@@ -210,7 +191,7 @@ export default function Home() {
 
         <div className="relative z-10 flex flex-col justify-center min-h-screen px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md rounded-full px-5 py-2 mb-8 border border-white/10">
+            <div className="inline-flex items-center gap-2 bg-white/5 rounded-full px-5 py-2 mb-8 border border-white/10">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500" />
@@ -237,7 +218,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-4 justify-center">
               <button
                 onClick={() => router.push("/login")}
-                className="group relative px-8 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                className="group relative px-8 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-full shadow-[0_4px_16px_rgba(139,92,246,0.3)] hover:shadow-[0_4px_16px_rgba(139,92,246,0.5)] transition-shadow duration-300 flex items-center gap-3"
               >
                 <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-indigo-400 opacity-0 group-hover:opacity-20 transition-opacity duration-500" />
                 <span className="relative z-10 flex items-center gap-2">
@@ -245,7 +226,7 @@ export default function Home() {
                 </span>
               </button>
               <button
-                className="group px-8 py-4 rounded-full border border-white/30 bg-white/5 backdrop-blur-sm font-semibold hover:bg-white/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300 flex items-center gap-2 text-white"
+                className="group px-8 py-4 rounded-full border border-white/30 bg-white/5 font-semibold hover:bg-white/10 hover:border-purple-400/50 transition-colors duration-300 flex items-center gap-2 text-white"
               >
                 <i className="fas fa-play-circle group-hover:text-purple-400 transition-colors"></i>
                 ดูวิธีการทำงาน
@@ -278,10 +259,9 @@ export default function Home() {
       </section>
 
       <section className="py-20 relative overflow-hidden">
-        <div className="absolute -right-40 top-10 w-80 h-80 bg-purple-600/10 rounded-full blur-[100px] spin-slow" />
-        <div className="absolute -left-40 bottom-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: "10s" }} />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_85%_20%,rgba(147,51,234,0.12),transparent_50%),radial-gradient(ellipse_at_15%_80%,rgba(79,70,229,0.12),transparent_50%)]" />
 
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="relative max-w-6xl mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center space-y-6">
               <div className="inline-block px-4 py-1 bg-purple-500/10 rounded-full border border-purple-500/30 text-purple-300 text-sm font-mono animate-pulse">
                 ✦ เครื่องมือชั้นนำ ✦
@@ -300,13 +280,13 @@ export default function Home() {
               </p>
               <div className="flex flex-wrap gap-3 mt-4 justify-center">
                 {["Cape Sandbox", "MobSF", "VirusTotal", "Gemini AI"].map((t) => (
-                  <span key={t} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/30 transition-all duration-300 cursor-default">
+                  <span key={t} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/30 transition-colors duration-300 cursor-default">
                     {t}
                   </span>
                 ))}
               </div>
               <button
-                className="mt-6 px-8 py-3 rounded-full bg-white/5 border border-white/20 font-semibold hover:bg-purple-500/40 hover:border-purple-300 transition-all inline-flex items-center gap-2 group"
+                className="mt-6 px-8 py-3 rounded-full bg-white/5 border border-white/20 font-semibold hover:bg-purple-500/40 hover:border-purple-300 transition-colors inline-flex items-center gap-2 group"
               >
                 สำรวจผลงาน{" "}
                 <i className="fas fa-arrow-right group-hover:translate-x-2 transition-transform duration-300"></i>
@@ -316,8 +296,8 @@ export default function Home() {
       </section>
 
       <section className="py-24 px-6 relative">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-[120px]" />
-        <div className="max-w-6xl mx-auto text-center">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_75%_0%,rgba(232,121,249,0.08),transparent_50%)]" />
+        <div className="relative max-w-6xl mx-auto text-center">
           <span className="text-purple-300 font-mono tracking-widest text-sm uppercase bg-white/5 px-4 py-1 rounded-full border border-purple-500/20">
             เสียงจากผู้ใช้จริง
           </span>
@@ -333,7 +313,7 @@ export default function Home() {
             ].map((t, i) => (
               <div
                 key={t.name}
-                className="backdrop-blur-md bg-white/5 p-8 rounded-2xl border border-white/10 text-left hover:scale-[1.03] hover:border-purple-500/30 transition-all duration-500 group"
+                className="bg-white/5 p-8 rounded-2xl border border-white/10 text-left hover:border-purple-500/30 transition-colors duration-300 group"
                 style={{ transitionDelay: `${i * 0.15}s` }}
               >
                 <div className="flex gap-1 mb-4">
@@ -358,12 +338,7 @@ export default function Home() {
       </section>
 
       <section className="relative py-32 px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-900/30 via-indigo-900/30 to-fuchsia-900/30 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.15),transparent_70%)]" />
-
-        <div className="absolute -bottom-16 left-0 w-72 h-72 bg-purple-500 rounded-full opacity-20 blur-[80px] animate-pulse" />
-        <div className="absolute -top-20 right-10 w-80 h-80 bg-indigo-500 rounded-full opacity-20 blur-[100px] animate-pulse" style={{ animationDelay: "0.7s" }} />
-        <div className="absolute top-1/2 left-1/3 w-60 h-60 bg-fuchsia-500 rounded-full opacity-10 blur-[90px] animate-pulse" style={{ animationDelay: "1.4s" }} />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_100%,rgba(147,51,234,0.2),transparent_50%),radial-gradient(ellipse_at_80%_0%,rgba(79,70,229,0.2),transparent_50%),radial-gradient(ellipse_at_40%_50%,rgba(232,121,249,0.1),transparent_45%)]" />
 
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
           <div className="w-[500px] h-[500px] rounded-full border border-purple-500/10 animate-ping" style={{ animationDuration: "5s" }} />
@@ -371,7 +346,7 @@ export default function Home() {
         </div>
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white/5 rounded-full px-5 py-2 mb-8 border border-white/10 backdrop-blur-sm hover:border-purple-500/30 transition-all duration-500">
+          <div className="inline-flex items-center gap-2 bg-white/5 rounded-full px-5 py-2 mb-8 border border-white/10 hover:border-purple-500/30 transition-colors duration-300">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
@@ -389,7 +364,7 @@ export default function Home() {
 
           <div className="flex flex-wrap gap-6 justify-center">
             <button
-              className="group relative px-10 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 flex items-center gap-3 text-lg overflow-hidden"
+              className="group relative px-10 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-full shadow-[0_4px_16px_rgba(139,92,246,0.3)] hover:shadow-[0_4px_16px_rgba(139,92,246,0.5)] transition-shadow duration-300 flex items-center gap-3 text-lg"
               onClick={() => router.push("/login")}
             >
               <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-indigo-400 opacity-0 group-hover:opacity-20 transition-opacity duration-500" />
@@ -399,7 +374,7 @@ export default function Home() {
               </span>
             </button>
             <button
-              className="group px-10 py-4 rounded-full border border-white/30 bg-transparent backdrop-blur-sm font-semibold hover:bg-white/10 hover:border-purple-400/50 hover:scale-105 transition-all duration-300 flex items-center gap-2"
+              className="group px-10 py-4 rounded-full border border-white/30 bg-transparent font-semibold hover:bg-white/10 hover:border-purple-400/50 transition-colors duration-300 flex items-center gap-2"
             >
               <i className="fas fa-chart-line group-hover:text-purple-400 transition-colors"></i> ดูรายงานตัวอย่าง
             </button>
@@ -423,10 +398,10 @@ export default function Home() {
             <p>© 2025 RAMPART — สร้างด้วยจิตวิญญาณ</p>
           </div>
           <div className="flex gap-6 text-lg">
-            <i className="fab fa-twitter hover:text-purple-400 cursor-pointer transition hover:scale-125 duration-200"></i>
-            <i className="fab fa-instagram hover:text-purple-400 cursor-pointer transition hover:scale-125 duration-200"></i>
-            <i className="fab fa-github hover:text-purple-400 cursor-pointer transition hover:scale-125 duration-200"></i>
-            <i className="fab fa-dribbble hover:text-purple-400 cursor-pointer transition hover:scale-125 duration-200"></i>
+            <i className="fab fa-twitter hover:text-purple-400 cursor-pointer transition-colors"></i>
+            <i className="fab fa-instagram hover:text-purple-400 cursor-pointer transition-colors"></i>
+            <i className="fab fa-github hover:text-purple-400 cursor-pointer transition-colors"></i>
+            <i className="fab fa-dribbble hover:text-purple-400 cursor-pointer transition-colors"></i>
           </div>
         </div>
       </footer>

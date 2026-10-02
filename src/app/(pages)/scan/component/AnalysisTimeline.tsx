@@ -101,7 +101,7 @@ export function AnalysisTimeline({ data, taskId, className }: AnalysisTimelinePr
             >
               <motion.div
                 className={cn(
-                  "rounded-2xl border bg-gradient-to-br p-4 backdrop-blur-sm",
+                  "rounded-2xl border bg-gradient-to-br p-4",
                   stageColorMap[data.virusTotal.status],
                   data.virusTotal.status === "completed" && "border-emerald-500/20",
                   data.virusTotal.status === "running" && "border-amber-500/30",
@@ -135,7 +135,7 @@ export function AnalysisTimeline({ data, taskId, className }: AnalysisTimelinePr
             >
               <motion.div
                 className={cn(
-                  "rounded-2xl border bg-gradient-to-br p-4 backdrop-blur-sm",
+                  "rounded-2xl border bg-gradient-to-br p-4",
                   stageColorMap[getEngineStageStatus(data.mobsf, data.cape, data.ml)],
                   getEngineStageStatus(data.mobsf, data.cape, data.ml) === "completed" && "border-emerald-500/20",
                   getEngineStageStatus(data.mobsf, data.cape, data.ml) === "running" && "border-amber-500/30",
@@ -192,7 +192,7 @@ export function AnalysisTimeline({ data, taskId, className }: AnalysisTimelinePr
             >
               <motion.div
                 className={cn(
-                  "rounded-2xl border bg-gradient-to-br p-4 backdrop-blur-sm",
+                  "rounded-2xl border bg-gradient-to-br p-4",
                   stageColorMap[data.gemini.status],
                   data.gemini.status === "completed" && "border-purple-500/20",
                   data.gemini.status === "running" && "border-amber-500/30",

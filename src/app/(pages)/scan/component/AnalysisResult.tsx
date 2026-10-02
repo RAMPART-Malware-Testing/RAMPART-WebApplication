@@ -72,7 +72,7 @@ export function AnalysisResult({ data, tools, className }: AnalysisResultProps) 
       {(roundedScore != null || riskLevel) && (
         <motion.div
           className={cn(
-            "rounded-xl border bg-slate-900/60 p-4 backdrop-blur-sm",
+            "rounded-xl border bg-slate-900/60 p-4",
             tier ? tier.surface : "border-slate-700/50"
           )}
           initial={{ opacity: 0, y: 10 }}
@@ -131,7 +131,7 @@ export function AnalysisResult({ data, tools, className }: AnalysisResultProps) 
 
       {scoredTools.length > 0 && (
         <motion.div
-          className="rounded-xl border border-slate-700/50 bg-slate-900/60 p-4 backdrop-blur-sm"
+          className="rounded-xl border border-slate-700/50 bg-slate-900/60 p-4"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -180,7 +180,7 @@ export function AnalysisResult({ data, tools, className }: AnalysisResultProps) 
 
       {indicators.length > 0 && (
         <motion.div
-          className="rounded-xl border border-purple-500/20 bg-slate-900/60 p-4 backdrop-blur-sm"
+          className="rounded-xl border border-purple-500/20 bg-slate-900/60 p-4"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
