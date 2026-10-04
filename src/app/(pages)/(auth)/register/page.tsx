@@ -22,10 +22,10 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [isVerified, setIsVerified] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [captchaOpen, setCaptchaOpen] = useState(false)
+  const [pendingSubmit, setPendingSubmit] = useState(false)
 
   const notify = useToast();
 
@@ -55,12 +55,15 @@ export default function RegisterPage() {
 
   const resetCaptcha = () => {
     recaptchaRef.current?.reset()
-    setIsVerified(false)
     setRecaptchaToken('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    await submit()
+  }
+
+  const submit = async (tokenOverride?: string) => {
     setPasswordError('')
 
     const formError = validateForm()
@@ -68,13 +71,17 @@ export default function RegisterPage() {
       notify.warning(formError)
       return
     }
-
-    if (!isVerified || !recaptchaToken) {
+    // The token override comes straight from the captcha callback, so the
+    // `recaptchaToken` state has not been committed yet for this render pass.
+    const token = tokenOverride ?? recaptchaToken
+    if (!token) {
+      setPendingSubmit(true)
       setCaptchaOpen(true)
       notify.warning('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
       return
     }
 
+    setPendingSubmit(false)
     setIsLoading(true)
 
     try {
@@ -82,7 +89,7 @@ export default function RegisterPage() {
         username,
         email,
         password,
-        recaptchaToken,
+        recaptchaToken: token,
       }, { validateStatus: () => true })
 
       if (data.success) {
@@ -121,14 +128,21 @@ export default function RegisterPage() {
 
   const handleCaptchaChange = (token: string | null) => {
     setRecaptchaToken(token || '')
-    setIsVerified(!!token)
-    if (token) setCaptchaOpen(false)
+    if (!token) return
+
+    setCaptchaOpen(false)
+    if (pendingSubmit) void submit(token)
   }
 
   const handleCaptchaExpired = () => {
-    setIsVerified(false)
     setRecaptchaToken('')
+    setPendingSubmit(false)
     notify.warning('reCAPTCHA หมดอายุ กรุณายืนยันใหม่อีกครั้ง.')
+  }
+
+  const handleCaptchaClose = () => {
+    setCaptchaOpen(false)
+    setPendingSubmit(false)
   }
 
   return (
@@ -140,7 +154,7 @@ export default function RegisterPage() {
         captchaRef={recaptchaRef}
         onVerify={handleCaptchaChange}
         onExpired={handleCaptchaExpired}
-        onClose={() => setCaptchaOpen(false)}
+        onClose={handleCaptchaClose}
         description="กรุณายืนยัน reCAPTCHA เพื่อสมัครสมาชิก"
       />
       <Navbarservice />

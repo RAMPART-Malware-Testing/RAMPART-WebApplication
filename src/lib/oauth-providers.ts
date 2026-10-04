@@ -27,7 +27,7 @@ const PROVIDERS: Record<OAuthProvider, OAuthProviderConfig> = {
         clientId: process.env.GITHUB_CLIENT_ID || '',
         clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
         credential: 'access_token',
-        usePkce: false,
+        usePkce: true,
     },
 }
 

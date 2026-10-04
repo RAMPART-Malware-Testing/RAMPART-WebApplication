@@ -40,9 +40,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccessful, setIsSuccessful] = useState(false)
-  const [isVerified, setIsVerified] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState('')
   const [captchaOpen, setCaptchaOpen] = useState(false)
+  const [pendingSubmit, setPendingSubmit] = useState(false)
 
   const notify = useToast();
   const oauthErrorHandled = useRef(false)
@@ -60,35 +60,45 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    await submit()
+  }
 
-    if (!isVerified || !recaptchaToken) {
+  const submit = async (tokenOverride?: string) => {
+    // The token override comes straight from the captcha callback, so the
+    // `recaptchaToken` state has not been committed yet for this render pass.
+    const token = tokenOverride ?? recaptchaToken
+
+    if (!token) {
+      setPendingSubmit(true)
       setCaptchaOpen(true)
       notify.warning('กรุณายืนยัน reCAPTCHA')
       return
     }
 
+    setPendingSubmit(false)
     setIsLoading(true)
 
     try {
       const res = await axios.post('/api/auth/login', {
         email,
         password,
-        ...(recaptchaToken && { recaptchaToken }),
+        recaptchaToken: token,
       });
 
       if (res.data.require_captcha) {
         recaptchaRef.current?.reset()
-        setIsVerified(false)
         setRecaptchaToken('')
+        setPendingSubmit(true)
+        setCaptchaOpen(true)
         notify.warning('กรุณายืนยัน reCAPTCHA เพื่อดำเนินการต่อ')
         return
       }
 
       if (res.data.success) {
         setIsSuccessful(true)
-        const token = res.data.requireOtp ? `&token=${encodeURIComponent(res.data.token)}` : ''
+        const otpToken = res.data.requireOtp ? `&token=${encodeURIComponent(res.data.token)}` : ''
         const target = res.data.requireOtp
-          ? `/verify-otp?content=login_confirm${token}`
+          ? `/verify-otp?content=login_confirm${otpToken}`
           : '/dashboard'
         setTimeout(() => {
           setIsSuccessful(false)
@@ -101,7 +111,6 @@ export default function LoginPage() {
     } catch (err: any) {
       notify.error(err.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง.')
       recaptchaRef.current?.reset()
-      setIsVerified(false)
       setRecaptchaToken('')
     } finally {
       setIsLoading(false)
@@ -110,13 +119,20 @@ export default function LoginPage() {
 
   const handleCaptchaChange = (token: string | null) => {
     setRecaptchaToken(token || '')
-    setIsVerified(!!token)
-    if (token) setCaptchaOpen(false)
+    if (!token) return
+
+    setCaptchaOpen(false)
+    if (pendingSubmit) void submit(token)
   }
 
   const handleCaptchaExpired = () => {
-    setIsVerified(false)
     setRecaptchaToken('')
+    setPendingSubmit(false)
+  }
+
+  const handleCaptchaClose = () => {
+    setCaptchaOpen(false)
+    setPendingSubmit(false)
   }
 
   return (
@@ -128,7 +144,7 @@ export default function LoginPage() {
       captchaRef={recaptchaRef}
       onVerify={handleCaptchaChange}
       onExpired={handleCaptchaExpired}
-      onClose={() => setCaptchaOpen(false)}
+      onClose={handleCaptchaClose}
       description="กรุณายืนยัน reCAPTCHA เพื่อเข้าสู่ระบบ"
     />
     <Navbarservice />

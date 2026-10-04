@@ -4,6 +4,9 @@ import { appUrl } from '@/lib/app-url'
 import { applyOAuthSession } from '@/lib/oauth-session'
 import { callbackUrl, getOAuthProvider, isOAuthProvider } from '@/lib/oauth-providers'
 import { OAUTH_STATE_COOKIE, readOAuthState } from '@/lib/oauth-state'
+import { signBridgeToken, type BridgeIdentity } from '@/lib/bridge-token'
+import { fetchGithubProfile } from '@/lib/github-profile'
+import { fetchGoogleProfile, verifyGoogleIdToken } from '@/lib/google-verify'
 
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:8006'
 
@@ -63,9 +66,46 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
         return callbackError(request, 'OAUTH_TOKEN_MISSING')
     }
 
+    // This is where the provider credential stops being trusted-but-unverified.
+    // Both providers are asked "who is this and what is their e-mail" from the
+    // web app, never from the API, and only once that succeeds do we know
+    // anything about the user.
+    //
+    // Google gets two independent answers that must agree: the ID token proves
+    // the credential was minted for *this* app, and a live call to Google's
+    // userinfo endpoint proves the account exists right now. GitHub issues
+    // opaque tokens, so asking GitHub is the only way.
+    let identity: BridgeIdentity
+    try {
+        if (provider === 'google') {
+            const claims = await verifyGoogleIdToken(tokens.id_token)
+            // The ID token is a signed statement, not a credential to spend on
+            // an API - userinfo needs the access token from the same grant.
+            const profile = await fetchGoogleProfile(tokens.access_token, claims.provider_uid)
+            identity = { provider: 'google', ...profile }
+        } else {
+            identity = { provider: 'github', ...(await fetchGithubProfile(credential)) }
+        }
+    } catch (err) {
+        return callbackError(request, 'OAUTH_PROVIDER_ERROR', err instanceof Error ? err.message : String(err))
+    }
+
+    // Both providers' answers are now facts, so state them to the API as a
+    // token it can check on its own - one shared secret, no provider involved.
+    let bridgeToken: string
+    try {
+        bridgeToken = signBridgeToken(identity)
+    } catch (err) {
+        return callbackError(request, 'OAUTH_NOT_CONFIGURED', err instanceof Error ? err.message : undefined)
+    }
+
+    // The API sees only this: a short-lived token it can verify on its own.
+    // No Google client ID, no redirect URI, no provider token crosses over.
     let exchanged: any
     try {
-        const { data } = await axios.post(`${SERVER_URL}/api/auth/${provider}/exchange`, { [config.credential]: credential })
+        const { data } = await axios.post(`${SERVER_URL}/api/auth/${provider}/bridge`, {
+            bridge_token: bridgeToken,
+        })
         exchanged = data
     } catch (err) {
         if (axios.isAxiosError(err) && err.response?.status === 404) {
@@ -74,13 +114,18 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
         return callbackError(request, 'OAUTH_SERVER_UNREACHABLE')
     }
 
-    if (!exchanged?.success || !exchanged?.data?.access_token) {
+    if (!exchanged?.success || !exchanged?.data?.access_token || !exchanged?.data?.data) {
         return callbackError(request, exchanged?.status || 'OAUTH_CALLBACK_FAILED', exchanged?.message)
     }
 
     const response = NextResponse.redirect(appUrl(request, '/dashboard'))
     response.cookies.delete(OAUTH_STATE_COOKIE)
-    const ok = await applyOAuthSession(response, exchanged.data.access_token, exchanged.data.device_token)
+    const ok = applyOAuthSession(
+        response,
+        exchanged.data.access_token,
+        exchanged.data.data,
+        exchanged.data.device_token,
+    )
     if (!ok) {
         return callbackError(request, 'OAUTH_SESSION_FAILED')
     }
