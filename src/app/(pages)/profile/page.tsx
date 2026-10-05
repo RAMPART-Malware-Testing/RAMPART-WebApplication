@@ -103,6 +103,11 @@ function ProfileContent() {
       }
     : null
 
+  const emailButtonLabel =
+    profileData?.role === 'master'
+      ? (profileData?.email_verified ? 'เปลี่ยน' : 'ยืนยัน OTP')
+      : 'เปลี่ยนอีเมล'
+
   const loginHistory: LoginHistory[] = rawLoginHistory.map((it) => ({
     id: it.id,
     timestamp: it.created_at || '',
@@ -187,10 +192,18 @@ function ProfileContent() {
     try {
       const { data } = await axios.post('/api/profile/change-email', { email: candidate })
       if (!data?.success) throw new Error(data?.message || 'ส่งรหัส OTP ไม่สำเร็จ')
-      setEmailOldToken(data?.data?.token ?? '')
+      const skippedOldEmail = data?.data?.old_email_skipped === true
+      if (skippedOldEmail) {
+        setEmailNewToken(data?.data?.token ?? '')
+      } else {
+        setEmailOldToken(data?.data?.token ?? '')
+      }
       setEmailSent(data?.data?.email_sent !== false)
-      setEmailStep('old-otp')
-      notify.success(data?.message || 'ส่งรหัส OTP ไปยังอีเมลเดิมของคุณแล้ว')
+      setEmailStep(skippedOldEmail ? 'new-otp' : 'old-otp')
+      notify.success(
+        data?.message ||
+          (skippedOldEmail ? 'ส่งรหัส OTP ไปยังอีเมลใหม่ของคุณแล้ว' : 'ส่งรหัส OTP ไปยังอีเมลเดิมของคุณแล้ว'),
+      )
     } catch (err) {
       const message = err instanceof Error ? err.message : 'ส่งรหัส OTP ไม่สำเร็จ'
       setEmailError(message)
@@ -614,7 +627,7 @@ function ProfileContent() {
                               className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-cyan-400 text-sm font-medium hover:bg-white/10 hover:text-cyan-300 transition whitespace-nowrap"
                             >
                               <i className="fas fa-envelope mr-1.5"></i>
-                              เปลี่ยนอีเมล
+                              {emailButtonLabel}
                             </button>
                           </div>
                         </div>
@@ -855,7 +868,9 @@ function ProfileContent() {
               </h3>
               <p className="text-slate-400 text-sm mt-1">
                 {emailStep === 'email'
-                  ? 'กรอกอีเมลใหม่ ระบบจะส่งรหัส OTP ไปยืนยันอีเมลเดิมก่อน'
+                  ? profileData?.email_verified
+                    ? 'กรอกอีเมลใหม่ ระบบจะส่งรหัส OTP ไปยืนยันอีเมลเดิมก่อน'
+                    : 'กรอกอีเมลใหม่ ระบบจะส่งรหัส OTP ไปยืนยันอีเมลใหม่ทันที'
                   : emailStep === 'old-otp'
                     ? `กรอกรหัส OTP 6 หลักที่ส่งไปที่อีเมลเดิม (${user?.email || '-'})`
                     : `กรอกรหัส OTP 6 หลักที่ส่งไปที่อีเมลใหม่ (${emailForm.newEmail.trim().toLowerCase()})`}
@@ -885,8 +900,17 @@ function ProfileContent() {
                 <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400">
                   <i className="fas fa-circle-info mt-0.5"></i>
                   <span>
-                    ยืนยัน 2 ขั้น: รหัสที่ 1 ส่งไป<b>อีเมลเดิม</b> (ยืนยันว่าเป็นเจ้าของบัญชี)
-                    แล้วรหัสที่ 2 ส่งไป<b>อีเมลใหม่</b> (ยืนยันว่าเป็นเจ้าของอีเมลใหม่)
+                    {profileData?.email_verified ? (
+                      <>
+                        ยืนยัน 2 ขั้น: รหัสที่ 1 ส่งไป<b>อีเมลเดิม</b> (ยืนยันว่าเป็นเจ้าของบัญชี)
+                        แล้วรหัสที่ 2 ส่งไป<b>อีเมลใหม่</b> (ยืนยันว่าเป็นเจ้าของอีเมลใหม่)
+                      </>
+                    ) : (
+                      <>
+                        ยืนยัน 1 ขั้น: ส่งรหัส OTP ไป<b>อีเมลใหม่</b> โดยตรง
+                        (อีเมลเดิมยังไม่ได้รับการยืนยัน จึงข้ามขั้นนั้น)
+                      </>
+                    )}
                   </span>
                 </div>
 
@@ -970,7 +994,8 @@ function ProfileContent() {
                   </div>
                 )}
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
-                  ขั้นที่ 2/2 — ยืนยันอีเมลใหม่: {emailForm.newEmail.trim().toLowerCase()}
+                  {profileData?.email_verified ? 'ขั้นที่ 2/2' : 'ขั้นที่ 1/1'} — ยืนยันอีเมลใหม่:{' '}
+                  {emailForm.newEmail.trim().toLowerCase()}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">รหัส OTP (อีเมลใหม่)</label>
