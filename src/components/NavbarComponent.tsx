@@ -20,7 +20,7 @@ import {
   ChevronDown,
 } from "lucide-react"
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
+const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:8006'
 
 const baseMenuItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: null },

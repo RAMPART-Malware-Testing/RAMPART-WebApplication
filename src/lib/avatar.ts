@@ -1,7 +1,7 @@
 export function resolveAvatarUrl(avatarUrl: string | null | undefined): string | null {
   if (!avatarUrl) return null
   if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) return avatarUrl
-  const base = process.env.NEXT_PUBLIC_SERVER_URL || ''
+  const base = process.env.SERVER_URL ?? 'http://localhost:8006'
   return `${base}${avatarUrl}`
 }
 

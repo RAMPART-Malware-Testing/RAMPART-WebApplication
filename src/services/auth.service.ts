@@ -4,7 +4,7 @@ const ERROR_RESPONSE = { success: false, status: 404, message: "Connect Server E
 
 class AuthService {
     private readonly http: AxiosInstance;
-    private readonly uri= process.env.SERVER_URL || "http://localhost:8000"
+    private readonly uri= process.env.SERVER_URL || "http://localhost:8006"
 
     constructor() {
         this.http = axios.create({

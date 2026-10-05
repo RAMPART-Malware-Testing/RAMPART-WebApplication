@@ -9,10 +9,11 @@ import {
   useDashboardRecentActivities,
   useDashboardPublicReports,
   type RecentActivity,
+  type RiskScoreEntry,
 } from '@/hooks/queries/useDashboard'
 import { fileTypeLabel, hasFileType } from '@/lib/file-type'
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
+const SERVER_URL = process.env.SERVER_URL
 
 function truncate(text?: string, max = 30) {
   if (!text) return '-'
@@ -85,12 +86,12 @@ const toolChips = (r: { virustotal_score?: number | null; mobsf_score?: number |
   return defs.filter((d) => d.value != null)
 }
 
-const avgChips = (item: { virustotalScore?: number | null; mobsfScore?: number | null; capeScore?: number | null; aiScore?: number | null }) => {
+const avgChips = (item: RiskScoreEntry) => {
   return [
-    { key: 'virustotal', label: 'VT', title: 'VirusTotal', value: item.virustotalScore ?? null },
-    { key: 'mobsf', label: 'MobSF', title: 'MobSF Static Analysis', value: item.mobsfScore ?? null },
-    { key: 'cape', label: 'CAPE', title: 'CAPE Sandbox', value: item.capeScore ?? null },
-    { key: 'rampart_ai', label: 'AI', title: 'RampartAI', value: item.aiScore ?? null },
+    { key: 'virustotal', label: 'VT', title: 'VirusTotal', value: item.tools.virustotal },
+    { key: 'mobsf', label: 'MobSF', title: 'MobSF Static Analysis', value: item.tools.mobsf },
+    { key: 'cape', label: 'CAPE', title: 'CAPE Sandbox', value: item.tools.cape },
+    { key: 'rampart_ai', label: 'AI', title: 'RampartAI', value: item.tools.ai },
   ].filter((c): c is { key: string; label: string; title: string; value: number } => c.value != null)
 }
 
@@ -292,36 +293,45 @@ export default function DashboardPage() {
             </div>
             <div className="p-6 space-y-4">
               {dashboardStats.riskScores.length > 0 ? (
-                dashboardStats.riskScores.map((item) => {
-                  const score = Math.min(Math.max(item.riskScore, 0), 100)
-                  return (
-                    <div key={item.fileType} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-white text-sm font-medium">{item.fileType}</span>
-                        <span className={`text-sm font-bold ${dangerTier(score).text}`}>{score.toFixed(0)}/100</span>
-                      </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${dangerTier(score).bar} rounded-full transition-[width] duration-700`}
-                          style={{ width: `${score}%` }}
-                        />
-                      </div>
-                      {avgChips(item).length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {avgChips(item).map((c) => (
-                            <span
-                              key={c.key}
-                              title={`${c.title} (ค่าเฉลี่ย): ${Math.round(c.value)}/100`}
-                              className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${dangerTier(c.value).chip} ${dangerTier(c.value).text}`}
-                            >
-                              {c.label} {Math.round(c.value)}
+                <div className="space-y-4">
+                  {dashboardStats.riskScores.map((item) => {
+                    const score = Math.min(Math.max(item.riskScore ?? 0, 0), 100)
+                    return (
+                      <div key={item.fileType} className="space-y-2">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-white text-sm font-medium">
+                            {item.label}
+                            <span className="text-slate-500 text-xs font-normal ml-2">
+                              {item.scoredCount}/{item.sampleCount} ไฟล์
                             </span>
-                          ))}
+                          </span>
+                          <span className={`text-sm font-bold ${dangerTier(score).text}`}>
+                            {score.toFixed(0)}/100
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  )
-                })
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${dangerTier(score).bar} rounded-full transition-[width] duration-700`}
+                            style={{ width: `${score}%` }}
+                          />
+                        </div>
+                        {avgChips(item).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {avgChips(item).map((c) => (
+                              <span
+                                key={c.key}
+                                title={`${c.title} (ค่าเฉลี่ย): ${Math.round(c.value)}/100`}
+                                className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${dangerTier(c.value).chip} ${dangerTier(c.value).text}`}
+                              >
+                                {c.label} {Math.round(c.value)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               ) : (
                 <div className="text-center py-12 text-slate-400">
                   <i className="fas fa-chart-line text-4xl mb-3 opacity-50" />

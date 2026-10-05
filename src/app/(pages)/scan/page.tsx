@@ -29,7 +29,10 @@ interface UploadResponse {
   detail?: string
 }
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
+// Exposed to the browser through the `env` block in next.config.ts. The upload
+// itself is a direct browser -> FastAPI POST so the file bytes never travel
+// through this app; only the upload token is minted through /api/generate-token.
+const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:8006'
 
 export default function ScanFilesPage() {
   const [file, setFile] = useState<UploadedFile | null>(null)
@@ -81,6 +84,15 @@ export default function ScanFilesPage() {
 
       xhr.onload = () => {
         try {
+          // FastAPI answers with JSON, but anything in front of it (proxy,
+          // gateway, this app itself) may answer with HTML or plain text.
+          // Surface that body instead of letting JSON.parse throw a SyntaxError.
+          const contentType = xhr.getResponseHeader('content-type') ?? ''
+          if (!contentType.includes('application/json')) {
+            throw new Error(
+              `Server error: ${xhr.status} — ${xhr.responseText.slice(0, 200) || 'ไม่มีข้อมูลตอบกลับ'}`
+            )
+          }
           const response: UploadResponse = JSON.parse(xhr.responseText)
           if (xhr.status === 200 && response.success && response.task_id) {
             setFile(prev => prev ? { ...prev, status: 'completed', progress: 100, taskId: response.task_id } : null)

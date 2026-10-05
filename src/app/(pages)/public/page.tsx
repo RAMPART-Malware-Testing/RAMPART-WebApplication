@@ -6,7 +6,7 @@ import NavbarComponent from '@/components/NavbarComponent'
 import { usePublicReports, type PublicReportItem } from '@/hooks/queries/usePublicReports'
 import { fileTypeLabel, hasFileType } from '@/lib/file-type'
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
+const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:8006'
 const PAGE_SIZE = 5
 const FILE_TYPES = ['apk', 'xapk', 'exe', 'msi', 'bat', 'dmg', 'ipa', 'zip', 'pkt']
 const STATUS_OPTIONS = [

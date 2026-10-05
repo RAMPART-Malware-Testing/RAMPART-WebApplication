@@ -16,7 +16,7 @@ import { HistoryPager } from '@/components/ui/HistoryPager'
 import { roleLabel } from '@/lib/roles'
 import { queryKeys } from '@/hooks/queries/queryKeys'
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
+const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:8006'
 
 const USERNAME_RE = /^[a-zA-Z0-9_.\-\u0E00-\u0E7F]{3,50}$/
 const ROLE_BADGE_CLASS: Record<string, string> = {

@@ -13,8 +13,6 @@ interface Datareport {
   report: any;
 }
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL
-
 export default function Page({ taskid, tool }: { taskid: string; tool: string }) {
   const [reportData, setReportData] = useState<Datareport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
