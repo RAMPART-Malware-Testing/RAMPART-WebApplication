@@ -15,11 +15,6 @@ function authHeaders(accessToken: string) {
 
 type GithubEmail = { email: string; primary?: boolean; verified?: boolean }
 
-/**
- * Asks GitHub who the access token belongs to. GitHub issues opaque tokens
- * rather than signed ones, so the only way to learn the identity behind one is
- * to present it - which is why this happens here and not in the API.
- */
 export async function fetchGithubProfile(accessToken: string): Promise<VerifiedProfile> {
     const headers = authHeaders(accessToken)
 

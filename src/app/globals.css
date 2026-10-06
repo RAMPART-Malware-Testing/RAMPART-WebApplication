@@ -61,11 +61,9 @@ body {
   animation-delay: 1.5s;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
 }

@@ -68,13 +68,6 @@ export async function proxy(request: NextRequest) {
         return redirect("/login", request, true);
     }
 
-    // Before anything else: an installation with no users has no one who could
-    // log in, so guest pages route to the one-time setup page until the first
-    // master account exists. Only asked when logged out - a logged-in session
-    // proves the install is already past setup, and skipping the check keeps
-    // authenticated navigation free of an extra backend round-trip.
-    // `null` (backend unreachable) is treated as "no setup needed" so an API
-    // outage can't strand the site on a setup page that can never succeed.
     if (!isLoggedIn) {
         const needsSetup = await needsFirstRunSetup();
         if (needsSetup && pathname !== "/first-run" && !matchesAny(pathname, PROTECTED_ROUTES)) {

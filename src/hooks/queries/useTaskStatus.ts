@@ -10,7 +10,6 @@ export interface TaskPoll {
   status?: string
   message?: string
   progress?: TaskProgress
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   report?: any
 }
 

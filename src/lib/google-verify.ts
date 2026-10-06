@@ -8,7 +8,6 @@ const JWKS_TTL_MS = 60 * 60 * 1000
 
 export class GoogleVerificationError extends Error {}
 
-/** The identity facts the API needs, already checked against Google's keys. */
 export type VerifiedProfile = {
     provider_uid: string
     email: string
@@ -35,7 +34,6 @@ async function googlePublicKeys(force = false): Promise<Record<string, KeyObject
         try {
             keys[jwk.kid] = createPublicKey({ key: jwk as JsonWebKey, format: 'jwk' })
         } catch {
-            // Skip a key we cannot parse rather than failing the whole refresh.
         }
     }
     if (Object.keys(keys).length === 0) {
@@ -46,12 +44,6 @@ async function googlePublicKeys(force = false): Promise<Record<string, KeyObject
     return keys
 }
 
-/**
- * Checks a Google ID token the way Google's own libraries do: signature against
- * the published JWKS, audience pinned to this app's client ID, issuer pinned to
- * Google, and expiry enforced. All four matter - the audience check is what
- * stops an ID token minted for some other website from being replayed at us.
- */
 export async function verifyGoogleIdToken(idToken: string): Promise<VerifiedProfile> {
     const clientId = process.env.GOOGLE_CLIENT_ID
     if (!clientId) throw new GoogleVerificationError('ยังไม่ได้ตั้งค่า GOOGLE_CLIENT_ID บนเว็บแอป')
@@ -101,15 +93,6 @@ type GoogleUserinfo = {
     picture?: string
 }
 
-/**
- * Presents the access token to Google and asks who it belongs to - the same
- * shape of check GitHub gets from `api.github.com/user`.
- *
- * The ID token check above proves the token was minted by Google *for this
- * app*; this proves the account is really there right now. `expectedSub` is
- * the ID token's own subject claim, and the two have to agree, so a valid
- * access token for one account cannot be paired with an ID token for another.
- */
 export async function fetchGoogleProfile(accessToken: string, expectedSub: string): Promise<VerifiedProfile> {
     if (!accessToken) throw new GoogleVerificationError('Google ไม่ได้ส่ง access token กลับมา')
 

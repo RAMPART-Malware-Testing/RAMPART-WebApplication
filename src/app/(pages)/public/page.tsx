@@ -270,7 +270,6 @@ export default function PublicFilesPage() {
                               <span className="flex items-center gap-1.5" title={`อัปโหลดโดย ${item.uploaded_by.username}`}>
                                 <span className="h-4 w-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-[8px] font-bold text-white overflow-hidden">
                                   {item.uploaded_by.avatar_url ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                       src={`${SERVER_URL}${item.uploaded_by.avatar_url}`}
                                       alt="avatar"

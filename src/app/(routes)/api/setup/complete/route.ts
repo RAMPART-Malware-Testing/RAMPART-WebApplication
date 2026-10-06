@@ -2,12 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { invalidateSetupStatusCache } from "@/lib/setup-status";
 import { setupService } from "@/services/setup.service";
 
-/**
- * Creates the very first master account.
- *
- * No captcha: this runs on a machine that is not on the network yet, and the
- * endpoint closes permanently the moment it succeeds once.
- */
 export async function POST(request: NextRequest) {
     try {
         const { username, email, password, confirmPassword } = await request.json();

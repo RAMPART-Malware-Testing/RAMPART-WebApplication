@@ -13,11 +13,6 @@ function cookieOptions(maxAge: number) {
     };
 }
 
-/**
- * Wraps the tokens the API issued at /exchange into the session cookies this
- * app reads. The user record comes from that same response - it is the row
- * the API just resolved or created - so there is no reason to fetch it again.
- */
 export function applyOAuthSession(
     response: NextResponse,
     accessToken: string,

@@ -71,8 +71,6 @@ export default function RegisterPage() {
       notify.warning(formError)
       return
     }
-    // The token override comes straight from the captcha callback, so the
-    // `recaptchaToken` state has not been committed yet for this render pass.
     const token = tokenOverride ?? recaptchaToken
     if (!token) {
       setPendingSubmit(true)

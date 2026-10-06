@@ -25,7 +25,7 @@ const OAUTH_ERROR_TEXT: Record<string, string> = {
   OAUTH_START_FAILED: 'เริ่มการเข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
   OAUTH_STATE_MISMATCH: 'คำขอเข้าสู่ระบบหมดอายุหรือไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
   OAUTH_TOKEN_EXCHANGE_FAILED: 'แลกเปลี่ยนโทเค็นกับผู้ให้บริการไม่สำเร็จ กรุณาลองใหม่',
-  OAUTH_API_OUTDATED: 'เซิร์ฟเวอร์ยังไม่รองรับการยืนยันตัวตนผ่าน OAuth (ต้องอัปเดต API server ให้มี POST /api/auth/{provider}/exchange)',
+  OAUTH_API_OUTDATED: 'เซิร์ฟเวอร์ยังไม่รองรับการยืนยันตัวตนผ่าน OAuth (ต้องอัปเดต API server ให้มี POST /api/auth/{provider}/bridge)',
 }
 
 function oauthErrorText(error: string, message?: string | null) {
@@ -64,8 +64,6 @@ export default function LoginPage() {
   }
 
   const submit = async (tokenOverride?: string) => {
-    // The token override comes straight from the captcha callback, so the
-    // `recaptchaToken` state has not been committed yet for this render pass.
     const token = tokenOverride ?? recaptchaToken
 
     if (!token) {
