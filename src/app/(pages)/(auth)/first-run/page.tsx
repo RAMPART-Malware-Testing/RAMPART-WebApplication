@@ -62,8 +62,6 @@ export default function FirstRunSetupPage() {
 
       setIsSuccessful(true)
       notify.success(data.message || 'ตั้งค่าบัญชีผู้ดูแลระบบสำเร็จ')
-      // Full navigation, not a client-side push: the middleware has to re-run
-      // so it picks up the now-completed setup state.
       setTimeout(() => {
         window.location.href = data.redirect || '/login'
       }, 1800)

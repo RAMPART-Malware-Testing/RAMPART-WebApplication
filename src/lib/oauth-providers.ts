@@ -42,8 +42,6 @@ export function isOAuthProvider(provider: string): provider is OAuthProvider {
     return provider === 'google' || provider === 'github'
 }
 
-// The provider redirects the browser back to this route, so it must be the
-// web app's own origin (APP_URL), not the FastAPI backend (SERVER_URL).
 export function callbackUrl(provider: string) {
     return `${(process.env.APP_URL || 'http://localhost:3000').replace(/\/+$/, '')}/api/auth/${provider}/callback`
 }

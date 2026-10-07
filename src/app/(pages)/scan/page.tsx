@@ -29,9 +29,6 @@ interface UploadResponse {
   detail?: string
 }
 
-// Exposed to the browser through the `env` block in next.config.ts. The upload
-// itself is a direct browser -> FastAPI POST so the file bytes never travel
-// through this app; only the upload token is minted through /api/generate-token.
 const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:8006'
 
 export default function ScanFilesPage() {
@@ -84,9 +81,6 @@ export default function ScanFilesPage() {
 
       xhr.onload = () => {
         try {
-          // FastAPI answers with JSON, but anything in front of it (proxy,
-          // gateway, this app itself) may answer with HTML or plain text.
-          // Surface that body instead of letting JSON.parse throw a SyntaxError.
           const contentType = xhr.getResponseHeader('content-type') ?? ''
           if (!contentType.includes('application/json')) {
             throw new Error(

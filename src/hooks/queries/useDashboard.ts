@@ -15,20 +15,15 @@ export interface MalwareTypeEntry {
 }
 
 export interface RiskScoreEntry {
-  /** Category read off the file's own bytes, e.g. `windows-exe`. */
   fileType: string
-  /** Human-readable Thai/English label for the category. */
   label: string
-  /** Weighted average danger score across the category's scored files. */
   riskScore: number | null
-  /** Per-tool averages. `null` means the tool produced no score at all. */
   tools: {
     virustotal: number | null
     mobsf: number | null
     cape: number | null
     ai: number | null
   }
-  /** Files in the category, and how many of them carry a score. */
   sampleCount: number
   scoredCount: number
 }
@@ -57,8 +52,6 @@ const EMPTY_STATS: FileStats = { total: 0, success: 0, pending: 0, failed: 0 }
 
 const num = (value: unknown): number | null => (typeof value === "number" ? value : null)
 
-/** Fills in every field so a partial or older payload cannot break the panel. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const normalizeRiskScore = (raw: any): RiskScoreEntry => ({
   fileType: String(raw?.fileType ?? ""),
   label: String(raw?.label ?? raw?.fileType ?? ""),
@@ -78,9 +71,6 @@ export function useDashboardSummary() {
     queryKey: queryKeys.dashboardSummary,
     queryFn: async (): Promise<DashboardSummary> => {
       const { data } = await axios.post<Partial<DashboardSummary>>("/api/dashboard")
-      // The route returns the backend payload flat: its `if (!res.success)`
-      // guard fires because the payload has no `success` key, so the error
-      // branch always wins and the summary fields sit at the top level.
       return {
         totalFiles: data?.totalFiles ?? EMPTY_STATS,
         userFiles: data?.userFiles ?? EMPTY_STATS,
@@ -113,7 +103,6 @@ export function useDashboardRecentActivities() {
 export function useDashboardPublicReports(page = 1, limit = 8) {
   return useQuery({
     queryKey: queryKeys.dashboardReports(page, limit),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     queryFn: async (): Promise<any[]> => {
       const { data } = await axios.post("/api/dashboard/reports", { page, limit })
       return data?.data ?? []

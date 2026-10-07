@@ -382,7 +382,6 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="h-4 w-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-[8px] font-bold text-white overflow-hidden">
                             {f.uploaded_by.avatar_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
                               <img src={`${SERVER_URL}${f.uploaded_by.avatar_url}`} alt="avatar" className="w-full h-full object-cover" />
                             ) : (
                               (f.uploaded_by.username || '?').charAt(0).toUpperCase()

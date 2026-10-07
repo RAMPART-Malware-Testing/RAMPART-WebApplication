@@ -459,7 +459,6 @@ function ProfileContent() {
                   <div className="relative w-24 h-24">
                     {user?.avatar && !avatarLoadFailed ? (
                       <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center border-4 border-slate-900 shadow-xl overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`${SERVER_URL}${user.avatar}`}
                           alt="avatar"

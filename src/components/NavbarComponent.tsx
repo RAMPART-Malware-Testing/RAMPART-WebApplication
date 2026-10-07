@@ -133,7 +133,6 @@ export default function NavbarComponent() {
               >
                 <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-blue-500/20 overflow-hidden">
                   {avatarSrc ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={avatarSrc}
                       alt="avatar"
