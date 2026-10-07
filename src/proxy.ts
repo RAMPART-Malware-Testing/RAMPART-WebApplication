@@ -6,7 +6,7 @@ import { needsFirstRunSetup } from "@/lib/setup-status";
 
 const GUEST_ONLY_ROUTES = ["/login", "/register", "/reset-passwd", "/verify-otp", "/first-run"];
 
-const PROTECTED_ROUTES = ["/home", "/dashboard", "/scan", "/details", "/profile", "/reports", "/public", "/admin", "/setup"];
+const PROTECTED_ROUTES = ["/home", "/dashboard", "/scan", "/details", "/profile", "/reports", "/public", "/admin"];
 
 const ROLE_PROTECTED_ROUTES: { prefix: string; roles: Array<"admin" | "master"> }[] = [
     { prefix: "/admin", roles: ["admin", "master"] },
@@ -21,7 +21,7 @@ function redirect(path: string, request: NextRequest, clearCookie = false) {
 function matchesAny(pathname: string, routes: string[]) {
     return routes.some((r) => pathname === r || pathname.startsWith(`${r}/`));
 }
-async function fetchFreshProfile(accessToken: string): Promise<{ role?: string; must_setup?: boolean } | null> {
+async function fetchFreshProfile(accessToken: string): Promise<{ role?: string } | null> {
     try {
         const serverUrl = process.env.SERVER_URL || "http://localhost:8006";
         const res = await fetch(`${serverUrl}/api/profile`, {
@@ -32,30 +32,10 @@ async function fetchFreshProfile(accessToken: string): Promise<{ role?: string; 
         if (!res.ok) return null;
         const body = await res.json();
         if (!body?.success || !body?.data) return null;
-        return { role: body.data.role, must_setup: body.data.must_setup === true };
+        return { role: body.data.role };
     } catch {
         return null;
     }
-}
-
-function withRefreshedSession(payload: { token?: string; data?: RampartUser }, fresh: Partial<RampartUser>) {
-    const response = NextResponse.next();
-    const refreshed = jwtService.sign(
-        {
-            token: payload.token,
-            type: "session",
-            data: { ...payload.data, ...fresh } as RampartUser,
-        },
-        "7d",
-    );
-    response.cookies.set("access_token", refreshed, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-    });
-    return response;
 }
 
 export async function proxy(request: NextRequest) {
@@ -92,27 +72,6 @@ export async function proxy(request: NextRequest) {
 
     if (matchesAny(pathname, PROTECTED_ROUTES)) {
         if (!isLoggedIn) return redirect("/login", request, !!token);
-
-        let setupPending = payload?.data?.must_setup === true;
-        let freshProfile: { role?: string; must_setup?: boolean } | null = null;
-        if (setupPending) {
-            freshProfile = await fetchFreshProfile(payload!.token as string);
-            if (freshProfile) {
-                setupPending = freshProfile.must_setup === true;
-            }
-        }
-        if (!setupPending && pathname === "/setup") {
-            return redirect("/dashboard", request);
-        }
-        if (setupPending && pathname !== "/setup") {
-            return redirect("/setup", request);
-        }
-        if (freshProfile && !setupPending) {
-            return withRefreshedSession(payload!, {
-                role: freshProfile.role as RampartUser["role"],
-                must_setup: false,
-            });
-        }
 
         const roleGate = ROLE_PROTECTED_ROUTES.find((r) => matchesAny(pathname, [r.prefix]));
         if (roleGate) {
@@ -174,8 +133,6 @@ export const config = {
         "/reports/:path*",
         "/public",
         "/public/:path*",
-        "/setup/:path*",
-        "/setup",
         "/admin/:path*",
     ],
 };

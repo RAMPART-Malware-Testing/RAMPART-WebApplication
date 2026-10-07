@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { invalidateSetupStatusCache } from "@/lib/setup-status";
 import { setupService } from "@/services/setup.service";
+import { jwtService } from "@/services/jwt.service";
 
 /**
  * Creates the very first master account.
@@ -27,7 +28,33 @@ export async function POST(request: NextRequest) {
         }
 
         invalidateSetupStatusCache();
-        return NextResponse.json({ success: true, message: res.message }, { status: 200 });
+
+        const accessToken = res.data?.access_token as string | undefined;
+
+        if (!accessToken) {
+            return NextResponse.json(
+                { success: true, message: res.message, redirect: "/login" },
+                { status: 200 },
+            );
+        }
+
+        const response = NextResponse.json(
+            { success: true, message: res.message, redirect: "/dashboard" },
+            { status: 200 },
+        );
+        const session = jwtService.sign(
+            { token: accessToken, type: "session", data: res.data?.data },
+            "7d",
+        );
+        response.cookies.set("access_token", session, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+            maxAge: 60 * 60 * 24 * 7,
+        });
+
+        return response;
     } catch (error) {
         console.error("First-run setup API error:", error);
         return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });

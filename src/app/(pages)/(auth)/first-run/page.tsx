@@ -65,7 +65,7 @@ export default function FirstRunSetupPage() {
       // Full navigation, not a client-side push: the middleware has to re-run
       // so it picks up the now-completed setup state.
       setTimeout(() => {
-        window.location.href = '/login'
+        window.location.href = data.redirect || '/login'
       }, 1800)
     } catch (err: any) {
       const message = err.response?.data?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง'
@@ -82,7 +82,7 @@ export default function FirstRunSetupPage() {
   return (
     <>
       {isLoading && <GeometricLoader loadingText="กำลังตั้งค่าระบบ" />}
-      {isSuccessful && <GeometricLoader loadingText="ตั้งค่าสำเร็จ กำลังพาไปหน้าเข้าสู่ระบบ" />}
+      {isSuccessful && <GeometricLoader loadingText="ตั้งค่าสำเร็จ กำลังเข้าสู่ระบบ" />}
 
       <div className="min-h-screen bg-[#050510] flex items-center justify-center p-4 relative overflow-hidden">
         <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(120,119,198,0.18),transparent_55%),radial-gradient(ellipse_at_80%_100%,rgba(59,130,246,0.12),transparent_55%)]" />

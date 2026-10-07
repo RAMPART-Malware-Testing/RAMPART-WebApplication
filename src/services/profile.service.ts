@@ -45,6 +45,15 @@ class ProfileServiceClass {
         }
     }
 
+    async verifyEmail(token: string, email: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/profile/verify-email`, { token, email });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
     async resendEmailOtp(token: string) {
         try {
             const res = await axios.post(`${SERVER_URL}/api/profile/resend-email-otp`, { token });

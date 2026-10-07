@@ -7,11 +7,13 @@ import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import NavbarComponent from '@/components/NavbarComponent'
 import GeometricLoader from "@/components/GeometricLoader";
+import MasterEmailVerifyDialog from '@/components/MasterEmailVerifyDialog'
 import { useProfile, useUpdateUsername, useUpdateAvatar, useChangePassword } from '@/hooks/queries/useProfile'
 import { useLoginHistory, useDownloadHistory, usePasswordHistory, HISTORY_PAGE_SIZE } from '@/hooks/queries/useProfileHistories'
 import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
 import { useToast } from '@/components/ui/ToastProvider'
 import { PASSWORD_RULES, validatePassword } from '@/lib/password'
+import { validateEmailInput } from '@/lib/email'
 import { HistoryPager } from '@/components/ui/HistoryPager'
 import { roleLabel } from '@/lib/roles'
 import { queryKeys } from '@/hooks/queries/queryKeys'
@@ -103,9 +105,13 @@ function ProfileContent() {
       }
     : null
 
-  const emailButtonLabel =
-    profileData?.role === 'master'
-      ? (profileData?.email_verified ? 'เปลี่ยน' : 'ยืนยัน OTP')
+  const isMasterVerifyingEmail =
+    profileData?.role === 'master' && !profileData?.email_verified
+
+  const emailButtonLabel = isMasterVerifyingEmail
+    ? 'ยืนยัน OTP'
+    : profileData?.role === 'master'
+      ? 'เปลี่ยน'
       : 'เปลี่ยนอีเมล'
 
   const loginHistory: LoginHistory[] = rawLoginHistory.map((it) => ({
@@ -143,6 +149,7 @@ function ProfileContent() {
   })
   const [passwordError, setPasswordError] = useState('')
   const [changeEmailDialog, setChangeEmailDialog] = useState(false)
+  const [verifyEmailDialog, setVerifyEmailDialog] = useState(false)
   const [emailStep, setEmailStep] = useState<'email' | 'old-otp' | 'new-otp'>('email')
   const [emailForm, setEmailForm] = useState({ newEmail: '', oldOtp: '', newOtp: '' })
   const [emailOldToken, setEmailOldToken] = useState('')
@@ -179,31 +186,21 @@ function ProfileContent() {
   const requestEmailOldOtp = async (e: React.FormEvent) => {
     e.preventDefault()
     setEmailError('')
-    const candidate = emailForm.newEmail.trim().toLowerCase()
-    if (/[^\x00-\x7F]/.test(emailForm.newEmail)) {
-      setEmailError('อีเมลต้องเป็นตัวอักษรอังกฤษ/ตัวเลขเท่านั้น (ตรวจพบอักขระภาษาอื่นปนอยู่)')
+
+    const result = validateEmailInput(emailForm.newEmail)
+    if ('error' in result) {
+      setEmailError(result.error)
       return
     }
-    if (candidate.split('@').length !== 2 || !/^[^@\s]{1,64}@[^@\s]{1,190}\.[A-Za-z]{2,}$/.test(candidate)) {
-      setEmailError('รูปแบบอีเมลไม่ถูกต้อง (ตัวอย่างที่ถูกต้อง: yourname@gmail.com)')
-      return
-    }
+
     setEmailBusy(true)
     try {
-      const { data } = await axios.post('/api/profile/change-email', { email: candidate })
+      const { data } = await axios.post('/api/profile/change-email', { email: result.value })
       if (!data?.success) throw new Error(data?.message || 'ส่งรหัส OTP ไม่สำเร็จ')
-      const skippedOldEmail = data?.data?.old_email_skipped === true
-      if (skippedOldEmail) {
-        setEmailNewToken(data?.data?.token ?? '')
-      } else {
-        setEmailOldToken(data?.data?.token ?? '')
-      }
+      setEmailOldToken(data?.data?.token ?? '')
       setEmailSent(data?.data?.email_sent !== false)
-      setEmailStep(skippedOldEmail ? 'new-otp' : 'old-otp')
-      notify.success(
-        data?.message ||
-          (skippedOldEmail ? 'ส่งรหัส OTP ไปยังอีเมลใหม่ของคุณแล้ว' : 'ส่งรหัส OTP ไปยังอีเมลเดิมของคุณแล้ว'),
-      )
+      setEmailStep('old-otp')
+      notify.success(data?.message || 'ส่งรหัส OTP ไปยังอีเมลเดิมของคุณแล้ว')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'ส่งรหัส OTP ไม่สำเร็จ'
       setEmailError(message)
@@ -617,6 +614,10 @@ function ProfileContent() {
                             />
                             <button
                               onClick={() => {
+                                if (isMasterVerifyingEmail) {
+                                  setVerifyEmailDialog(true)
+                                  return
+                                }
                                 setEmailError('')
                                 setEmailStep('email')
                                 setEmailForm({ newEmail: '', oldOtp: '', newOtp: '' })
@@ -858,6 +859,15 @@ function ProfileContent() {
         </div>
       </div>
 
+      <MasterEmailVerifyDialog
+        open={verifyEmailDialog}
+        currentEmail={profileData?.email || ''}
+        onClose={() => setVerifyEmailDialog(false)}
+        onVerified={async () => {
+          await queryClient.invalidateQueries({ queryKey: queryKeys.profile })
+        }}
+      />
+
       {changeEmailDialog && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4" onClick={closeEmailDialog}>
           <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -868,9 +878,7 @@ function ProfileContent() {
               </h3>
               <p className="text-slate-400 text-sm mt-1">
                 {emailStep === 'email'
-                  ? profileData?.email_verified
-                    ? 'กรอกอีเมลใหม่ ระบบจะส่งรหัส OTP ไปยืนยันอีเมลเดิมก่อน'
-                    : 'กรอกอีเมลใหม่ ระบบจะส่งรหัส OTP ไปยืนยันอีเมลใหม่ทันที'
+                  ? 'กรอกอีเมลใหม่ ระบบจะส่งรหัส OTP ไปยืนยันอีเมลเดิมก่อน'
                   : emailStep === 'old-otp'
                     ? `กรอกรหัส OTP 6 หลักที่ส่งไปที่อีเมลเดิม (${user?.email || '-'})`
                     : `กรอกรหัส OTP 6 หลักที่ส่งไปที่อีเมลใหม่ (${emailForm.newEmail.trim().toLowerCase()})`}
@@ -887,7 +895,7 @@ function ProfileContent() {
                     autoComplete="email"
                     value={emailForm.newEmail}
                     onChange={(e) => {
-                      setEmailForm((prev) => ({ ...prev, newEmail: e.target.value.replace(/[^\x20-\x7E]/g, '') }))
+                      setEmailForm((prev) => ({ ...prev, newEmail: e.target.value }))
                       if (emailError) setEmailError('')
                     }}
                     placeholder="yourname@gmail.com"
@@ -900,17 +908,8 @@ function ProfileContent() {
                 <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400">
                   <i className="fas fa-circle-info mt-0.5"></i>
                   <span>
-                    {profileData?.email_verified ? (
-                      <>
-                        ยืนยัน 2 ขั้น: รหัสที่ 1 ส่งไป<b>อีเมลเดิม</b> (ยืนยันว่าเป็นเจ้าของบัญชี)
-                        แล้วรหัสที่ 2 ส่งไป<b>อีเมลใหม่</b> (ยืนยันว่าเป็นเจ้าของอีเมลใหม่)
-                      </>
-                    ) : (
-                      <>
-                        ยืนยัน 1 ขั้น: ส่งรหัส OTP ไป<b>อีเมลใหม่</b> โดยตรง
-                        (อีเมลเดิมยังไม่ได้รับการยืนยัน จึงข้ามขั้นนั้น)
-                      </>
-                    )}
+                    ยืนยัน 2 ขั้น: รหัสที่ 1 ส่งไป<b>อีเมลเดิม</b> (ยืนยันว่าเป็นเจ้าของบัญชี)
+                    แล้วรหัสที่ 2 ส่งไป<b>อีเมลใหม่</b> (ยืนยันว่าเป็นเจ้าของอีเมลใหม่)
                   </span>
                 </div>
 
@@ -994,8 +993,7 @@ function ProfileContent() {
                   </div>
                 )}
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
-                  {profileData?.email_verified ? 'ขั้นที่ 2/2' : 'ขั้นที่ 1/1'} — ยืนยันอีเมลใหม่:{' '}
-                  {emailForm.newEmail.trim().toLowerCase()}
+                  ขั้นที่ 2/2 — ยืนยันอีเมลใหม่: {emailForm.newEmail.trim().toLowerCase()}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">รหัส OTP (อีเมลใหม่)</label>
