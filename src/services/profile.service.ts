@@ -36,46 +36,6 @@ class ProfileServiceClass {
         }
     }
 
-    async changeEmail(token: string, email: string) {
-        try {
-            const res = await axios.post(`${SERVER_URL}/api/profile/change-email`, { token, email });
-            return res.data;
-        } catch {
-            return ERROR_RESPONSE;
-        }
-    }
-
-    async verifyEmail(token: string, email: string) {
-        try {
-            const res = await axios.post(`${SERVER_URL}/api/profile/verify-email`, { token, email });
-            return res.data;
-        } catch {
-            return ERROR_RESPONSE;
-        }
-    }
-
-    async resendEmailOtp(token: string) {
-        try {
-            const res = await axios.post(`${SERVER_URL}/api/profile/resend-email-otp`, { token });
-            return res.data;
-        } catch {
-            return ERROR_RESPONSE;
-        }
-    }
-
-    async confirmEmail(token: string, otpToken: string, otp: string) {
-        try {
-            const res = await axios.post(`${SERVER_URL}/api/profile/confirm-email`, {
-                token,
-                otp_token: otpToken,
-                otp,
-            });
-            return res.data;
-        } catch {
-            return ERROR_RESPONSE;
-        }
-    }
-
     async changePassword(token: string, currentPasswd: string, newPasswd: string) {
         try {
             const res = await axios.post(`${SERVER_URL}/api/profile/change-password`, {

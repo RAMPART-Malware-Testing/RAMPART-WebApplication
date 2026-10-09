@@ -29,11 +29,18 @@ async function fetchFreshProfile(accessToken: string): Promise<{ role?: string }
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: accessToken }),
         });
-        if (!res.ok) return null;
+        if (!res.ok) {
+            console.error("fetchFreshProfile failed: HTTP", res.status, await res.text());
+            return null;
+        }
         const body = await res.json();
-        if (!body?.success || !body?.data) return null;
+        if (!body?.success || !body?.data) {
+            console.error("fetchFreshProfile failed: invalid response", body);
+            return null;
+        }
         return { role: body.data.role };
-    } catch {
+    } catch (err) {
+        console.error("fetchFreshProfile error:", err);
         return null;
     }
 }
@@ -75,6 +82,7 @@ export async function proxy(request: NextRequest) {
 
             const freshProfile = await fetchFreshProfile(payload!.token as string);
             const freshRole = freshProfile?.role ?? null;
+            console.log(`[DEBUG] Proxy role check: cookieRole=${cookieRole}, freshRole=${freshRole}`);
             if (freshRole && roleGate.roles.includes(freshRole as "admin" | "master")) {
                 const response = NextResponse.next();
                 const refreshed = jwtService.sign(

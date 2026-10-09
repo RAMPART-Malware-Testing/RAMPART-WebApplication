@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
         limit: body.limit,
         actor_uid: body.actor_uid,
         action: body.action,
+        q: body.q,
+        date_from: body.date_from,
+        date_to: body.date_to,
     });
     return NextResponse.json(res, { status: res.success ? 200 : 400 });
 }

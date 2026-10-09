@@ -2,9 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useAdminAuditLogs, exportAdminAuditLogsCsv } from '@/hooks/queries/useAdminAuditLogs'
+import Swal from 'sweetalert2'
+import { useProfile } from '@/hooks/queries/useProfile'
+import {
+  useAdminAuditLogs,
+  useAdminDeleteAuditLogsOlderThan,
+  exportAdminAuditLogsCsv,
+} from '@/hooks/queries/useAdminAuditLogs'
 
 const ACTION_LABELS: Record<string, string> = {
+  create_user: 'สร้างบัญชี',
+  delete_audit_logs: 'ลบประวัติการดำเนินการ',
   ban_user: 'แบนผู้ใช้',
   unban_user: 'ปลดแบนผู้ใช้',
   role_change: 'เปลี่ยนสิทธิ์',
@@ -30,34 +38,45 @@ const ACTION_BADGE: Record<string, string> = {
   delete_user_history: 'text-rose-400 bg-rose-500/10 border border-rose-500/20',
 }
 
+const DELETE_MONTH_OPTIONS = [1, 2, 3, 6, 12]
+
 function formatDate(dateStr: string | null) {
   return dateStr ? new Date(dateStr).toLocaleString('th-TH') : '-'
 }
 
 export default function AdminAuditLogsPage() {
   const [actionFilter, setActionFilter] = useState('')
-  const [actorSearch, setActorSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [q, setQ] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [deleteMonths, setDeleteMonths] = useState(1)
   const [page, setPage] = useState(1)
   const [isExporting, setIsExporting] = useState(false)
 
-  const { data: listResult, isLoading } = useAdminAuditLogs({
-    page,
-    limit: 25,
-    action: actionFilter || undefined,
-  })
-  const rawItems = listResult?.data ?? []
-  const pagination = listResult?.pagination ?? null
+  const { data: profile } = useProfile()
+  const isMaster = profile?.role === 'master'
+  const deleteOlderMutation = useAdminDeleteAuditLogsOlderThan()
 
-  const items = actorSearch
-    ? rawItems.filter((log) =>
-        (log.actor_username ?? '').toLowerCase().includes(actorSearch.toLowerCase()) ||
-        (log.target_username ?? '').toLowerCase().includes(actorSearch.toLowerCase())
-      )
-    : rawItems
+  useEffect(() => {
+    const timer = setTimeout(() => setQ(searchInput.trim()), 500)
+    return () => clearTimeout(timer)
+  }, [searchInput])
 
   useEffect(() => {
     setPage(1)
-  }, [actionFilter])
+  }, [actionFilter, q, dateFrom, dateTo])
+
+  const { data: listResult, isLoading, error: listError } = useAdminAuditLogs({
+    page,
+    limit: 25,
+    action: actionFilter || undefined,
+    q: q || undefined,
+    date_from: dateFrom || undefined,
+    date_to: dateTo || undefined,
+  })
+  const items = listResult?.data ?? []
+  const pagination = listResult?.pagination ?? null
 
   const handleExport = async () => {
     setIsExporting(true)
@@ -68,12 +87,46 @@ export default function AdminAuditLogsPage() {
     }
   }
 
+  const handleDeleteOlderThan = async () => {
+    if (deleteOlderMutation.isPending) return
+    const confirm = await Swal.fire({
+      title: `ลบข้อมูลที่เก่ากว่า ${deleteMonths} เดือน?`,
+      html: 'ลบประวัติทั้งหมดที่เก่ากว่าระยะเวลาที่เลือก (1 เดือน = 30 วัน) โดยไม่ใช้ตัวกรองค้นหาหรือช่วงวันที่ — <b>กู้คืนไม่ได้</b>',
+      showCancelButton: true,
+      confirmButtonText: 'ลบ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc2626',
+      background: '#0f172a',
+      color: '#fff',
+    })
+    if (!confirm.isConfirmed) return
+
+    try {
+      const deleted = await deleteOlderMutation.mutateAsync(deleteMonths)
+      Swal.fire({
+        icon: 'success',
+        title: `ลบข้อมูลแล้ว ${deleted} รายการ`,
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#0891b2',
+      })
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: err instanceof Error ? err.message : 'ไม่สามารถลบข้อมูลได้',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#dc2626',
+      })
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <h1 className="text-2xl font-bold text-white">ประวัติการดำเนินการของผู้ดูแล</h1>
-            <p className="text-blue-200/50 text-sm mt-1">บันทึกทุกการแบน / ปลดแบน / เปลี่ยนสิทธิ์ / เข้าถึงข้อมูลส่วนตัวของผู้ใช้อื่น</p>
+            <p className="text-blue-200/50 text-sm mt-1">บันทึกการสร้างบัญชี / แบน / ปลดแบน / เข้าถึงข้อมูลส่วนตัว / ลบประวัติ</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -97,41 +150,97 @@ export default function AdminAuditLogsPage() {
             ตัวกรอง
           </h3>
           <div>
-            <label className="block text-sm text-blue-200/60 mb-2">ค้นหาผู้ดำเนินการ / เป้าหมาย</label>
+            <label className="block text-sm text-blue-200/60 mb-2">ค้นหา</label>
             <input
               type="text"
-              value={actorSearch}
-              onChange={(e) => setActorSearch(e.target.value)}
-              placeholder="ค้นหาด้วยชื่อผู้ใช้..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="ค้นหาผู้กระทำ/เป้าหมาย/รายละเอียด"
               className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-blue-200/30 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition"
             />
           </div>
-          <label className="block text-sm text-blue-200/60 mb-2">กรองตามประเภทการดำเนินการ</label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setActionFilter('')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                actionFilter === '' ? 'bg-cyan-500 text-white' : 'bg-white/5 text-blue-200/60 hover:text-white'
-              }`}
-            >
-              ทั้งหมด
-            </button>
-            {Object.entries(ACTION_LABELS).map(([key, label]) => (
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <label className="block text-sm text-blue-200/60 mb-2">จากวันที่</label>
+              <input
+                type="date"
+                value={dateFrom}
+                max={dateTo || undefined}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition [color-scheme:dark]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-blue-200/60 mb-2">ถึงวันที่</label>
+              <input
+                type="date"
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition [color-scheme:dark]"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-blue-200/60 mb-2">กรองตามประเภทการดำเนินการ</label>
+            <div className="flex flex-wrap gap-2">
               <button
-                key={key}
-                onClick={() => setActionFilter(key)}
+                onClick={() => setActionFilter('')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                  actionFilter === key ? 'bg-cyan-500 text-white' : 'bg-white/5 text-blue-200/60 hover:text-white'
+                  actionFilter === '' ? 'bg-cyan-500 text-white' : 'bg-white/5 text-blue-200/60 hover:text-white'
                 }`}
               >
-                {label}
+                ทั้งหมด
               </button>
-            ))}
+              {Object.entries(ACTION_LABELS).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setActionFilter(key)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                    actionFilter === key ? 'bg-cyan-500 text-white' : 'bg-white/5 text-blue-200/60 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {isMaster && (
+            <div className="pt-4 border-t border-white/10 space-y-3">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+                <i className="fas fa-broom text-red-400" />
+                ลบข้อมูลเก่า
+              </h3>
+              <div>
+                <label className="block text-sm text-blue-200/60 mb-2">ลบข้อมูลที่เก่ากว่า</label>
+                <select
+                  value={deleteMonths}
+                  onChange={(e) => setDeleteMonths(Number(e.target.value))}
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition"
+                >
+                  {DELETE_MONTH_OPTIONS.map((m) => (
+                    <option key={m} value={m} className="bg-slate-800">
+                      {m} เดือน
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                disabled={deleteOlderMutation.isPending}
+                onClick={handleDeleteOlderThan}
+                className="w-full px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/20 transition disabled:opacity-40"
+              >
+                {deleteOlderMutation.isPending ? 'กำลังลบ...' : 'ลบข้อมูลที่เก่ากว่า'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="lg:order-1 bg-white/5 rounded-2xl p-6 border border-white/10">
-          {isLoading ? (
+          {listError ? (
+            <p className="text-red-400 text-sm py-8 text-center">{listError instanceof Error ? listError.message : 'ไม่สามารถดึงประวัติได้'}</p>
+          ) : isLoading ? (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
             </div>

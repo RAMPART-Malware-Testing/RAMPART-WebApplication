@@ -8,6 +8,7 @@ export interface AdminUsersListParams {
   role?: string | string[]
   q?: string
   banned?: boolean
+  status?: 'active' | 'deleted' | 'all'
 }
 
 export function useAdminUsersList(params: AdminUsersListParams) {
@@ -18,6 +19,7 @@ export function useAdminUsersList(params: AdminUsersListParams) {
       if (params.role) body.role = params.role
       if (params.q) body.q = params.q
       if (params.banned !== undefined) body.banned = params.banned
+      if (params.status) body.status = params.status
       const { data } = await axios.post<AdminUserListResponse>('/api/admin/users', body)
       if (!data.success) return { data: [] as AdminUserListItem[], pagination: null as AdminPagination | null }
       return { data: data.data, pagination: data.pagination }
@@ -31,6 +33,8 @@ function useInvalidateAdminUsers() {
   return () => {
     queryClient.invalidateQueries({ queryKey: ["admin", "users-list"] })
     queryClient.invalidateQueries({ queryKey: ["admin", "user-detail"] })
+    queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] })
+    queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] })
   }
 }
 
@@ -58,18 +62,6 @@ export function useAdminUnbanUser() {
   })
 }
 
-export function useAdminChangeRole() {
-  const invalidate = useInvalidateAdminUsers()
-  return useMutation({
-    mutationFn: async ({ uid, newRole }: { uid: string; newRole: 'user' | 'admin' }) => {
-      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/role', { target_uid: uid, new_role: newRole })
-      if (!data.success) throw new Error(data.message || 'ไม่สามารถเปลี่ยนสิทธิ์ได้')
-      return data
-    },
-    onSuccess: invalidate,
-  })
-}
-
 export function useAdminBulkBanUsers() {
   const invalidate = useInvalidateAdminUsers()
   return useMutation({
@@ -77,6 +69,53 @@ export function useAdminBulkBanUsers() {
       const { data } = await axios.post<AdminBulkActionResponse>('/api/admin/users/bulk-ban', { target_uids: uids, reason })
       if (!data.success || !data.data) throw new Error('ไม่สามารถแบนได้')
       return data.data
+    },
+    onSuccess: invalidate,
+  })
+}
+
+export function useAdminDeleteUser() {
+  const invalidate = useInvalidateAdminUsers()
+  return useMutation({
+    mutationFn: async (uid: string) => {
+      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/delete', { target_uid: uid })
+      if (!data.success) throw new Error(data.message || 'ไม่สามารถลบบัญชีได้')
+      return data
+    },
+    onSuccess: invalidate,
+  })
+}
+
+export function useAdminResetUserPassword() {
+  const invalidate = useInvalidateAdminUsers()
+  return useMutation({
+    mutationFn: async ({ uid, newPassword }: { uid: string; newPassword: string }) => {
+      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/password-reset', {
+        target_uid: uid,
+        new_password: newPassword,
+      })
+      if (!data.success) throw new Error(data.message || 'ไม่สามารถตั้งรหัสผ่านได้')
+      return data
+    },
+    onSuccess: invalidate,
+  })
+}
+
+export function useAdminCreateUser() {
+  const invalidate = useInvalidateAdminUsers()
+  return useMutation({
+    mutationFn: async (payload: AdminCreateUserPayload) => {
+      try {
+        const { data } = await axios.post<AdminCreateUserResponse>('/api/admin/users/create', payload)
+        if (!data.success || !data.data) throw new Error(data.message || 'ไม่สามารถสร้างบัญชีได้')
+        return data.data
+      } catch (err) {
+        if (axios.isAxiosError(err)) {
+          const message = (err.response?.data as { message?: string } | undefined)?.message
+          throw new Error(message || 'ไม่สามารถสร้างบัญชีได้')
+        }
+        throw err instanceof Error ? err : new Error('ไม่สามารถสร้างบัญชีได้')
+      }
     },
     onSuccess: invalidate,
   })

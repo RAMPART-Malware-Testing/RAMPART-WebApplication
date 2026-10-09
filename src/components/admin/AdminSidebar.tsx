@@ -14,7 +14,6 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: 'fas fa-gauge-high', exact: true },
   { href: '/admin/users', label: 'จัดการผู้ใช้', icon: 'fas fa-users' },
-  { href: '/admin/admins', label: 'จัดการแอดมิน', icon: 'fas fa-user-shield' },
   { href: '/admin/files', label: 'จัดการไฟล์', icon: 'fas fa-folder-tree' },
   { href: '/admin/reports', label: 'จัดการ Report', icon: 'fas fa-file-contract' },
   { href: '/admin/audit-logs', label: 'ประวัติการจัดการ', icon: 'fas fa-clipboard-list' },

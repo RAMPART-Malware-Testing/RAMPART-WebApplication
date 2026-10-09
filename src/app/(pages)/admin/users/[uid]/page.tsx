@@ -7,7 +7,6 @@ import Swal from 'sweetalert2'
 import GeometricLoader from '@/components/GeometricLoader'
 import { ROLE_LABELS } from '@/lib/roles'
 import { useProfile } from '@/hooks/queries/useProfile'
-import { useAdminChangeRole } from '@/hooks/queries/useAdminUsers'
 import { useAdminDeleteHistory } from '@/hooks/queries/useAdminUserDetail'
 import { useToast } from '@/components/ui/ToastProvider'
 import { fileTypeLabel, hasFileType } from '@/lib/file-type'
@@ -62,10 +61,8 @@ export default function AdminUserDetailPage() {
 
   const { data: profile } = useProfile()
   const isMaster = profile?.role === 'master'
-  const roleMutation = useAdminChangeRole()
   const deleteHistory = useAdminDeleteHistory(uid)
   const notify = useToast()
-  const [roleBusy, setRoleBusy] = useState(false)
   const [historyBusy, setHistoryBusy] = useState<string | null>(null)
   const canDeleteHistory = isMaster && user?.role !== 'master'
 
@@ -113,30 +110,6 @@ export default function AdminUserDetailPage() {
         {historyBusy === entryId ? 'กำลังลบ...' : 'ลบ'}
       </button>
     ) : null
-
-  const handleRoleChange = async (newRole: 'user' | 'admin') => {
-    if (!user) return
-    const confirm = await Swal.fire({
-      title: `เปลี่ยนสิทธิ์ของ ${user.username} เป็น ${ROLE_LABELS[newRole]}?`,
-      showCancelButton: true,
-      confirmButtonText: 'ยืนยัน',
-      cancelButtonText: 'ยกเลิก',
-      confirmButtonColor: '#0891b2',
-      background: '#0f172a',
-      color: '#fff',
-    })
-    if (!confirm.isConfirmed) return
-
-    setRoleBusy(true)
-    try {
-      await roleMutation.mutateAsync({ uid: user.uid, newRole })
-      notify.success(newRole === 'admin' ? 'เพิ่มยศเป็นผู้ดูแลระบบสำเร็จ' : 'ถอดสิทธิ์เป็นสมาชิกทั่วไปสำเร็จ')
-    } catch (err) {
-      notify.error(err instanceof Error ? err.message : 'ไม่สามารถเปลี่ยนสิทธิ์ได้')
-    } finally {
-      setRoleBusy(false)
-    }
-  }
 
   const { data: historyResult, isLoading: historyLoading } = useAdminUserHistory(uid, historyPage)
   const history = historyResult?.data ?? []
@@ -202,31 +175,6 @@ export default function AdminUserDetailPage() {
             <p className="text-blue-200/40 text-xs mt-1">สมัครเมื่อ {formatDate(user.created_at)}</p>
           </div>
 
-          {isMaster && user.role !== 'master' && (
-            <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">
-              {user.role === 'user' ? (
-                <button
-                  type="button"
-                  disabled={roleBusy}
-                  onClick={() => handleRoleChange('admin')}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition disabled:opacity-40"
-                >
-                  <i className="fas fa-arrow-up mr-1.5 text-xs"></i>
-                  เพิ่มยศเป็นผู้ดูแล
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={roleBusy}
-                  onClick={() => handleRoleChange('user')}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/5 text-blue-200/70 border border-white/10 hover:bg-white/10 transition disabled:opacity-40"
-                >
-                  <i className="fas fa-arrow-down mr-1.5 text-xs"></i>
-                  ถอดสิทธิ์เป็นสมาชิกทั่วไป
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         {user.is_banned && (

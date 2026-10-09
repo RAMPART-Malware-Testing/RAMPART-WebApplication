@@ -3,20 +3,15 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import axios from 'axios'
-import { useQueryClient } from '@tanstack/react-query'
 import NavbarComponent from '@/components/NavbarComponent'
 import GeometricLoader from "@/components/GeometricLoader";
-import MasterEmailVerifyDialog from '@/components/MasterEmailVerifyDialog'
 import { useProfile, useUpdateUsername, useUpdateAvatar, useChangePassword } from '@/hooks/queries/useProfile'
 import { useLoginHistory, useDownloadHistory, usePasswordHistory, HISTORY_PAGE_SIZE } from '@/hooks/queries/useProfileHistories'
 import { useAnalysisHistory } from '@/hooks/queries/useAnalysisHistory'
 import { useToast } from '@/components/ui/ToastProvider'
 import { PASSWORD_RULES, validatePassword } from '@/lib/password'
-import { validateEmailInput } from '@/lib/email'
 import { HistoryPager } from '@/components/ui/HistoryPager'
 import { roleLabel } from '@/lib/roles'
-import { queryKeys } from '@/hooks/queries/queryKeys'
 
 const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:8006'
 
@@ -88,7 +83,6 @@ function ProfileContent() {
   const passwordPagination = passwordResult?.pagination ?? null
   const { data: latestPasswordChange } = usePasswordHistory(1, 1)
   const lastPasswordChangeAt = latestPasswordChange?.data?.[0]?.created_at ?? null
-  const queryClient = useQueryClient()
   const updateUsername = useUpdateUsername()
   const updateAvatar = useUpdateAvatar()
   const changePassword = useChangePassword()
@@ -104,15 +98,6 @@ function ProfileContent() {
         avatar: profileData.avatar_url || undefined,
       }
     : null
-
-  const isMasterVerifyingEmail =
-    profileData?.role === 'master' && !profileData?.email_verified
-
-  const emailButtonLabel = isMasterVerifyingEmail
-    ? 'ยืนยัน OTP'
-    : profileData?.role === 'master'
-      ? 'เปลี่ยน'
-      : 'เปลี่ยนอีเมล'
 
   const loginHistory: LoginHistory[] = rawLoginHistory.map((it) => ({
     id: it.id,
@@ -148,15 +133,6 @@ function ProfileContent() {
     confirmPassword: ''
   })
   const [passwordError, setPasswordError] = useState('')
-  const [changeEmailDialog, setChangeEmailDialog] = useState(false)
-  const [verifyEmailDialog, setVerifyEmailDialog] = useState(false)
-  const [emailStep, setEmailStep] = useState<'email' | 'old-otp' | 'new-otp'>('email')
-  const [emailForm, setEmailForm] = useState({ newEmail: '', oldOtp: '', newOtp: '' })
-  const [emailOldToken, setEmailOldToken] = useState('')
-  const [emailNewToken, setEmailNewToken] = useState('')
-  const [emailSent, setEmailSent] = useState(true)
-  const [emailError, setEmailError] = useState('')
-  const [emailBusy, setEmailBusy] = useState(false)
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [editError, setEditError] = useState<string | null>(null)
@@ -172,114 +148,6 @@ function ProfileContent() {
     setChangePasswordDialog(false)
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
     setPasswordError('')
-  }
-
-  const closeEmailDialog = () => {
-    setChangeEmailDialog(false)
-    setEmailStep('email')
-    setEmailForm({ newEmail: '', oldOtp: '', newOtp: '' })
-    setEmailOldToken('')
-    setEmailNewToken('')
-    setEmailError('')
-  }
-
-  const requestEmailOldOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setEmailError('')
-
-    const result = validateEmailInput(emailForm.newEmail)
-    if ('error' in result) {
-      setEmailError(result.error)
-      return
-    }
-
-    setEmailBusy(true)
-    try {
-      const { data } = await axios.post('/api/profile/change-email', { email: result.value })
-      if (!data?.success) throw new Error(data?.message || 'ส่งรหัส OTP ไม่สำเร็จ')
-      setEmailOldToken(data?.data?.token ?? '')
-      setEmailSent(data?.data?.email_sent !== false)
-      setEmailStep('old-otp')
-      notify.success(data?.message || 'ส่งรหัส OTP ไปยังอีเมลเดิมของคุณแล้ว')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'ส่งรหัส OTP ไม่สำเร็จ'
-      setEmailError(message)
-      notify.error(message)
-    } finally {
-      setEmailBusy(false)
-    }
-  }
-
-  const verifyOldEmailOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setEmailError('')
-    if (emailForm.oldOtp.trim().length !== 6) {
-      setEmailError('รหัส OTP ต้องเป็นตัวเลข 6 หลัก')
-      return
-    }
-    setEmailBusy(true)
-    try {
-      const { data } = await axios.post('/api/profile/verify-old-email', {
-        otp_token: emailOldToken,
-        otp: emailForm.oldOtp.trim(),
-      })
-      if (!data?.success) throw new Error(data?.message || 'ยืนยันอีเมลเดิมไม่สำเร็จ')
-      setEmailNewToken(data?.data?.token ?? '')
-      setEmailSent(data?.data?.email_sent !== false)
-      setEmailStep('new-otp')
-      notify.success(data?.message || 'ยืนยันอีเมลเดิมแล้ว — ส่งรหัส OTP ไปยังอีเมลใหม่แล้ว')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'ยืนยันอีเมลเดิมไม่สำเร็จ'
-      setEmailError(message)
-      notify.error(message)
-    } finally {
-      setEmailBusy(false)
-    }
-  }
-
-  const resendNewEmailOtp = async () => {
-    setEmailError('')
-    setEmailBusy(true)
-    try {
-      const { data } = await axios.post('/api/profile/resend-email-otp')
-      if (!data?.success) throw new Error(data?.message || 'ส่งรหัสใหม่ไม่สำเร็จ')
-      setEmailNewToken(data?.data?.token ?? emailNewToken)
-      setEmailSent(data?.data?.email_sent !== false)
-      setEmailForm((prev) => ({ ...prev, newOtp: '' }))
-      notify.success(data?.message || 'ส่งรหัส OTP ใหม่แล้ว')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'ส่งรหัสใหม่ไม่สำเร็จ'
-      setEmailError(message)
-      notify.error(message)
-    } finally {
-      setEmailBusy(false)
-    }
-  }
-
-  const confirmNewEmailOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setEmailError('')
-    if (emailForm.newOtp.trim().length !== 6) {
-      setEmailError('รหัส OTP ต้องเป็นตัวเลข 6 หลัก')
-      return
-    }
-    setEmailBusy(true)
-    try {
-      const { data } = await axios.post('/api/profile/confirm-email', {
-        otp_token: emailNewToken,
-        otp: emailForm.newOtp.trim(),
-      })
-      if (!data?.success) throw new Error(data?.message || 'ยืนยันไม่สำเร็จ')
-      notify.success('เปลี่ยนอีเมลสำเร็จ')
-      closeEmailDialog()
-      await queryClient.invalidateQueries({ queryKey: queryKeys.profile })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'ยืนยันไม่สำเร็จ'
-      setEmailError(message)
-      notify.error(message)
-    } finally {
-      setEmailBusy(false)
-    }
   }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -602,34 +470,13 @@ function ProfileContent() {
 
                         <div>
                           <label className="block text-slate-400 text-sm mb-2">อีเมล</label>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="email"
-                              value={user?.email || ''}
-                              readOnly
-                              disabled
-                              title="ต้องยืนยัน OTP ที่อีเมลใหม่ก่อนจึงจะเปลี่ยนได้"
-                              className="flex-1 px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white cursor-not-allowed opacity-70"
-                            />
-                            <button
-                              onClick={() => {
-                                if (isMasterVerifyingEmail) {
-                                  setVerifyEmailDialog(true)
-                                  return
-                                }
-                                setEmailError('')
-                                setEmailStep('email')
-                                setEmailForm({ newEmail: '', oldOtp: '', newOtp: '' })
-                                setEmailOldToken('')
-                                setEmailNewToken('')
-                                setChangeEmailDialog(true)
-                              }}
-                              className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-cyan-400 text-sm font-medium hover:bg-white/10 hover:text-cyan-300 transition whitespace-nowrap"
-                            >
-                              <i className="fas fa-envelope mr-1.5"></i>
-                              {emailButtonLabel}
-                            </button>
-                          </div>
+                          <input
+                            type="email"
+                            value={user?.email || ''}
+                            readOnly
+                            disabled
+                            className="w-full px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white cursor-not-allowed opacity-70"
+                          />
                         </div>
 
                         <div>
@@ -857,191 +704,6 @@ function ProfileContent() {
           </div>
         </div>
       </div>
-
-      <MasterEmailVerifyDialog
-        open={verifyEmailDialog}
-        currentEmail={profileData?.email || ''}
-        onClose={() => setVerifyEmailDialog(false)}
-        onVerified={async () => {
-          await queryClient.invalidateQueries({ queryKey: queryKeys.profile })
-        }}
-      />
-
-      {changeEmailDialog && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4" onClick={closeEmailDialog}>
-          <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-white/10">
-              <h3 className="text-white font-semibold text-lg flex items-center gap-2">
-                <i className="fas fa-envelope text-cyan-400"></i>
-                เปลี่ยนอีเมล
-              </h3>
-              <p className="text-slate-400 text-sm mt-1">
-                {emailStep === 'email'
-                  ? 'กรอกอีเมลใหม่ ระบบจะส่งรหัส OTP ไปยืนยันอีเมลเดิมก่อน'
-                  : emailStep === 'old-otp'
-                    ? `กรอกรหัส OTP 6 หลักที่ส่งไปที่อีเมลเดิม (${user?.email || '-'})`
-                    : `กรอกรหัส OTP 6 หลักที่ส่งไปที่อีเมลใหม่ (${emailForm.newEmail.trim().toLowerCase()})`}
-              </p>
-            </div>
-
-            {emailStep === 'email' && (
-              <form onSubmit={requestEmailOldOtp} noValidate className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">อีเมลใหม่</label>
-                  <input
-                    type="text"
-                    inputMode="email"
-                    autoComplete="email"
-                    value={emailForm.newEmail}
-                    onChange={(e) => {
-                      setEmailForm((prev) => ({ ...prev, newEmail: e.target.value }))
-                      if (emailError) setEmailError('')
-                    }}
-                    placeholder="yourname@gmail.com"
-                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                    autoFocus
-                  />
-                  <p className="mt-2 text-xs text-slate-500">อีเมลปัจจุบัน: {user?.email || '-'}</p>
-                </div>
-
-                <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400">
-                  <i className="fas fa-circle-info mt-0.5"></i>
-                  <span>
-                    ยืนยัน 2 ขั้น: รหัสที่ 1 ส่งไป<b>อีเมลเดิม</b> (ยืนยันว่าเป็นเจ้าของบัญชี)
-                    แล้วรหัสที่ 2 ส่งไป<b>อีเมลใหม่</b> (ยืนยันว่าเป็นเจ้าของอีเมลใหม่)
-                  </span>
-                </div>
-
-                {emailError && (
-                  <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
-                    <i className="fas fa-exclamation-circle mt-0.5"></i>
-                    <span>{emailError}</span>
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="submit"
-                    disabled={emailBusy}
-                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
-                  >
-                    {emailBusy ? 'กำลังส่งรหัส...' : 'ส่งรหัส OTP'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closeEmailDialog}
-                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
-                  >
-                    ยกเลิก
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {emailStep === 'old-otp' && (
-              <form onSubmit={verifyOldEmailOtp} noValidate className="p-6 space-y-4">
-                {!emailSent && (
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
-                    ⚠ ระบบส่งอีเมลล้มเหลว — ตรวจสอบ GMAIL_USERNAME / GMAIL_PASSWORD ใน .env ของ backend
-                  </div>
-                )}
-                <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-300">
-                  ขั้นที่ 1/2 — ยืนยันอีเมลเดิม: {user?.email || '-'}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">รหัส OTP (อีเมลเดิม)</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={emailForm.oldOtp}
-                    onChange={(e) => setEmailForm((prev) => ({ ...prev, oldOtp: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="000000"
-                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-center text-lg tracking-[0.5em] text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                    autoFocus
-                  />
-                </div>
-                {emailError && (
-                  <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
-                    <i className="fas fa-exclamation-circle mt-0.5"></i>
-                    <span>{emailError}</span>
-                  </div>
-                )}
-                <button
-                  type="submit"
-                  disabled={emailBusy}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
-                >
-                  {emailBusy ? 'กำลังตรวจสอบ...' : 'ยืนยันอีเมลเดิม'}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeEmailDialog}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
-                >
-                  ยกเลิก
-                </button>
-              </form>
-            )}
-
-            {emailStep === 'new-otp' && (
-              <form onSubmit={confirmNewEmailOtp} noValidate className="p-6 space-y-4">
-                {!emailSent && (
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
-                    ⚠ ระบบส่งอีเมลล้มเหลว — ตรวจสอบ GMAIL_USERNAME / GMAIL_PASSWORD ใน .env ของ backend
-                  </div>
-                )}
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
-                  ขั้นที่ 2/2 — ยืนยันอีเมลใหม่: {emailForm.newEmail.trim().toLowerCase()}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">รหัส OTP (อีเมลใหม่)</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={emailForm.newOtp}
-                    onChange={(e) => setEmailForm((prev) => ({ ...prev, newOtp: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="000000"
-                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-center text-lg tracking-[0.5em] text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                    autoFocus
-                  />
-                </div>
-                {emailError && (
-                  <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
-                    <i className="fas fa-exclamation-circle mt-0.5"></i>
-                    <span>{emailError}</span>
-                  </div>
-                )}
-                <button
-                  type="submit"
-                  disabled={emailBusy}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
-                >
-                  {emailBusy ? 'กำลังบันทึก...' : 'ยืนยันและเปลี่ยนอีเมล'}
-                </button>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    disabled={emailBusy}
-                    onClick={resendNewEmailOtp}
-                    className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 py-3 rounded-xl font-semibold transition-colors duration-200 disabled:opacity-50"
-                  >
-                    ส่งรหัสใหม่
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closeEmailDialog}
-                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
-                  >
-                    ยกเลิก
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
 
       {changePasswordDialog && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4" onClick={closePasswordDialog}>

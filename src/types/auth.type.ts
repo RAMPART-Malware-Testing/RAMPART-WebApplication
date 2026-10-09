@@ -7,7 +7,6 @@ interface RampartUser {
     avatar_url: string | null
     role: "user" | "admin" | "master"
     status: string
-    email_verified?: boolean
     created_at: string | null
 }
 

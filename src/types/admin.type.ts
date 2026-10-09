@@ -117,6 +117,31 @@ interface AdminActionResponse {
     data: AdminUserListItem | null
 }
 
+interface AdminCreateUserPayload {
+    username: string
+    email: string
+    password: string
+    role: "user" | "admin"
+}
+
+interface AdminCreateUserResponse {
+    success: boolean
+    status: string
+    message: string
+    data: AdminUserListItem | null
+}
+
+interface AdminDeleteAuditLogsOlderThanPayload {
+    months: number
+}
+
+interface AdminDeleteAuditLogsOlderThanResponse {
+    success: boolean
+    status: string
+    message: string
+    data: { deleted: number } | null
+}
+
 interface AdminFileListItem {
     aid: string
     task_id: string | null

@@ -10,7 +10,6 @@ import Image from 'next/image'
 const SECTION_TITLES: { prefix: string; title: string; exact?: boolean }[] = [
   { prefix: '/admin', title: 'Dashboard', exact: true },
   { prefix: '/admin/users', title: 'จัดการผู้ใช้' },
-  { prefix: '/admin/admins', title: 'จัดการแอดมิน' },
   { prefix: '/admin/files', title: 'จัดการไฟล์' },
   { prefix: '/admin/reports', title: 'จัดการ Report' },
   { prefix: '/admin/audit-logs', title: 'ประวัติการจัดการ' },

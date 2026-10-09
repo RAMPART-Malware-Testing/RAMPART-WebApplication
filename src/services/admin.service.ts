@@ -4,7 +4,14 @@ const ERROR_RESPONSE = { success: false, status: "SERVER_ERROR", message: "Conne
 const SERVER_URL = process.env.SERVER_URL || "http://localhost:8006";
 
 class AdminServiceClass {
-    async listUsers(token: string, params: { page?: number; limit?: number; q?: string; role?: string | string[]; banned?: boolean }) {
+    async listUsers(token: string, params: {
+        page?: number;
+        limit?: number;
+        q?: string;
+        role?: string | string[];
+        banned?: boolean;
+        status?: "active" | "deleted" | "all";
+    }) {
         try {
             const res = await axios.post(`${SERVER_URL}/api/admin/users`, { token, ...params });
             return res.data;
@@ -76,15 +83,6 @@ class AdminServiceClass {
         }
     }
 
-    async changeRole(token: string, targetUid: string, newRole: "user" | "admin") {
-        try {
-            const res = await axios.post(`${SERVER_URL}/api/admin/users/role`, { token, target_uid: targetUid, new_role: newRole });
-            return res.data;
-        } catch {
-            return ERROR_RESPONSE;
-        }
-    }
-
     async dashboardSummary(token: string, trendDays?: number) {
         try {
             const res = await axios.post(`${SERVER_URL}/api/admin/dashboard/summary`, { token, trend_days: trendDays || 14 });
@@ -94,11 +92,63 @@ class AdminServiceClass {
         }
     }
 
-    async auditLogs(token: string, params: { page?: number; limit?: number; actor_uid?: string; action?: string }) {
+    async auditLogs(token: string, params: { page?: number; limit?: number; actor_uid?: string; action?: string; q?: string; date_from?: string; date_to?: string }) {
         try {
             const res = await axios.post(`${SERVER_URL}/api/admin/audit-logs`, { token, ...params });
             return res.data;
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response?.status === 422) {
+                return { success: false, status: "INVALID_REQUEST", message: "คำค้นหาหรือช่วงวันที่ไม่ถูกต้อง" };
+            }
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async deleteAuditLogsOlderThan(token: string, months: number) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/audit-logs/delete-older-than`, { token, months });
+            return res.data;
         } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async createUser(token: string, payload: { username: string; email: string; password: string; role: "user" | "admin" }) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/users/create`, { token, ...payload });
+            return res.data;
+        } catch (err) {
+            const detail = (err as { response?: { data?: { message?: string; detail?: unknown } } })?.response?.data;
+            if (detail?.message) {
+                return { success: false, status: "CREATE_FAILED", message: detail.message };
+            }
+            if (Array.isArray(detail?.detail) && detail.detail[0]?.msg) {
+                return { success: false, status: "CREATE_FAILED", message: String(detail.detail[0].msg) };
+            }
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async deleteUser(token: string, targetUid: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/users/delete`, { token, target_uid: targetUid });
+            return res.data;
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response?.data?.message) return err.response.data;
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async resetUserPassword(token: string, targetUid: string, newPassword: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/users/password-reset`, {
+                token,
+                target_uid: targetUid,
+                new_password: newPassword,
+            });
+            return res.data;
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response?.data?.message) return err.response.data;
             return ERROR_RESPONSE;
         }
     }

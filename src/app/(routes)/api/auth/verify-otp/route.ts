@@ -14,8 +14,12 @@ async function fetchProfile(accessToken: string) {
         const SERVER_URL = process.env.SERVER_URL || 'http://localhost:8006';
         const { data } = await axios_.post(`${SERVER_URL}/api/profile`, { token: accessToken });
         if (data?.success && data?.data) return data.data;
-    } catch {}
-    return null;
+        console.error("fetchProfile failed: invalid response", data);
+        return null;
+    } catch (err) {
+        console.error("fetchProfile error:", err);
+        return null;
+    }
 }
 
 export async function POST(request: NextRequest) {
