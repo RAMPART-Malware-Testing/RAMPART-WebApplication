@@ -109,6 +109,40 @@ export async function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
+    if (pathname.startsWith("/api/admin")) {
+        if (!isLoggedIn) return NextResponse.json({ success: false, status: "UNAUTHORIZED", message: "ไม่พบ token" }, { status: 401 });
+
+        const cookieRole = payload?.data?.role;
+        if (cookieRole && (cookieRole === "admin" || cookieRole === "master")) {
+            return NextResponse.next();
+        }
+
+        const freshProfile = await fetchFreshProfile(payload!.token as string);
+        const freshRole = freshProfile?.role ?? null;
+        console.log(`[DEBUG] Proxy role check for /api/admin: cookieRole=${cookieRole}, freshRole=${freshRole}`);
+        if (freshRole && (freshRole === "admin" || freshRole === "master")) {
+            const response = NextResponse.next();
+            const refreshed = jwtService.sign(
+                {
+                    token: payload!.token,
+                    type: "session",
+                    data: { ...payload!.data, role: freshRole } as RampartUser,
+                },
+                "7d",
+            );
+            response.cookies.set("access_token", refreshed, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+                path: "/",
+                maxAge: 60 * 60 * 24 * 7,
+            });
+            return response;
+        }
+
+        return NextResponse.json({ success: false, status: "FORBIDDEN", message: "ไม่มีสิทธิ์เข้าถึง" }, { status: 403 });
+    }
+
     if (matchesAny(pathname, GUEST_ONLY_ROUTES)) {
         if (isLoggedIn) return redirect("/dashboard", request);
         return NextResponse.next();
@@ -135,5 +169,6 @@ export const config = {
         "/public",
         "/public/:path*",
         "/admin/:path*",
+        "/api/admin/:path*",
     ],
 };

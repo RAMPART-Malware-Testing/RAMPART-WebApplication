@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Shield, Activity, FileText, Database, Network, FolderTree, Cpu, Workflow, ScanSearch, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TaskCard } from "./TaskCard"
-import type { VirusTotalResult, MobSFResult, CAPEResult, MLResult, GeminiResult, TaskStatus } from "./types"
+import type { VirusTotalResult, MobSFResult, CAPEResult, CapeRunSummary, MLResult, GeminiResult, TaskStatus } from "./types"
 
 interface VirusTotalCardProps {
   data: VirusTotalResult
@@ -129,6 +129,83 @@ const CAPE_METRICS = [
   { key: "processes", label: "Processes", icon: Cpu },
 ] as const
 
+const CAPE_REASON_LABELS: Record<string, string> = {
+  analysis_timeout: "Sandbox หมดเวลาก่อนวิเคราะห์จบ",
+  no_execution: "Sandbox ไม่ได้รันไฟล์นี้",
+  analysis_failed: "Sandbox วิเคราะห์ล้มเหลว",
+  sample_blocked_by_guest_av: "ระบบป้องกันของเครื่อง Sandbox บล็อกไฟล์นี้",
+  launch_requires_elevation: "ไฟล์ต้องยกระดับสิทธิ์ จึงรันใน Sandbox ไม่ได้",
+}
+
+function capeRunNotice(run: CapeRunSummary): { tone: string; title: string; detail: string } | null {
+  if (run.status === "complete") return null
+  const reasons = (run.reasons ?? []).map((r) => CAPE_REASON_LABELS[r] ?? r)
+  const detail = reasons.length > 0 ? reasons.join(" · ") : "ผลวิเคราะห์ไม่สมบูรณ์"
+  if (run.launchBlocked) {
+    return {
+      tone: "border-red-500/30 bg-red-500/5 text-red-300",
+      title: "Sandbox รันไฟล์นี้ไม่ได้ — คะแนนมาจากการตรวจแบบ static",
+      detail,
+    }
+  }
+  if (run.status === "unusable") {
+    return {
+      tone: "border-red-500/30 bg-red-500/5 text-red-300",
+      title: "Sandbox ไม่มีหลักฐานพฤติกรรมให้ประเมิน",
+      detail,
+    }
+  }
+  return {
+    tone: "border-amber-500/30 bg-amber-500/5 text-amber-300",
+    title: "ผลวิเคราะห์ Sandbox ไม่สมบูรณ์",
+    detail,
+  }
+}
+
+function CapeRunNotice({ run }: { run: CapeRunSummary }) {
+  const notice = capeRunNotice(run)
+  if (!notice) return null
+  const detections = run.staticDetections ?? []
+  const yara = run.staticYaraRules ?? []
+  return (
+    <div className={cn("rounded-lg border px-3 py-2", notice.tone)}>
+      <div className="text-xs font-semibold">{notice.title}</div>
+      <div className="mt-0.5 text-[11px] opacity-80">{notice.detail}</div>
+      {(detections.length > 0 || yara.length > 0) && (
+        <div className="mt-2">
+          <div className="text-[11px] uppercase tracking-wide opacity-70">
+            หลักฐาน Static ที่ตรวจพบ
+          </div>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {yara.map((rule) => (
+              <span
+                key={`yara-${rule}`}
+                className="rounded border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 font-mono text-[10px] text-red-200"
+              >
+                YARA: {rule}
+              </span>
+            ))}
+            {detections.map((d) => (
+              <span
+                key={d}
+                className="rounded border border-slate-600/50 bg-slate-800/60 px-1.5 py-0.5 font-mono text-[10px] text-slate-300"
+              >
+                {d}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {run.staticDangerScoreFloor ? (
+        <div className="mt-2 text-[11px] opacity-80">
+          คะแนนขั้นต่ำที่ยึดจากหลักฐาน static: {run.staticDangerScoreFloor}/100
+          {run.durationSeconds != null && ` · ระยะเวลารัน ${run.durationSeconds} วินาที`}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function CAPECard({ data, className }: CAPECardProps) {
   return (
     <TaskCard
@@ -143,6 +220,7 @@ export function CAPECard({ data, className }: CAPECardProps) {
     >
       {data.status === "completed" && (
         <div className="space-y-2">
+          {data.run && <CapeRunNotice run={data.run} />}
           {data.dangerScore !== undefined && (
             <div className="rounded-lg bg-slate-800/50 px-3 py-2">
               <div className="flex items-center justify-between">
@@ -163,7 +241,7 @@ export function CAPECard({ data, className }: CAPECardProps) {
           )}
           <div className="grid grid-cols-2 gap-2">
             {CAPE_METRICS.map(({ key, label, icon: Icon }) => {
-              const value = data[key as keyof typeof data]
+              const value = data[key as (typeof CAPE_METRICS)[number]["key"]]
               if (value === undefined) return null
               return (
                 <div key={key} className="rounded-lg bg-slate-800/50 px-3 py-2">

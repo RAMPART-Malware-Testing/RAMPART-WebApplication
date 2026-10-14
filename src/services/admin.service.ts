@@ -303,6 +303,24 @@ class AdminServiceClass {
         }
     }
 
+    async getConfig(token: string) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/config`, { token });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
+    async updateConfig(token: string, key: string, value: boolean | string | number | null) {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/config/update`, { token, key, value });
+            return res.data;
+        } catch {
+            return ERROR_RESPONSE;
+        }
+    }
+
 }
 
 export const AdminService = new AdminServiceClass();

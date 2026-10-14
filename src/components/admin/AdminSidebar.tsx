@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/task-queue', label: 'คิวงานวิเคราะห์', icon: 'fas fa-list-check' },
   { href: '/admin/rate-limits', label: 'ตรวจจับการใช้งานผิดปกติ', icon: 'fas fa-shield-halved' },
   { href: '/admin/broadcast', label: 'ส่งอีเมลประกาศ', icon: 'fas fa-bullhorn' },
+  { href: '/admin/config', label: 'การตั้งค่าระบบ', icon: 'fas fa-cog' },
 ]
 
 interface Props {

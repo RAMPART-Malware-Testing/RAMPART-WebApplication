@@ -38,6 +38,22 @@ export interface MobSFResult {
   message?: string
 }
 
+export interface CapeRunSummary {
+  usable?: boolean | null
+  status?: string | null
+  reasons?: string[]
+  timedOut?: boolean | null
+  durationSeconds?: number | null
+  malstatus?: string | null
+  launchBlocked?: boolean | null
+  sampleBlockedByGuestAv?: boolean | null
+  launchRequiresElevation?: boolean | null
+  neverInstrumented?: boolean | null
+  staticDetections?: string[]
+  staticYaraRules?: string[]
+  staticDangerScoreFloor?: number | null
+}
+
 export interface CAPEResult {
   status: TaskStatus
   network?: number
@@ -46,6 +62,7 @@ export interface CAPEResult {
   processes?: number
   behaviorReport?: string
   dangerScore?: number
+  run?: CapeRunSummary | null
   startedAt?: string
   finishedAt?: string
   message?: string

@@ -7,7 +7,7 @@ import { AnalysisResult } from "./AnalysisResult"
 import { AnalysisTimeline } from "./AnalysisTimeline"
 import GeometricLoader from "@/components/GeometricLoader"
 import ReportDownload from "../../details/[tool]/[taskid]/components/ReportDownload"
-import type { AnalysisResponse, TaskStatus } from "./types"
+import type { AnalysisResponse, CapeRunSummary, TaskStatus } from "./types"
 import { useProfile } from "@/hooks/queries/useProfile"
 import { useTaskStatus, type TaskProgress } from "@/hooks/queries/useTaskStatus"
 import { queryKeys } from "@/hooks/queries/queryKeys"
@@ -83,6 +83,51 @@ function mapRisk(risk?: string): "Low" | "Medium" | "High" | "Critical" | undefi
   return undefined
 }
 
+function buildCapeRun(summary: any, rawCape: any): CapeRunSummary | null {
+  if (summary && typeof summary === "object") {
+    return {
+      usable: summary.usable ?? null,
+      status: summary.status ?? null,
+      reasons: Array.isArray(summary.reasons) ? summary.reasons : [],
+      timedOut: summary.timed_out ?? null,
+      durationSeconds: summary.duration_seconds ?? null,
+      malstatus: summary.malstatus ?? null,
+      launchBlocked: summary.launch_blocked ?? null,
+      sampleBlockedByGuestAv: summary.sample_blocked_by_guest_av ?? null,
+      launchRequiresElevation: summary.launch_requires_elevation ?? null,
+      neverInstrumented: summary.never_instrumented ?? null,
+      staticDetections: Array.isArray(summary.static_detections) ? summary.static_detections : [],
+      staticYaraRules: Array.isArray(summary.static_yara_rules) ? summary.static_yara_rules : [],
+      staticDangerScoreFloor: summary.static_danger_score_floor ?? null,
+    }
+  }
+  // Older API servers do not return cape_run; fall back to the raw report so a run
+  // that never executed still reads as incomplete instead of "all zeros".
+  if (!rawCape || typeof rawCape !== "object") return null
+  const processes = Array.isArray(rawCape.behavior?.processes) ? rawCape.behavior.processes.length : 0
+  const signatures = Array.isArray(rawCape.signatures) ? rawCape.signatures : []
+  const timedOut = Boolean(rawCape.info?.timeout)
+  const failed = String(rawCape.malstatus || "").toLowerCase() === "failed"
+  if (processes > 0 && !timedOut) return null
+  const reasons = [
+    ...(failed ? ["analysis_failed"] : []),
+    ...(timedOut ? ["analysis_timeout"] : []),
+    ...(processes === 0 ? ["no_execution"] : []),
+  ]
+  return {
+    status: failed ? "unusable" : "partial",
+    reasons,
+    timedOut,
+    durationSeconds: rawCape.info?.duration ?? null,
+    malstatus: rawCape.malstatus ?? null,
+    neverInstrumented: processes === 0,
+    staticDetections: signatures.map((s: any) => String(s?.name ?? "")).filter(Boolean),
+    staticYaraRules: Array.isArray(rawCape.target?.file?.yara)
+      ? rawCape.target.file.yara.map((y: any) => String(y?.name ?? "")).filter(Boolean)
+      : [],
+  }
+}
+
 function extractRampartAiScore(raw: any): number | null {
   if (raw == null) return null
   if (typeof raw === "number") return Math.max(0, Math.min(100, raw))
@@ -151,6 +196,7 @@ function buildReport(report: any, raw: Record<string, any>): AnalysisResponse {
       status: raw.cape || tools.includes("cape") ? "completed" : "skipped",
       message: toolNotes.cape,
       dangerScore: report?.cape_score != null ? Number(report.cape_score) : undefined,
+      run: buildCapeRun(report?.cape_run, raw.cape),
       network: (Array.isArray(capeNet.http) ? capeNet.http.length : 0) + (Array.isArray(capeNet.dns) ? capeNet.dns.length : 0),
       registry: Array.isArray(capeSummary.keys) ? capeSummary.keys.length : 0,
       files: Array.isArray(capeSummary.files) ? capeSummary.files.length : 0,
