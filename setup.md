@@ -6,13 +6,39 @@
 ## ⛔ กติกาบังคับก่อนเริ่ม (อ่านให้ครบก่อนทำอย่างอื่น)
 
 1. **ห้ามแต่งค่า env เอง** — `GOOGLE_*`, `GITHUB_*`, `RECAPTCHA_*` ห้ามสุ่ม ห้ามใส่ placeholder ห้าม mock ต้องได้มาจาก console จริงเท่านั้น
-2. **ใช้ MCP browser เป็นขั้นตอนบังคับ** — agent ต้องเปิด MCP browser เอง ไปยัง console แต่ละแหล่งตามขั้นตอนในหัวข้อ 4 แล้วดึง key จริงมาใส่
+2. **ใช้ MCP browser เป็นขั้นตอนบังคับ** — agent ต้องเปิด MCP browser เอง ไปยัง console แต่ละแหล่งตามขั้นตอนในหัวข้อ 4 แล้วดึง key จริงมาใส่ หากตรวจพบว่ายังไม่มี MCP browser ติดตั้งอยู่ ให้ติดตั้งก่อนตามหัวข้อ 0 แล้วจึงเริ่มทำงาน ห้ามเลี่ยงไปใช้วิธีอื่น
 3. **เจอหน้า login ให้หยุดรายงานผู้ใช้ทันที** — ถ้า browser ไปถึง console แล้วแต่ยังไม่ได้ login ด้วย Google/GitHub **ห้ามข้าม ห้ามปลอมข้อมูล** ให้รายงานผู้ใช้ทันทีว่า:
    - ตอนนี้ไปถึงขั้นไหนแล้ว (เช่น "เปิด Google Cloud Console แล้ว แต่ยังไม่ได้ login")
    - เหลืออะไรอีก
    - ผู้ใช้ต้องทำอะไรต่อ (เช่น "รบกวน login Google ในหน้า browser ที่เปิดค้างไว้ แล้ว agent จะทำต่อเอง")
    - รอผู้ใช้ login เสร็จแล้วทำงานต่อจากเดิมได้เลย
-4. ทำขั้นตอนตามลำดับ 1→6 และทำ checkpoint (✓) ท้ายแต่ละหัวข้อให้ครบก่อนไปต่อ
+4. ทำขั้นตอนตามลำดับ 0→7 และทำ checkpoint (✓) ท้ายแต่ละหัวข้อให้ครบก่อนไปต่อ
+
+## 0. ตรวจและติดตั้ง MCP browser (ทำก่อนอย่างอื่น)
+
+ตรวจว่า agent มี MCP browser ใช้งานได้หรือไม่ (เช่นมี tool ประเภท browser navigate/screenshot/click ให้เรียกใช้) และ Chrome ติดตั้งอยู่ในเครื่อง
+
+**ถ้ายังไม่มี MCP browser ให้ติดตั้งเองก่อน แล้วจึงเริ่มทำขั้นตอนถัดไป — ห้ามข้าม ห้ามใช้วิธีอื่นแทน เช่น การแต่งค่า env เอง:**
+
+1. ติดตั้ง MCP server ฝั่ง browser เช่น `chrome-devtools-mcp` (หรือตัวใดตัวหนึ่งที่ agent รองรับ: Playwright MCP, Browserbase ฯลฯ):
+   ```bash
+   npx -y chrome-devtools-mcp --help
+   ```
+2. เพิ่ม MCP server เข้ากับ agent ที่กำลังรันอยู่ ตาม syntax ของ agent นั้นๆ เช่น สำหรับ ZCode/Kiro ให้เพิ่มในไฟล์ config MCP ของผู้ใช้ (`~/.kiro/settings/mcp.json` หรือเทียบเท่า):
+   ```json
+   {
+     "mcpServers": {
+       "chrome-devtools": {
+         "command": "npx",
+         "args": ["-y", "chrome-devtools-mcp"]
+       }
+     }
+   }
+   ```
+3. ตรวจว่า Chrome/Chromium ติดตั้งแล้ว (`google-chrome --version` หรือ `chromium --version`) ถ้าไม่มีให้ติดตั้งก่อน (`sudo apt install -y chromium-browser` หรือดาวน์โหลด Chrome จากทางการ)
+4. โหลด/รีสตาร์ท MCP server แล้วทดสอบเรียก tool browser ครั้งแรก (เช่น navigate ไป `https://example.com`)
+
+✓ checkpoint: เรียก tool ของ MCP browser ได้จริงแล้วจึงไปหัวข้อ 1
 
 ## 1. เตรียมเครื่อง
 
