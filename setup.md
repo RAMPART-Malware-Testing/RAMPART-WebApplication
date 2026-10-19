@@ -63,7 +63,8 @@ pnpm i
 
 | Variable | ค่า |
 |---|---|
-| `SERVER_URL` | `http://localhost:8006` |
+| `SERVER_URL` | `http://localhost:8006` (ที่อยู่ภายในที่ web server ใช้เรียก API) |
+| `SERVER_URL_HTTPS` | public HTTPS ของ API ที่เบราว์เซอร์เรียกได้ เช่น `https://rm-api.mon-kai.com` — ใช้ตอนอัปโหลดไฟล์จากหน้า `/scan` (ว่างได้ ระบบจะ fallback เป็น `SERVER_URL`) |
 | `APP_URL` | `http://localhost:3000` (ตอน deploy เปลี่ยนเป็น public URL เช่น `https://app.example.com`) |
 | `GOOGLE_REDIRECT_URI` | ไม่บังคับ — ใส่เมื่อ callback URL ไม่ได้มาจาก `APP_URL` |
 | `GITHUB_REDIRECT_URI` | ปิดใช้งานอยู่ — ไม่ต้องใส่ (เปิด GitHub auth ก่อนจึงจะใช้) |

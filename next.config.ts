@@ -21,6 +21,7 @@ const backendPattern = backendRemotePattern();
 const nextConfig: NextConfig = {
   env: {
     SERVER_URL: process.env.SERVER_URL,
+    SERVER_URL_HTTPS: process.env.SERVER_URL_HTTPS,
   },
   images: {
     remotePatterns: [

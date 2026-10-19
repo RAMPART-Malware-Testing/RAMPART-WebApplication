@@ -29,7 +29,7 @@ interface UploadResponse {
   detail?: string
 }
 
-const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:8006'
+const API_BASE_URL = (process.env.SERVER_URL_HTTPS || process.env.SERVER_URL || 'http://localhost:8006').replace(/\/+$/, '')
 
 export default function ScanFilesPage() {
   const [file, setFile] = useState<UploadedFile | null>(null)
@@ -69,7 +69,7 @@ export default function ScanFilesPage() {
       formData.append('file', selectedFile)
       formData.append('privacy', privacy.toString())
       const xhr = new XMLHttpRequest()
-      xhr.open('POST', `${SERVER_URL}/api/analy/v1/upload?token=${uploadToken}`)
+      xhr.open('POST', `${API_BASE_URL}/api/analy/v1/upload?token=${uploadToken}`)
       xhr.timeout = 30 * 60 * 1000
 
       xhr.upload.onprogress = (event) => {
