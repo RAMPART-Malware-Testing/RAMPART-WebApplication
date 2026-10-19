@@ -98,7 +98,11 @@ function buildCapeRun(summary: any, rawCape: any): CapeRunSummary | null {
       neverInstrumented: summary.never_instrumented ?? null,
       staticDetections: Array.isArray(summary.static_detections) ? summary.static_detections : [],
       staticYaraRules: Array.isArray(summary.static_yara_rules) ? summary.static_yara_rules : [],
-      staticDangerScoreFloor: summary.static_danger_score_floor ?? null,
+      coverage: summary.coverage ?? null,
+      observedProcesses: summary.observed_processes ?? null,
+      staticReasons: Array.isArray(summary.static_reasons) ? summary.static_reasons : [],
+      staticStrongStrings: Array.isArray(summary.static_strong_strings) ? summary.static_strong_strings : [],
+      staticPdbPath: summary.static_pdb_path ?? null,
     }
   }
   // Older API servers do not return cape_run; fall back to the raw report so a run
@@ -121,6 +125,7 @@ function buildCapeRun(summary: any, rawCape: any): CapeRunSummary | null {
     durationSeconds: rawCape.info?.duration ?? null,
     malstatus: rawCape.malstatus ?? null,
     neverInstrumented: processes === 0,
+    coverage: "incomplete",
     staticDetections: signatures.map((s: any) => String(s?.name ?? "")).filter(Boolean),
     staticYaraRules: Array.isArray(rawCape.target?.file?.yara)
       ? rawCape.target.file.yara.map((y: any) => String(y?.name ?? "")).filter(Boolean)

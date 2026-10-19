@@ -51,7 +51,11 @@ export interface CapeRunSummary {
   neverInstrumented?: boolean | null
   staticDetections?: string[]
   staticYaraRules?: string[]
-  staticDangerScoreFloor?: number | null
+  coverage?: string | null
+  observedProcesses?: number | null
+  staticReasons?: string[]
+  staticStrongStrings?: string[]
+  staticPdbPath?: string | null
 }
 
 export interface CAPEResult {
