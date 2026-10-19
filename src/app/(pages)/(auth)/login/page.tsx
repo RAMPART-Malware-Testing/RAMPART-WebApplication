@@ -13,6 +13,7 @@ import CaptchaModal from '@/components/CaptchaModal'
 
 
 const OAUTH_ERROR_TEXT: Record<string, string> = {
+  SESSION_EXPIRED: 'เซสชันหมดอายุหรือบัญชีนี้ไม่พร้อมใช้งานแล้ว กรุณาเข้าสู่ระบบใหม่',
   OAUTH_PROVIDER_ERROR: 'เข้าสู่ระบบด้วยผู้ให้บริการภายนอกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
   OAUTH_EMAIL_MISSING: 'บัญชีผู้ให้บริการนี้ไม่มีอีเมลที่ใช้งานได้ กรุณาใช้บัญชีอื่นหรือสมัครใหม่',
   OAUTH_ACCOUNT_LINKED: 'อีเมลนี้ถูกผูกกับบัญชีอื่นอยู่แล้ว',
