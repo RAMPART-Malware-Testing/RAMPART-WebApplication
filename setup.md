@@ -64,11 +64,15 @@ pnpm i
 | Variable | ค่า |
 |---|---|
 | `SERVER_URL` | `http://localhost:8006` |
-| `APP_URL` | `http://localhost:3000` |
+| `APP_URL` | `http://localhost:3000` (ตอน deploy เปลี่ยนเป็น public URL เช่น `https://app.example.com`) |
+| `GOOGLE_REDIRECT_URI` | ไม่บังคับ — ใส่เมื่อ callback URL ไม่ได้มาจาก `APP_URL` |
+| `GITHUB_REDIRECT_URI` | ปิดใช้งานอยู่ — ไม่ต้องใส่ (เปิด GitHub auth ก่อนจึงจะใช้) |
 | `JWT_SECRET` | random 64 hex — `openssl rand -hex 32` (ตัวเดียวในไฟล์นี้ที่สุ่มได้) |
 | `OAUTH_BRIDGE_SECRET` | random 64 hex — `openssl rand -hex 32` (ต้องต่างจาก JWT_SECRET) |
 
-ค่าที่ **ห้ามใส่เอง** และต้องรอดึงจาก browser: `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
+ค่าที่ **ห้ามใส่เอง** และต้องรอดึงจาก browser: `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+
+`GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` ไม่ต้องใส่ตอนนี้ — GitHub auth ถูกปิดในเว็บ (ดูข้อ 4.2)
 
 ห้ามตั้ง `NODE_ENV` ใน `.env`
 
@@ -82,11 +86,10 @@ pnpm i
 3. ถ้าไม่มี → สร้างใหม่ (Create Credentials → OAuth client ID → Web application) โดยตั้ง Authorized redirect URI เป็น `http://localhost:3000/api/auth/google/callback`
 4. ใส่ค่าลง `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
 
-### 4.2 GitHub OAuth
-1. เปิด `https://github.com/settings/developers`
-2. ถ้ามี OAuth App อยู่แล้ว → คัดลอก **Client ID** กด Generate new client secret แล้วคัดลอก **Client Secret**
-3. ถ้าไม่มี → New OAuth App โดยตั้ง Authorization callback URL เป็น `http://localhost:3000/api/auth/github/callback`
-4. ใส่ค่าลง `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+### 4.2 GitHub OAuth (ปิดใช้งาน)
+ตอนนี้เว็บ auth ด้วย Google เท่านั้น ปุ่มและ route ของ GitHub ถูกปิด (`ENABLED_PROVIDERS` ใน `src/lib/oauth-providers.ts`) — ข้ามข้อนี้ได้เลย
+
+ถ้าจะเปิดภายหลัง: เพิ่ม `'github'` ใน `ENABLED_PROVIDERS`, คืนปุ่มในหน้า login, แล้วตั้ง `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` จาก `https://github.com/settings/developers` พร้อม callback URL `http://localhost:3000/api/auth/github/callback`
 
 ### 4.3 reCAPTCHA
 1. เปิด `https://www.google.com/recaptcha/admin` (v2)
@@ -120,5 +123,6 @@ pnpm start
 ## หมายเหตุ
 
 - `SERVER_URL` ถูก expose ไป browser (ดู `next.config.ts`) เพราะหน้า `/scan` ยิงไฟล์ตรงไป backend — ตอน deploy จริงต้องเป็น public origin ของ API
+- OAuth redirect URI มาจาก `GOOGLE_REDIRECT_URI` / `GITHUB_REDIRECT_URI` ก่อน ถ้าไม่ตั้งจะใช้ `APP_URL` + `/api/auth/<provider>/callback` และถ้า `APP_URL` ว่างจะ derive จาก request (`x-forwarded-host` / `x-forwarded-proto`) — ตอน deploy ต้องตั้ง `APP_URL` เป็น public origin และอัปเดต Authorized redirect URI ใน Google Console / GitHub OAuth App ให้ตรงกับค่านี้ ไม่อย่างนั้น provider จะพากลับ `localhost:3000`
 - Backend จริง (`RAMPART-API-SERVERv1`) รัน port 8006 — โปรเจกต์นี้เป็น frontend คุยผ่าน `src/proxy.ts`
 - ห้าม commit `.env` ลง git

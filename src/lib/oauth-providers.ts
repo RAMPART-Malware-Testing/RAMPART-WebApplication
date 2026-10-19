@@ -1,3 +1,6 @@
+import type { NextRequest } from 'next/server'
+import { appOrigin } from './app-url'
+
 export type OAuthProvider = 'google' | 'github'
 
 export type OAuthProviderConfig = {
@@ -31,17 +34,29 @@ const PROVIDERS: Record<OAuthProvider, OAuthProviderConfig> = {
     },
 }
 
+const ENABLED_PROVIDERS: OAuthProvider[] = ['google']
+
 export function getOAuthProvider(provider: string): OAuthProviderConfig | null {
-    if (provider !== 'google' && provider !== 'github') return null
+    if (!isOAuthProvider(provider)) return null
     const config = PROVIDERS[provider]
     if (!config.clientId || !config.clientSecret) return null
     return config
 }
 
 export function isOAuthProvider(provider: string): provider is OAuthProvider {
-    return provider === 'google' || provider === 'github'
+    return (ENABLED_PROVIDERS as string[]).includes(provider)
 }
 
-export function callbackUrl(provider: string) {
+function configuredRedirectUri(provider: OAuthProvider): string {
+    const value = provider === 'google' ? process.env.GOOGLE_REDIRECT_URI : process.env.GITHUB_REDIRECT_URI
+    return (value || '').trim()
+}
+
+export function callbackUrl(provider: string, request?: NextRequest) {
+    if (isOAuthProvider(provider)) {
+        const configured = configuredRedirectUri(provider)
+        if (configured) return configured
+    }
+    if (request) return new URL(`/api/auth/${provider}/callback`, appOrigin(request)).toString()
     return `${(process.env.APP_URL || 'http://localhost:3000').replace(/\/+$/, '')}/api/auth/${provider}/callback`
 }

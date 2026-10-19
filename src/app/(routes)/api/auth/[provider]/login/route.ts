@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
 
     const url = new URL(config.authorizeUrl)
     url.searchParams.set('client_id', config.clientId)
-    url.searchParams.set('redirect_uri', callbackUrl(provider))
+    url.searchParams.set('redirect_uri', callbackUrl(provider, request))
     url.searchParams.set('response_type', 'code')
     url.searchParams.set('scope', config.scope)
     url.searchParams.set('state', state)

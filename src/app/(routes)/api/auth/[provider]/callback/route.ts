@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
         client_secret: config.clientSecret,
         code,
         grant_type: 'authorization_code',
-        redirect_uri: callbackUrl(provider),
+        redirect_uri: callbackUrl(provider, request),
     })
     if (config.usePkce) grant.set('code_verifier', stored.verifier)
 
