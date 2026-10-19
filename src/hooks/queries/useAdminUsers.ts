@@ -101,6 +101,21 @@ export function useAdminResetUserPassword() {
   })
 }
 
+export function useAdminChangeUserRole() {
+  const invalidate = useInvalidateAdminUsers()
+  return useMutation({
+    mutationFn: async ({ uid, newRole }: { uid: string; newRole: 'user' | 'admin' }) => {
+      const { data } = await axios.post<AdminActionResponse>('/api/admin/users/role', {
+        target_uid: uid,
+        new_role: newRole,
+      })
+      if (!data.success) throw new Error(data.message || 'ไม่สามารถเปลี่ยนสิทธิ์ได้')
+      return data
+    },
+    onSuccess: invalidate,
+  })
+}
+
 export function useAdminCreateUser() {
   const invalidate = useInvalidateAdminUsers()
   return useMutation({

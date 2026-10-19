@@ -129,6 +129,16 @@ class AdminServiceClass {
         }
     }
 
+    async changeUserRole(token: string, targetUid: string, newRole: "user" | "admin") {
+        try {
+            const res = await axios.post(`${SERVER_URL}/api/admin/users/role`, { token, target_uid: targetUid, new_role: newRole });
+            return res.data;
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response?.data?.message) return err.response.data;
+            return ERROR_RESPONSE;
+        }
+    }
+
     async deleteUser(token: string, targetUid: string) {
         try {
             const res = await axios.post(`${SERVER_URL}/api/admin/users/delete`, { token, target_uid: targetUid });

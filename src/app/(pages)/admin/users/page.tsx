@@ -14,6 +14,7 @@ import {
   useAdminCreateUser,
   useAdminDeleteUser,
   useAdminResetUserPassword,
+  useAdminChangeUserRole,
   exportAdminUsersCsv,
 } from '@/hooks/queries/useAdminUsers'
 
@@ -67,6 +68,7 @@ export default function AdminUsersPage() {
   const createUserMutation = useAdminCreateUser()
   const deleteUserMutation = useAdminDeleteUser()
   const resetPasswordMutation = useAdminResetUserPassword()
+  const changeRoleMutation = useAdminChangeUserRole()
   const isBulkBusy = bulkBanMutation.isPending
 
   useEffect(() => {
@@ -203,6 +205,35 @@ export default function AdminUsersPage() {
     }
   }
 
+  const handleChangeRole = async (user: AdminUserListItem) => {
+    const { value, isConfirmed } = await Swal.fire({
+      title: `เปลี่ยนสิทธิ์ ${user.username}`,
+      input: 'select',
+      inputOptions: { user: ROLE_LABELS.user, admin: ROLE_LABELS.admin },
+      inputValue: user.role,
+      showCancelButton: true,
+      confirmButtonText: 'บันทึกสิทธิ์',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#0891b2',
+      background: '#0f172a',
+      color: '#fff',
+    })
+    if (!isConfirmed || !value) return
+    if (value === user.role) {
+      notify.error('บัญชีนี้มีสิทธิ์นี้อยู่แล้ว')
+      return
+    }
+    setBusyUid(user.uid)
+    try {
+      await changeRoleMutation.mutateAsync({ uid: user.uid, newRole: value as 'user' | 'admin' })
+      notify.success('เปลี่ยนสิทธิ์สำเร็จ')
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : 'ไม่สามารถเปลี่ยนสิทธิ์ได้')
+    } finally {
+      setBusyUid(null)
+    }
+  }
+
   const handleDelete = async (user: AdminUserListItem) => {
     const confirm = await Swal.fire({
       title: `ลบบัญชี ${user.username}?`,
@@ -275,7 +306,9 @@ export default function AdminUsersPage() {
           <div>
             <h1 className="text-2xl font-bold text-white">จัดการผู้ใช้งาน</h1>
             <p className="text-blue-200/50 text-sm mt-1">
-              รายชื่อผู้ใช้งานทั้งหมด — สร้างบัญชี / แบน / ปลดแบน
+              {isMaster
+                ? 'รายชื่อผู้ใช้งานทั้งหมด — สร้างบัญชี / แบน / ปลดแบน / เปลี่ยนสิทธิ์'
+                : 'รายชื่อผู้ใช้งานทั้งหมด — แบน / ปลดแบน'}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -448,6 +481,15 @@ export default function AdminUsersPage() {
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     {canManageTarget(user.role) && user.status !== 'deleted' && (
                       <>
+                        {isMaster && (
+                          <button
+                            disabled={busyUid === user.uid}
+                            onClick={() => handleChangeRole(user)}
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-500/10 text-purple-300 border border-purple-500/20 hover:bg-purple-500/20 transition disabled:opacity-40"
+                          >
+                            เปลี่ยนสิทธิ์
+                          </button>
+                        )}
                         <button
                           disabled={busyUid === user.uid}
                           onClick={() => handleResetPassword(user)}
